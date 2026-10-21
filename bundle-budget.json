@@ -1,9 +1,9 @@
 {
-  "//": "Gzipped KB, checked by scripts/check-bundle-size.mjs after a build. Set a little above the sizes measured when it was set: visitor load 110.4 (the landing page alone), signed-in start 302.3 (the brutal copy lives in it), heaviest tab's first open 34.8 (Study), largest chunk 143.5 (pdf.js), all JS 773.5, CSS 14.1. Lighthouse on the five tabs then (npm run perf:screens): performance and accessibility 100 on each, LCP 1.4 to 1.8 s, TBT at most 17 ms, CLS at most 0.03. Raise a number only on purpose, in the PR that needs it.",
+  "//": "Gzipped KB, checked by scripts/check-bundle-size.mjs after a build. Set a little above the sizes CI measured when it was set (Node 24, whose gzip comes out about 1% bigger than a Mac on Node 26): visitor load 110.4 (the landing page alone), signed-in start 307.1 (the brutal copy lives in it), heaviest tab's first open 35.0 (Study), largest chunk 143.9 (pdf.js), all JS 779.9, CSS 14.1. Lighthouse on the five tabs then (npm run perf:screens): performance and accessibility 100 on each, LCP 1.4 to 1.8 s, TBT at most 17 ms, CLS at most 0.03. Raise a number only on purpose, in the PR that needs it.",
   "initialKB": 112,
-  "appStartKB": 304,
+  "appStartKB": 309,
   "screenKB": 36,
   "largestChunkKB": 146,
-  "totalJsKB": 785,
+  "totalJsKB": 788,
   "cssKB": 14.5
 }
