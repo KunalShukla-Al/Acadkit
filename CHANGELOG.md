@@ -30,6 +30,10 @@ existing data or installs, a minor version for new features, a patch version for
 - A subject's skips were never capped at the classes left ("skip 13 more of the remaining 5"),
   which also hid the date it was safe to skip everything up to.
 - Skips asked for one class too many on medical leave: 0.65 × 100 came out a hair above 65.
+- Add to Home Screen on iOS 26 still drew a letter instead of the icon. The touch icon now sits in
+  the page as a data URI, so the sheet needs no fetch; each manifest icon has one purpose, since
+  iOS passes over "any maskable"; and the `-180x180` names iOS also asks the site for are real
+  PNGs.
 
 ## [1.0.0] - 2026-10-21
 
