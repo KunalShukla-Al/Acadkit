@@ -125,7 +125,9 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   zero and no list staggers in on arrival (each starts with `initial={false}`). What moves is
   what changed: a number that updates, a tab's pill, a row you open, a sheet, the corner, the
   explainers.
-- Today (`src/pages/Today.tsx`, at `/`) is the day and what's due. Its card (`TodayCard`) shows
+- Today (`src/pages/Today.tsx`, at `/`) is the day and what's due. Its title is a greeting by the
+  hour (`Greeting`, "you're awake, kunal"), under a struck-out "welcome back, scholar" in the
+  brutalist voice. Its card (`TodayCard`) shows
   today's classes, the one on now and the next, or the next day with classes once today's are
   over. Under it, the next three deadlines each open the Deadlines page (`/deadlines`, under the
   next exam's countdown). Above the day is only what needs you: a suggestion, a page to continue,
