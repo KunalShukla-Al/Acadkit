@@ -1,0 +1,13 @@
+{
+  "notices": [
+    {
+      "subject_code": null,
+      "text": "Lab 4 is due at the next lab: bring the zip on a pen drive",
+      "source": "OS lab WhatsApp",
+      "posted": "2026-10-06",
+      "until": "2026-10-09",
+      "file": "Operating_Systems/Lab 4 files.zip"
+    },
+    { "text": "An old notice that has run out", "until": "2026-10-06" }
+  ]
+}

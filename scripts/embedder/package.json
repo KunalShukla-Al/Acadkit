@@ -1,0 +1,9 @@
+{
+  "name": "acadkit-embedder",
+  "private": true,
+  "description": "gte-small on the Mac for the study sync; installed on the Mac only (npm ci --prefix scripts/embedder)",
+  "type": "module",
+  "dependencies": {
+    "@huggingface/transformers": "4.3.1"
+  }
+}

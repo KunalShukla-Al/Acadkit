@@ -1,0 +1,80 @@
+name: Deploy
+
+# After a merge to main: database migrations (supabase db push) and the edge functions the merge
+# touched. Vercel deploys the app on its own. The plan job says what would change; the deploy
+# job waits for one click in the "production" environment (a required reviewer), then does it.
+#
+# One-time setup: secrets SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD, variable
+# SUPABASE_PROJECT_REF, and the production environment with a required reviewer. The history must
+# match the folder first (scripts/repair-migration-history.sh); until it does, db push refuses.
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**", "packages/core/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      functions: ${{ steps.functions.outputs.list }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Migrations that would be applied
+        run: supabase db push --project-ref "$PROJECT_REF" --dry-run
+
+      # Everything on a manual run; otherwise what this push touched.
+      - name: Functions that would be deployed
+        id: functions
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            list=$(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | cut -d/ -f3 | sort | tr '\n' ' ')
+          else
+            list=$(bash scripts/changed-functions.sh "${{ github.event.before }}" "${{ github.sha }}" | tr '\n' ' ')
+          fi
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "Functions: ${list:-none}"
+
+  deploy:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Apply migrations
+        run: supabase db push --project-ref "$PROJECT_REF"
+
+      # verify_jwt for each comes from supabase/config.toml; --use-api bundles server-side, which
+      # takes feeds' imports from packages/core.
+      - name: Deploy functions
+        if: needs.plan.outputs.functions != ''
+        run: |
+          for f in ${{ needs.plan.outputs.functions }}; do
+            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api
+          done

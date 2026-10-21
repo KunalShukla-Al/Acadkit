@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npx vite build
+
+      - name: Bundle size
+        run: npm run size
+
+  e2e:
+    # Playwright against `npm run dev:mock`: sign in, mark attendance, add
+    # marks, and replay a write made offline. No real Supabase involved.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  changes:
+    # Whether this push or pull request touches supabase/: the RLS job below
+    # takes about four minutes to start a local Supabase, and nothing else
+    # can change what it tests.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      supabase: ${{ steps.diff.outputs.supabase }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        run: |
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            echo "supabase=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$base" "${{ github.sha }}" | grep -q '^supabase/'; then
+            echo "supabase=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supabase=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  rls:
+    # pgTAP tests in supabase/tests: a throwaway local Supabase is built
+    # from supabase/migrations, then every table is checked for one account
+    # reaching another's data. `--local` only - never the hosted project.
+    needs: changes
+    if: needs.changes.outputs.supabase == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned to the version src/lib/database.types.ts was generated with, so the check below compares like with like.
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.118.0
+
+      # Auth and Storage stay: their own migrations define auth.uid() and
+      # the storage.objects policies under test. Everything else is skipped.
+      - name: Start local Supabase
+        run: supabase start -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: RLS tests
+        run: supabase test db --local
+
+      - name: Database types match the migrations
+        run: |
+          bash scripts/local-db.sh types
+          git diff --exit-code src/lib/database.types.ts || { echo "Run npm run db:types and commit the result."; exit 1; }
+
+  lighthouse:
+    # Lighthouse on the production build, median of three runs, against the
+    # limits in lighthouserc.json. It loads the sign-in screen, so this is the
+    # first visit's download and render speed.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # The app refuses to start without these. Nothing is contacted: the
+      # sign-in screen renders without a network call.
+      - name: Build
+        run: npx vite build
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: lighthouse
+
+      - name: Lighthouse
+        run: npx -y @lhci/cli@0.15.1 autorun
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report
+          path: lighthouse-report/
+          retention-days: 14

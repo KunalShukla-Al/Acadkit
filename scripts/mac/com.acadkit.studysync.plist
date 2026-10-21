@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Installed by npm run mac:install, which fills in __HOME__ and __REPO__. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.acadkit.studysync</string>
+    <!-- bash stays the parent: it holds Full Disk Access for ~/Documents, and node inherits it. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>node "__REPO__/scripts/mac/watch.mjs"; exit $?</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict><key>PATH</key><string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>StandardErrorPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

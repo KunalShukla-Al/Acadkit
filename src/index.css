@@ -1,0 +1,438 @@
+@import 'tailwindcss';
+/* Each theme's colours and shapes, light and dark (src/design/tokens.json, npm run tokens). */
+@import './design/tokens.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-bg: hsl(var(--bg));
+  --color-surface: hsl(var(--surface));
+  --color-surface-2: hsl(var(--surface-2));
+  --color-line: hsl(var(--line));
+  --color-ink: hsl(var(--ink));
+  --color-muted: hsl(var(--muted));
+  --color-brand: hsl(var(--brand));
+  --color-brand-ink: hsl(var(--brand-ink));
+  --color-accent: hsl(var(--accent));
+  --color-accent-2: hsl(var(--accent-2));
+  --color-good: #4ade80;
+  --color-warn: #facc15;
+  --color-bad: #fb7185;
+  --color-accent-deep: hsl(var(--accent-deep));
+  --color-good-deep: hsl(var(--good-deep));
+  --color-warn-deep: hsl(var(--warn-deep));
+  --color-bad-deep: hsl(var(--bad-deep));
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'Chakra Petch', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: 0 12px 40px -8px hsl(var(--accent) / 0.45);
+
+  --spacing-safe-t: env(safe-area-inset-top);
+  --spacing-safe-b: env(safe-area-inset-bottom);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility grade-badge {
+  /* A grade's hue as text on its own 13% tint: mixed with black in light
+     mode to clear 4.5:1, used as-is in dark mode where it already does. */
+  color: color-mix(in srgb, var(--grade) 45%, black);
+  .dark & {
+    color: var(--grade);
+  }
+}
+
+@utility card {
+  @apply rounded-3xl border bg-surface shadow-card;
+  border-radius: var(--radius-card, 1.5rem);
+}
+
+@utility glass {
+  /* The scrolling chrome: the sticky top bar and the bottom nav.
+     Opaque, and deliberately not glass any more.
+
+     A backdrop-filter on a sticky or fixed element makes the compositor
+     re-blur everything behind it on every scroll frame, and there are
+     two of these on screen at once — the measurable cause of scroll and
+     swipe stutter on a 120Hz phone, where a frame is 8ms. It also never
+     earned its keep: OLED had already opted out (a lit slab across the
+     top of a true-black page), and brutalist separates surfaces
+     with hairlines, not depth. The border does the work. */
+  background: hsl(var(--bg));
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility accent-gradient-text {
+  background: linear-gradient(120deg, hsl(var(--accent)), hsl(var(--accent-2)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---- Brutalist: the structural half of the theme ----
+
+   These override utility classes on purpose (a title's text-2xl, a label's
+   tracking-widest, a card's shadow). Tailwind 4 puts utilities in a cascade
+   layer that beats every other layer, so the overrides live in that same
+   layer, where specificity decides again. */
+@layer utilities {
+  /* Stat numbers become the page's largest element, in a squared-off
+     display face. Every .tabular number in the app inherits this. */
+  [data-theme="brutalist"] .tabular {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Page titles are the loudest thing on screen: oversized, lowercase and
+     in the display face. clamp() keeps one from swallowing a small phone. */
+  [data-theme="brutalist"] h1 {
+    font-family: var(--font-display);
+    text-transform: lowercase;
+    font-size: clamp(2.25rem, 8vw, 3.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  /* Section labels: wide-tracked lowercase instead of tight uppercase. */
+  [data-theme="brutalist"] .uppercase {
+    text-transform: lowercase;
+    letter-spacing: 0.22em;
+  }
+
+  /* Cards are colour blocks, not raised surfaces: no shadow, a real
+     border, and a radius big enough to read as a squircle. */
+  [data-theme="brutalist"] .card {
+    border-width: 1.5px;
+    box-shadow: none;
+  }
+
+  /* The bottom bar sits flush on the screen edge, and its active tab is a solid disc. */
+  [data-theme="brutalist"] nav[aria-label="Primary"].glass {
+    border-top: 1.5px solid hsl(var(--line) / 0.14);
+    background: hsl(var(--surface));
+  }
+  [data-theme="brutalist"] nav[aria-label="Primary"] [data-nav-pill] {
+    border-radius: 9999px;
+    background: hsl(var(--accent));
+  }
+  [data-theme="brutalist"] nav[aria-label="Primary"] a[aria-current="page"] svg,
+  [data-theme="brutalist"] nav[aria-label="Primary"] a[aria-current="page"] span {
+    color: hsl(0 0% 6%);
+  }
+
+  /* OLED x-factor: there isn't one, deliberately: zero saturation everywhere
+     and true #000 in dark mode. The restraint itself is the theme. */
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--line) / var(--line-alpha));
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    background-color: hsl(var(--bg));
+  }
+  body {
+    @apply text-ink font-sans antialiased;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "cv11";
+    /* Standalone iOS has no browser chrome to rubber-band against, so a
+       bounce just exposes the page background and reads as a bug. */
+    overscroll-behavior: none;
+  }
+  #root {
+    min-height: 100dvh;
+  }
+  /* Clip the page transitions horizontally without making a scroll box.
+     A page slides out sideways on every route change and would otherwise
+     widen the document.
+
+     This lives here rather than as an `overflow-x-hidden` class because
+     the class wins the cascade — `.overflow-x-hidden` outranks `main` on
+     specificity, so an @supports override on the element never applied.
+
+     `hidden` forces the other axis to `auto`, which is how <main> became
+     a scroll container by accident and, with overscroll containment on
+     top, swallowed every touch scroll in the app. `clip` has no such side
+     effect: overflow-y stays `visible` and the document remains the only
+     thing that scrolls. `hidden` stays as the fallback for Safari below
+     16, where behaviour is simply what it has always been. */
+  main {
+    overflow-x: hidden;
+  }
+  @supports (overflow: clip) {
+    main {
+      overflow-x: clip;
+      overflow-y: visible;
+    }
+  }
+
+  /* `main` is NOT the scroll container — the document is. It only looks
+     like one because `overflow-x: hidden` forces the other axis to
+     `auto`, and that accident used to carry `overscroll-behavior-y:
+     contain`. The combination is a trap: a scroll container with nothing
+     to scroll, told not to pass the gesture on. A finger dragging inside
+     it moved nothing, on every page. (A mouse wheel chains regardless,
+     which is why it only ever showed up on touch.)
+
+     Momentum scrolling went with it: `-webkit-overflow-scrolling` only
+     means anything on an element that actually scrolls, and the page
+     already has inertia of its own. */
+
+  /* Anything that slides horizontally claims the horizontal axis, so the
+     browser stops waiting to see whether the gesture was a scroll —
+     that wait is what makes a swipe feel a frame behind the finger. */
+  [data-swipe] {
+    touch-action: pan-y;
+  }
+
+  /* Scroll position no longer jumps when a list grows above the
+     viewport — marking a class, or a sync landing mid-scroll. */
+  html {
+    scroll-behavior: smooth;
+    overflow-anchor: auto;
+  }
+
+  /* Long-pressing a control in a native app doesn't offer to copy it or
+     preview a link, and a tab bar isn't text to be selected. Content
+     stays selectable — only chrome opts out. */
+  button,
+  a,
+  [role="button"],
+  [role="switch"],
+  nav {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    /* Skip the 300ms tap delay without disabling pinch-zoom globally. */
+    touch-action: manipulation;
+  }
+  /* iOS zooms the viewport when a focused field is under 16px. Every
+     field is 16px by design; this catches anything that slips through. */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  /* iOS styles date/time fields natively: it gives them an intrinsic
+     width they refuse to shrink below, and centres the value. Dropped
+     into a narrow grid cell they overflow and their rounded edges
+     overlap the neighbour. Make them behave like ordinary text fields. */
+  input[type="date"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  /* --brand, not --accent: OLED sets the accent to 38% grey, which leaves
+     a focus ring nearly invisible on a near-black ground — the same trap
+     that hid the brand mark in the top bar. --brand is guaranteed to
+     contrast in every theme. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--brand));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* vaul drawer needs this for exit animations */
+[data-vaul-drawer] {
+  touch-action: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- file viewer ---------------------------------------------------- */
+/* Code colours from the theme's own tokens, so a lab program reads like
+   the rest of the app in each theme, light and dark. */
+.code-view .hljs-keyword,
+.code-view .hljs-built_in,
+.code-view .hljs-meta .hljs-keyword { color: hsl(var(--accent)); font-weight: 600; }
+.code-view .hljs-type,
+.code-view .hljs-title,
+.code-view .hljs-title.class_,
+.code-view .hljs-title.function_ { color: hsl(var(--accent-2)); }
+.code-view .hljs-string,
+.code-view .hljs-char { color: hsl(var(--good)); }
+.code-view .hljs-number,
+.code-view .hljs-literal { color: hsl(var(--warn)); }
+.code-view .hljs-comment,
+.code-view .hljs-doctag { color: hsl(var(--muted)); font-style: italic; }
+.code-view .hljs-meta,
+.code-view .hljs-meta .hljs-string { color: hsl(var(--bad)); }
+.code-view .hljs-params,
+.code-view .hljs-variable,
+.code-view .hljs-attr { color: hsl(var(--ink)); }
+
+/* Word pages stay on white paper whatever the theme: documents are
+   written for it, and dark text on a dark page would vanish. */
+.docx-host .docx-wrapper { background: transparent !important; padding: 0 !important; }
+.docx-host .docx-wrapper > section.docx { margin: 0 auto 16px !important; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25) !important; }
+
+.code-view { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+
+/* Spreadsheets in the file viewer: a grid you can say "C12" about. */
+.sheet-view th, .sheet-view td { border: 1px solid hsl(var(--line) / var(--line-alpha)); padding: 4px 8px; white-space: nowrap; max-width: 28rem; overflow: hidden; text-overflow: ellipsis; }
+.sheet-view .sheet-head { background: hsl(var(--surface-2)); color: hsl(var(--muted)); font-weight: 700; font-size: 11px; text-align: center; }
+.sheet-view .sheet-rownum { text-align: right; min-width: 2.5rem; }
+.sheet-view .sheet-corner { background: hsl(var(--surface-2)); }
+.sheet-view tr > :first-child { border-left: 0; }
+.sheet-view thead tr > * { border-top: 0; }
+
+/* pdf.js text layer (the rules from pdfjs-dist/web/pdf_viewer.css the
+   viewer needs): invisible text laid over each page's drawing, so it can
+   be searched, highlighted and selected. */
+.textLayer {
+  position: absolute; inset: 0; overflow: clip; line-height: 1; text-align: initial;
+  -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none;
+  transform-origin: 0 0; z-index: 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+.textLayer > :not(.markedContent), .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1; --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.textLayer .markedContent { display: contents; }
+.textLayer ::selection { background: hsl(var(--accent) / 0.35); }
+.textLayer br::selection { background: transparent; }
+
+/* Find-in-file matches (CSS Custom Highlight API; see viewer/find.ts). */
+::highlight(viewer-find) { background-color: hsl(var(--accent) / 0.32); }
+::highlight(viewer-find-current) { background-color: hsl(var(--accent)); color: #000; }
+/* A PDF's text layer is see-through over the drawing: colour only the box. */
+.textLayer span::highlight(viewer-find-current) { color: transparent; background-color: hsl(var(--accent) / 0.55); }
+
+/* The search button: a lens with a glint, and a ring that turns while
+   search is open. */
+.find-btn { position: relative; isolation: isolate; overflow: hidden; }
+.find-btn::before {
+  content: ""; position: absolute; inset: -40%; z-index: -1; opacity: 0;
+  background: conic-gradient(from 0deg, transparent 0 55%, hsl(var(--accent)) 75%, transparent 95%);
+  transition: opacity .3s ease;
+}
+.find-btn::after {
+  content: ""; position: absolute; inset: 2px; z-index: -1; border-radius: inherit; background: hsl(var(--surface-2));
+}
+.find-btn[data-open="true"]::before { opacity: 1; animation: find-spin 2.4s linear infinite; }
+.find-glint {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .55) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.find-btn:active .find-glint, .find-btn[data-glint="true"] .find-glint { animation: find-glint .6s ease-out; }
+@keyframes find-spin { to { transform: rotate(360deg); } }
+@keyframes find-glint { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+
+/* The page counter: digits that roll like an odometer, and the page you'd land on, popping up over the pill while you scrub. */
+.roll-in-up { animation: roll-in-up .26s cubic-bezier(.2, .9, .3, 1.15) both; }
+.roll-in-down { animation: roll-in-down .26s cubic-bezier(.2, .9, .3, 1.15) both; }
+.roll-out-up { animation: roll-out-up .26s ease-in both; }
+.roll-out-down { animation: roll-out-down .26s ease-in both; }
+@keyframes roll-in-up { from { transform: translateY(100%); opacity: 0; } }
+@keyframes roll-in-down { from { transform: translateY(-100%); opacity: 0; } }
+@keyframes roll-out-up { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes roll-out-down { to { transform: translateY(100%); opacity: 0; } }
+.scrub-pop { animation: scrub-pop .22s cubic-bezier(.2, .9, .3, 1.2) both; }
+@keyframes scrub-pop { from { opacity: 0; transform: translateY(8px) scale(.9); } }
+@media (prefers-reduced-motion: reduce) {
+  .roll-in-up, .roll-in-down, .scrub-pop { animation: none; }
+  .roll-out-up, .roll-out-down { animation: none; opacity: 0; }
+}
+
+/* While a search runs, a scan line sweeps along the bar. */
+.find-scan { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; overflow: hidden; }
+.find-scan::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 35%;
+  background: linear-gradient(90deg, transparent, hsl(var(--accent)), transparent);
+  animation: find-sweep 1s ease-in-out infinite;
+}
+@keyframes find-sweep { from { left: -35%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .find-btn[data-open="true"]::before, .find-scan::after, .find-btn .find-glint { animation: none !important; }
+}
+
+/*
+ * Pinch-zoom is allowed (people who need bigger text rely on it), so the
+ * viewport no longer sets maximum-scale=1. What that setting was really
+ * for: iOS zooms the whole page into any field whose text is under 16px
+ * the moment it's focused. Keeping every field at 16px or more on touch
+ * screens stops that. !important because this has to beat the text-xs /
+ * text-sm utilities some fields carry, whatever the source order.
+ */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  [contenteditable="true"] {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* A card a subject chip just jumped to: lands below the sticky header, and glows for a moment. */
+[id^="att-"], [id^="attf-"], [id^="marks-"], [id^="tgt-"] {
+  scroll-margin-top: 5rem;
+}
+[data-jumped] {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+  transition: outline-color 1.2s ease-out;
+}

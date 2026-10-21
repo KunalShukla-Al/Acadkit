@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "title": "Test run-up",
+  "start": "2026-10-05",
+  "end": "2026-10-31",
+  "events": [
+    {
+      "id": "os-ft2",
+      "subject_code": "21CSC202J",
+      "title": "OS FT-II",
+      "kind": "test",
+      "date": "2026-10-09",
+      "target": { "score": 12, "max": 15, "note": "about two-thirds of the paper" },
+      "weight": "15% of the grade",
+      "format": "Part A 5 marks + Part B 2 x 10, each an either/or",
+      "units": [2, 3],
+      "portion": ["Processes, threads and IPC", "CPU scheduling and deadlocks"],
+      "scoring": ["Draw the three thread models and recommend one for a web server", "Show every Gantt chart step"],
+      "prepare": ["Banker's algorithm: Need matrix and a safe sequence"],
+      "analysis": {
+        "source": "Four papers from last year",
+        "items": [{ "topic": "Multithreading models", "seen": "4 / 4", "note": "three ask it as a web server" }]
+      },
+      "pyqs": [
+        {
+          "source": "FJ2 2025 · Set B",
+          "file": "Operating_Systems/Unit 3 deadlocks (6 pages).pdf",
+          "page": 2,
+          "number": "6a",
+          "marks": 10,
+          "unit": 2,
+          "topic": "Threads",
+          "year": 2025,
+          "kind": "ct",
+          "text": "A web server uses multithreading but seems underutilized on a quad-core machine."
+        },
+        {
+          "source": "End-sem May 2025",
+          "number": "24b",
+          "marks": 8,
+          "unit": 3,
+          "topic": "Deadlock",
+          "year": 2025,
+          "kind": "end_sem",
+          "text": "Explain Banker's algorithm with an example."
+        }
+      ],
+      "files": [{ "path": "Operating_Systems/Unit 2 scheduling notes.pdf", "why": "the faculty's Unit 2 notes" }]
+    },
+    {
+      "id": "dsa-lab",
+      "subject_code": "21CSC201J",
+      "title": "DSA lab exam",
+      "kind": "lab",
+      "date": null,
+      "when": "postponed, date not announced",
+      "target": { "score": 10, "max": 15 }
+    }
+  ],
+  "days": [
+    {
+      "date": "2026-10-06",
+      "focus": "Threads",
+      "tasks": [
+        { "id": "t1", "text": "Sketch the three thread models", "event": "os-ft2", "minutes": 30 },
+        { "id": "t2", "text": "Write BST insert from memory", "event": "dsa-lab", "minutes": 40 }
+      ]
+    },
+    {
+      "date": "2026-10-07",
+      "focus": "Scheduling numericals",
+      "tasks": [
+        {
+          "id": "t3",
+          "text": "Two Gantt charts: FCFS and Round Robin",
+          "event": "os-ft2",
+          "minutes": 45,
+          "files": ["Operating_Systems/Unit 2 scheduling notes.pdf"]
+        },
+        { "id": "t4", "text": "Pandas groupby, five snippets by hand", "subject_code": "21CSS202T", "minutes": 30 }
+      ]
+    },
+    {
+      "date": "2026-10-08",
+      "tasks": [{ "id": "t5", "text": "One full past paper, timed", "event": "os-ft2", "minutes": 50 }]
+    }
+  ]
+}

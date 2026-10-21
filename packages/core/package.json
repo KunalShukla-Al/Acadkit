@@ -1,0 +1,10 @@
+{
+  "name": "@acadkit/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AcadKit's rules as plain TypeScript: no React, no Supabase, no DOM, so the app, the edge functions and the Mac run the same code",
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}

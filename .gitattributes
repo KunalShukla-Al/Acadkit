@@ -1,0 +1,4 @@
+*.swift linguist-detectable=false
+supabase/** linguist-detectable=false
+notebooks/** linguist-detectable=false
+

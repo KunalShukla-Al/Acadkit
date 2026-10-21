@@ -1,0 +1,21 @@
+#!/bin/sh
+# Before each commit: ESLint on the staged JavaScript and TypeScript, then the typecheck
+# (tsc -b, incremental, so a second or so). CI runs both again in full. Skip once with
+# `git commit --no-verify`. Turned on by `npm install` (the prepare script).
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.mjs')
+[ -z "$staged" ] && exit 0
+
+echo "pre-commit: lint" >&2
+# Word-split on purpose: the repo's paths have no spaces.
+# shellcheck disable=SC2086
+npx eslint --max-warnings 0 --no-warn-ignored $staged || {
+  echo "pre-commit: ESLint failed. Fix it, or commit with --no-verify." >&2
+  exit 1
+}
+
+echo "pre-commit: typecheck" >&2
+npm run -s typecheck || {
+  echo "pre-commit: the typecheck failed. Fix it, or commit with --no-verify." >&2
+  exit 1
+}

@@ -1,0 +1,164 @@
+{
+  "model": "qwen3-vl:8b-instruct",
+  "today": "2026-10-19",
+  "subjects": [
+    {
+      "id": "dsa",
+      "code": "21CSC201J",
+      "name": "Data Structures and Algorithms",
+      "short_name": "DSA"
+    },
+    {
+      "id": "os",
+      "code": "21CSC202J",
+      "name": "Operating Systems",
+      "short_name": "OS"
+    },
+    {
+      "id": "aoop",
+      "code": "21CSC203P",
+      "name": "Advanced Object Oriented and Programming",
+      "short_name": "AOOP"
+    },
+    {
+      "id": "tbvp",
+      "code": "21MAB201T",
+      "name": "Transforms and Boundary Value Problems",
+      "short_name": "TBVP"
+    },
+    {
+      "id": "fds",
+      "code": "21CSS202T",
+      "name": "Fundamentals of Data Science",
+      "short_name": "FDS"
+    },
+    {
+      "id": "uhv",
+      "code": "21LEM202T",
+      "name": "Universal Human Values II",
+      "short_name": "UHV"
+    }
+  ],
+  "cases": [
+    {
+      "name": "IMG_2041.png",
+      "whatIs": {
+        "kind": "notice",
+        "subject": "21CSS202T",
+        "summary": "FUNDAMENTALS OF DATA SCIENCE, session AN, type T-EXT, date 26-11-2026",
+        "confidence": 0.95
+      },
+      "notice": {
+        "events": [
+          {
+            "title": "End semester exam",
+            "type": "exam",
+            "subject": "21MAB201T",
+            "date": "2026-11-25",
+            "time": null,
+            "max_marks": null
+          },
+          {
+            "title": "End semester exam",
+            "type": "exam",
+            "subject": "21CSS202T",
+            "date": "2026-11-26",
+            "time": null,
+            "max_marks": null
+          },
+          {
+            "title": "End semester exam",
+            "type": "exam",
+            "subject": "21CSC201J",
+            "date": "2026-11-27",
+            "time": null,
+            "max_marks": null
+          },
+          {
+            "title": "End semester exam",
+            "type": "exam",
+            "subject": "21CSC202J",
+            "date": "2026-11-30",
+            "time": null,
+            "max_marks": null
+          }
+        ],
+        "confidence": 1
+      }
+    },
+    {
+      "name": "IMG_2042.jpg",
+      "whatIs": {
+        "kind": "question-paper",
+        "subject": "21CSC203P",
+        "summary": "Exam paper for 21CSC203P: Advanced Object Oriented and Programming, dated 16-09-2025, with questions on JVM, type conversion, Swing, JDBC, and Vector class.",
+        "confidence": 0.98
+      }
+    },
+    {
+      "name": "notes_from_whatsapp.pdf",
+      "whatIs": {
+        "kind": "notice",
+        "subject": "21CSC202J",
+        "summary": "OS lab test on 15 Sep 2026 and OS lab assessment on 29 Sep 2026, with portions from exp 1 to exp 7.",
+        "confidence": 0.98
+      },
+      "notice": {
+        "events": [
+          {
+            "title": "OS lab test",
+            "type": "lab",
+            "subject": "21CSC202J",
+            "date": "2026-09-15",
+            "time": null,
+            "max_marks": null
+          },
+          {
+            "title": "OS LAB ASSESSMENT",
+            "type": "exam",
+            "subject": "21CSC202J",
+            "date": "2026-09-29",
+            "time": null,
+            "max_marks": null
+          },
+          {
+            "title": "OS CT-1 = FT-II written",
+            "type": "exam",
+            "subject": "21CSC202J",
+            "date": "2026-10-29",
+            "time": null,
+            "max_marks": 15
+          }
+        ],
+        "confidence": 1
+      }
+    },
+    {
+      "name": "Unit2_Fourier_Series_Slides.pdf",
+      "whatIs": {
+        "kind": "slides",
+        "subject": "21MAB201T",
+        "summary": "Lecture slides for 'Fourier Series' in the course 'Transforms and Boundary Value Problems' at SRM Institute of Science and Technology.",
+        "confidence": 0.98
+      }
+    },
+    {
+      "name": "Assignment-1.pdf",
+      "whatIs": {
+        "kind": "assignment",
+        "subject": "21MAB201T",
+        "summary": "Assignment-1 for Transforms and Boundary Value Problems, containing PDE problems to solve.",
+        "confidence": 0.98
+      }
+    },
+    {
+      "name": "IMG_2043.png",
+      "whatIs": {
+        "kind": "other",
+        "subject": null,
+        "summary": "A black and white abstract logo, not related to any course material.",
+        "confidence": 1
+      }
+    }
+  ]
+}

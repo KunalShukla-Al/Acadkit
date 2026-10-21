@@ -1,0 +1,240 @@
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, type Location } from "react-router-dom";
+import { QueryClient, defaultShouldDehydrateQuery } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { MotionConfig } from "motion/react";
+import { Toaster } from "sonner";
+import { registerMutationDefaults } from "@/api/mutations";
+import { AppShell } from "@/components/layout/app-shell";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { LaunchScreen } from "@/components/launch-screen";
+import { DialogProvider } from "@/components/ui/dialog";
+import { UpdatePrompt } from "@/components/update-prompt";
+import Onboarding from "@/pages/Onboarding";
+import Welcome from "@/pages/Welcome";
+import type { AuthMode } from "@/pages/Landing";
+import { useSession } from "@/hooks/useSession";
+import { useAutoDevice } from "@/hooks/useAutoDevice";
+import { useIdleHome } from "@/hooks/useIdleHome";
+import { RQ_CACHE_KEY, useAuthReset } from "@/hooks/useAuthReset";
+import { appStore } from "@/lib/offlineStore";
+import { entryScreen } from "@/lib/devices";
+import { useAppStore } from "@/store/app";
+
+// The five tabs (src/lib/screens.ts), then the pages the ball and the top bar open.
+const Today = lazy(() => import("@/pages/Today"));
+const Timetable = lazy(() => import("@/pages/Timetable"));
+const Attendance = lazy(() => import("@/pages/Attendance"));
+const Marks = lazy(() => import("@/pages/Marks"));
+const Deadlines = lazy(() => import("@/pages/Deadlines"));
+const Calendar = lazy(() => import("@/pages/Calendar"));
+const Skips = lazy(() => import("@/pages/Survival"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const History = lazy(() => import("@/pages/History"));
+const AbsentLog = lazy(() => import("@/pages/AbsentLog"));
+const Wrapped = lazy(() => import("@/pages/Wrapped"));
+const Files = lazy(() => import("@/pages/Files"));
+const Subject = lazy(() => import("@/pages/Subject"));
+const Practice = lazy(() => import("@/pages/Practice"));
+const Electives = lazy(() => import("@/pages/Electives"));
+const Viewer = lazy(() => import("@/pages/Viewer"));
+const Lecture = lazy(() => import("@/pages/Lecture"));
+const Runup = lazy(() => import("@/pages/Runup"));
+const RunupEvent = lazy(() => import("@/pages/RunupEvent"));
+const Design = lazy(() => import("@/pages/Design"));
+
+/** Query roots kept in memory only (see dehydrateOptions below). */
+const UNPERSISTED = new Set(["study-blob", "study-file", "study-download", "theme-account"]);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      // A week, matching the persisted cache below: opening on last
+      // week's figures beats a skeleton waiting on a slow network, and
+      // everything refetches in the background regardless.
+      gcTime: 1000 * 60 * 60 * 24 * 7,
+      retry: 1,
+      refetchOnWindowFocus: true,
+    },
+  },
+});
+
+// Persist the read cache to IndexedDB (src/lib/offlineStore.ts) so data is
+// viewable offline across reloads.
+const persister = createAsyncStoragePersister({
+  storage: appStore(),
+  key: RQ_CACHE_KEY,
+});
+
+// Must happen before the persisted cache is restored: a rehydrated
+// mutation looks up its function by key, and one that finds nothing is
+// dropped on the floor.
+registerMutationDefaults(queryClient);
+
+/**
+ * useAuthReset needs the query client, so it has to run inside the
+ * provider rather than in App's own body.
+ */
+function AuthReset() {
+  useAuthReset();
+  return null;
+}
+
+/** The routes, with the file viewer and a lecture's transcript able to open *over* a page. */
+function AppRoutes() {
+  const location = useLocation();
+  useIdleHome();
+  const background = (location.state as { background?: Location } | null)?.background;
+  return (
+    <>
+      <Routes location={background ?? location}>
+        {/* The file viewer is full-screen: outside the shell, so a
+            page gets the whole height and no tab bar sits over it. */}
+        <Route
+          path="/view"
+          element={
+            <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
+              <Viewer />
+            </Suspense>
+          }
+        />
+        {/* A recorded lecture's transcript, full screen like the viewer. */}
+        <Route
+          path="/lecture/:id"
+          element={
+            <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
+              <Lecture />
+            </Suspense>
+          }
+        />
+        {/* The design catalog: every token and primitive, full screen like the viewer. */}
+        <Route
+          path="/design"
+          element={
+            <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
+              <Design />
+            </Suspense>
+          }
+        />
+        <Route element={<AppShell />}>
+          <Route index element={<Today />} />
+          <Route path="/timetable" element={<Timetable />} />
+          <Route path="/attendance" element={<Attendance />} />
+          <Route path="/marks" element={<Marks />} />
+          <Route path="/study" element={<Files />} />
+          <Route path="/deadlines" element={<Deadlines />} />
+          <Route path="/runup" element={<Runup />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/skips" element={<Skips />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/history" element={<History />} />
+          {/* The old screens (/grades, /plan, /you) have no route: the shell sends their links on (movedTo). */}
+          <Route path="/log" element={<AbsentLog />} />
+          <Route path="/wrapped" element={<Wrapped />} />
+          <Route path="/subject/:code" element={<Subject />} />
+          <Route path="/practice/:code" element={<Practice />} />
+          <Route path="/electives" element={<Electives />} />
+          <Route path="/runup/event/:id" element={<RunupEvent />} />
+          <Route path="/runup/:date" element={<Runup />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+      {background && (
+        <Routes>
+          <Route
+            path="/view"
+            element={
+              <div className="fixed inset-0 z-60 bg-bg">
+                <Suspense fallback={<div className="h-full bg-bg" />}>
+                  <Viewer overlay />
+                </Suspense>
+              </div>
+            }
+          />
+          <Route
+            path="/lecture/:id"
+            element={
+              <div className="fixed inset-0 z-60 bg-bg">
+                <Suspense fallback={<div className="h-full bg-bg" />}>
+                  <Lecture overlay />
+                </Suspense>
+              </div>
+            }
+          />
+        </Routes>
+      )}
+    </>
+  );
+}
+
+/** `initialAuth`: arriving from the landing page (src/public.tsx) with Sign in or Get started already tapped. */
+export default function App({ initialAuth = null }: { initialAuth?: AuthMode | null } = {}) {
+  const pin = useAppStore((s) => s.pin);
+  const { session, loading } = useSession();
+  const { resolved: devicesResolved } = useAutoDevice(!!session);
+  const screen = entryScreen({
+    sessionLoading: loading,
+    signedIn: !!session,
+    pin,
+    devicesResolved,
+  });
+
+  return (
+    <ErrorBoundary>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: 1000 * 60 * 60 * 24 * 7,
+          buster: "v2",
+          dehydrateOptions: {
+            // Offline, React Query pauses a mutation rather than failing it.
+            shouldDehydrateMutation: (m) => m.state.isPaused,
+            // Not the viewer's files: a Blob doesn't survive JSON - it came back as {}, which the viewer then tried to read as a file ("arrayBuffer is not a function") - and a signed link kept for a week has long expired.
+            shouldDehydrateQuery: (q) => defaultShouldDehydrateQuery(q) && !UNPERSISTED.has(String(q.queryKey[0])),
+          },
+        }}
+        // Restored writes have to be kicked, and the server is the
+        // authority once they land.
+        onSuccess={() => {
+          void queryClient.resumePausedMutations().then(() => queryClient.invalidateQueries());
+        }}
+      >
+        <MotionConfig reducedMotion="user">
+         <DialogProvider>
+          <Toaster
+            position="top-center"
+            // Standalone iOS draws under the status bar and the Dynamic
+            // Island, so a toast at the default offset lands beneath
+            // them - visible enough to notice, not enough to tap.
+            offset="calc(env(safe-area-inset-top) + 10px)"
+            mobileOffset="calc(env(safe-area-inset-top) + 10px)"
+            toastOptions={{
+              className: "rounded-2xl! border! bg-surface! text-ink! shadow-card!",
+              descriptionClassName: "text-muted!",
+            }}
+          />
+          <AuthReset />
+          <UpdatePrompt />
+          {/* Order matters: hold the launch screen until the stored session has been read, or every launch flashes a sign-in screen at someone who is already signed in. */}
+          {/* Not when arriving from the landing page: the visitor has already seen a page load, and a splash between tapping Sign in and the form would only be in the way. */}
+          {!initialAuth && <LaunchScreen ready={!loading} />}
+          {screen === "holding" ? (
+            <div className="min-h-dvh" />
+          ) : screen === "sign-in" ? (
+            <Welcome initialAuth={initialAuth} />
+          ) : screen === "onboarding" ? (
+            <Onboarding />
+          ) : (
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          )}
+         </DialogProvider>
+        </MotionConfig>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
+  );
+}

@@ -1,0 +1,39 @@
+{
+ "transcription": [
+  {
+   "offsets": {
+    "from": 0,
+    "to": 1620
+   },
+   "text": " Today we look at page replacement."
+  },
+  {
+   "offsets": {
+    "from": 2080,
+    "to": 7220
+   },
+   "text": " When a page fault occurs and memory is full, the operating system must choose a victim page."
+  },
+  {
+   "offsets": {
+    "from": 7580,
+    "to": 9580
+   },
+   "text": " FIFO replaces the oldest page."
+  },
+  {
+   "offsets": {
+    "from": 9880,
+    "to": 12880
+   },
+   "text": " LRU replaces the page that was used least recently."
+  },
+  {
+   "offsets": {
+    "from": 12880,
+    "to": 17760
+   },
+   "text": " And the optimal algorithm replaces the page that will not be used for the longest time."
+  }
+ ]
+}

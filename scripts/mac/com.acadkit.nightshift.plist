@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Installed by npm run mac:install, which fills in __HOME__ and __REPO__. The night shift (scripts/night-shift.mjs). -->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.acadkit.nightshift</string>
+    <!-- bash stays the parent, as for the sync: it holds Full Disk Access, and node inherits it. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd "__REPO__" &amp;&amp; npm run -s night:shift</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict><key>PATH</key><string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+    <!-- 23:00 each night. Asleep then, launchd starts it at wake, and a start in the day does nothing. -->
+    <key>StartCalendarInterval</key>
+    <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>0</integer></dict>
+    <key>StandardOutPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>StandardErrorPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

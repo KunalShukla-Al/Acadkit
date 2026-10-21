@@ -1,0 +1,39 @@
+# Dependency update PRs. Every one runs through CI (lint, typecheck, unit,
+# e2e and RLS tests) before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "09:00"
+      timezone: Asia/Kolkata
+    # The week's minor and patch group, and a few majors to review one at a time.
+    open-pull-requests-limit: 4
+    groups:
+      # Minor and patch bumps arrive as one PR a week instead of a dozen.
+      minor-and-patch:
+        update-types: [minor, patch]
+    # Major versions still come one PR each, so a breaking change is
+    # reviewed on its own.
+    ignore:
+      # Its majors follow Vite's; upgrade the two together, by hand.
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      # Its majors follow ESLint's and its plugins'; upgrade them together, by hand.
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

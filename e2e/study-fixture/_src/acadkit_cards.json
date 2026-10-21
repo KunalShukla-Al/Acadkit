@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "cards": [
+    {
+      "id": "c-throughput",
+      "subject": "OS",
+      "code": "21CSC202J",
+      "deck": "1 FT-II · Units II–III",
+      "unit": 3,
+      "topic": "CPU scheduling criteria and algorithms",
+      "tier": "near-certain",
+      "repeated": true,
+      "question": "Throughput in scheduling means",
+      "options": [
+        { "key": "A", "text": "The number of processes completed per unit time" },
+        { "key": "B", "text": "CPU idle time" },
+        { "key": "C", "text": "Time in the system" },
+        { "key": "D", "text": "Submission-to-completion time" }
+      ],
+      "answer": "A",
+      "why": "Throughput counts finished processes; the others are idle time, turnaround and waiting.",
+      "seen": ["End-sem May 2024", "FJ2 2024 (set pink)"]
+    },
+    {
+      "id": "c-dispatcher",
+      "subject": "OS",
+      "code": "21CSC202J",
+      "deck": "1 FT-II · Units II–III",
+      "unit": 3,
+      "topic": "CPU scheduling criteria and algorithms",
+      "tier": "near-certain",
+      "repeated": false,
+      "question": "Which module gives control of the CPU to the process the short-term scheduler picked?",
+      "options": [],
+      "answer": "The dispatcher",
+      "why": "It switches context, switches to user mode and jumps to the right place in the program.",
+      "seen": ["End-sem May 2023"]
+    },
+    {
+      "id": "c-queue",
+      "subject": "DSA",
+      "code": "21CSC201J",
+      "deck": "1 FJ-III · Units III–V",
+      "unit": 3,
+      "topic": "Queue ADT",
+      "tier": "near-certain",
+      "repeated": false,
+      "question": "A queue removes items in which order?",
+      "options": [
+        { "key": "A", "text": "Last in, first out" },
+        { "key": "B", "text": "First in, first out" },
+        { "key": "C", "text": "By priority" },
+        { "key": "D", "text": "At random" }
+      ],
+      "answer": "B",
+      "why": null,
+      "seen": []
+    }
+  ]
+}

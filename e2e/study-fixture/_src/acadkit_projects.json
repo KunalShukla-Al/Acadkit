@@ -1,0 +1,12 @@
+{
+  "updated": "2026-10-06",
+  "projects": [
+    { "name": "jobq", "state": "active", "status": "Delivering reminders", "next": "Tag v1.0.0", "url": "https://github.com/KunalShukla-Al/jobq" },
+    { "name": "fuelcast", "state": "waiting", "status": "Starts 31 Oct" }
+  ],
+  "todos": [
+    { "text": "Send the mentor email" },
+    { "text": "Claim the exam voucher", "due": "2026-10-09" },
+    { "text": "Hand in the form", "due": "2026-10-05" }
+  ]
+}
