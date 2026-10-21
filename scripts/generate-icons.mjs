@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { markAlpha } from "./lib/mark.mjs";
@@ -33,12 +34,26 @@ async function buildMasterBuffer() {
     .toBuffer();
 }
 
-async function generate(masterBuffer, size, outName) {
-  await sharp(masterBuffer)
-    .resize(size, size)
-    .png()
-    .toFile(join(root, "public", "icons", outName));
+/** An opaque square PNG: a touch icon with an alpha channel, even one that's all opaque, is one iOS may pass over. */
+async function generate(masterBuffer, size, outName, dir = join(root, "public", "icons")) {
+  await sharp(masterBuffer).resize(size, size).flatten({ background: BACKGROUND }).removeAlpha().png().toFile(join(dir, outName));
   console.log(`✓ ${outName} (${size}x${size})`);
+}
+
+/** favicon.ico: one 32 px PNG in an ICO container, so /favicon.ico is an icon rather than the app's page. */
+async function generateFavicon(masterBuffer) {
+  const png = await sharp(masterBuffer).resize(32, 32).flatten({ background: BACKGROUND }).removeAlpha().png().toBuffer();
+  const head = Buffer.alloc(22);
+  head.writeUInt16LE(1, 2); // an icon
+  head.writeUInt16LE(1, 4); // one image
+  head.writeUInt8(32, 6); // 32 wide
+  head.writeUInt8(32, 7); // 32 high
+  head.writeUInt16LE(1, 10); // one plane
+  head.writeUInt16LE(32, 12); // 32 bits a pixel
+  head.writeUInt32LE(png.length, 14);
+  head.writeUInt32LE(22, 18); // the PNG starts after this header
+  writeFileSync(join(root, "public", "favicon.ico"), Buffer.concat([head, png]));
+  console.log("✓ favicon.ico (32x32)");
 }
 
 /** The bare mark on transparency, for the in-app launch screen. */
@@ -56,5 +71,9 @@ const masterBuffer = await buildMasterBuffer();
 await generate(masterBuffer, 192, "icon-192.png");
 await generate(masterBuffer, 512, "icon-512.png");
 await generate(masterBuffer, 180, "apple-touch-icon.png");
+// Where iOS looks when a page names no touch icon, or its share sheet asks the site itself.
+await generate(masterBuffer, 180, "apple-touch-icon.png", join(root, "public"));
+await generate(masterBuffer, 180, "apple-touch-icon-precomposed.png", join(root, "public"));
+await generateFavicon(masterBuffer);
 await generateMark();
 console.log("Icons generated successfully.");
