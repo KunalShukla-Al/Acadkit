@@ -20,8 +20,8 @@ transcribes lectures and links them all together.
   <img src="docs/screens/study.webp" width="150" alt="Study: the study folder and search" />
 </p>
 
-- **Today**: the day's classes, the one on now and the one next, then what's due. Above them
-  only what needs me: a suggestion, a page to continue, an undo.
+- **Today**: a greeting by the hour, the day's classes, the one on now and the one next, then
+  what's due. Above them only what needs me: a suggestion, a page to continue, an undo.
 - **Timetable**: the classes of each Day Order, on SRM's 5-day rotation.
 - **Attendance**: how many classes each subject can spare, what it takes to get back above the
   bar, a forecast, and a heatmap of the semester.

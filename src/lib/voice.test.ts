@@ -22,6 +22,11 @@ describe("the app's voice", () => {
     for (const [key, line] of lines("quiet")) expect(line, key).not.toMatch(/!/);
   });
 
+  it("greets by the hour, with the name when there is one", () => {
+    expect([3, 9, 14, 20].map((h) => say(VOICE.greeting, "brutal", h, "Kunal"))).toEqual(["still up, Kunal?", "you're awake, Kunal", "sup, Kunal", "long day, Kunal?"]);
+    expect(say(VOICE.greeting, "quiet", 9, "")).toBe("Good morning");
+  });
+
   it("falls back to the plain line where a register has none of its own", () => {
     expect(say(VOICE.titleMarks, "quiet")).toBe(say(VOICE.titleMarks, "plain"));
     expect(say(VOICE.upNext, "quiet")).toBe("Next");

@@ -20,6 +20,21 @@ const pick = <A extends unknown[]>(c: Copy<A>) => c;
 
 export const VOICE = {
 
+  /** Today's title, by the hour, with your first name when the app has one. */
+  greeting: pick<[hour: number, name: string]>({
+    plain: (hour, name) => {
+      const part = hour < 5 ? "Up late" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+      return name ? `${part}, ${name}` : part;
+    },
+    brutal: (hour, name) => {
+      const who = name ? `, ${name}` : "";
+      if (hour < 6) return `still up${who}?`;
+      if (hour < 12) return `you're awake${who}`;
+      if (hour < 17) return `sup${who}`;
+      return `long day${who}?`;
+    },
+  }),
+
   /** The live class card's heading, while a class is running. */
   inClassNow: pick({
     plain: () => "In class now",

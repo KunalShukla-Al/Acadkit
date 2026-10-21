@@ -16,6 +16,8 @@ existing data or installs, a minor version for new features, a patch version for
   31 expected in the end-sem, that's 15.5 of the 25 in the tests - 62% of them"), and its
   explainer shows the step.
 - Timetable's Add class sits beside the heading.
+- Today opens with a greeting by the hour, "you're awake" to "still up?", under a struck-out
+  "welcome back, scholar".
 
 ### Fixed
 
