@@ -8,7 +8,7 @@ describe("the five tabs", () => {
     expect(["/subject/21CSC202J", "/practice/21CSC202J", "/view", "/lecture/9"].map(screenOf)).toEqual(Array(4).fill("study"));
   });
 
-  it("light no tab for what the ball and the top bar open", () => {
+  it("light no tab for what the corner and the top bar open", () => {
     expect(["/runup", "/runup/2026-11-20", "/runup/event/3", "/calendar", "/skips", "/settings", "/history", "/wrapped", "/electives"].map(screenOf)).toEqual(Array(9).fill(null));
   });
 

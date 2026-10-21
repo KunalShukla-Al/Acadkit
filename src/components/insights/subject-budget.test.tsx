@@ -362,6 +362,10 @@ describe("SubjectBudgetCard", () => {
     expect(t).toContain("End semester assumed 34/40");
     // 71 − 34 = 37 across the 60 internal marks, not 71 across all 100.
     expect(t).toContain("CT-1 9.5/15");
+    expect(t).toContain("Nothing graded yet. With 34 expected in the end-sem, A needs 62% of the 60 internal marks.");
+    // With a mark in, the whole ask, then what the assumption leaves the tests: 32 of the 55, not "32 of the 95 left".
+    const marked = text(renderFor(withTarget, [mark("Assignment", 5, 5)]));
+    expect(marked).toContain("A needs 66 of the 95 marks left. With 34 expected in the end-sem, that's 32 of the 55 in the tests - 58% of them.");
   });
 
   it("offers the thing it is waiting for", () => {

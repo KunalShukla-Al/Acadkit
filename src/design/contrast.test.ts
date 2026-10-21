@@ -13,7 +13,7 @@ const GROUNDS = ["bg", "surface", "surface-2"];
 
 /**
  * Token pairs let off the check, each with the reason. Brutalist's light
- * lime is a fill under ink (the active tab, the ball, a lit chip), never a
+ * lime is a fill under ink (the active tab, the corner, a lit chip), never a
  * mark on the page by itself; the ink on it is checked as brand-ink on brand.
  */
 const EXCEPTIONS = new Set(["brutalist light: accent on bg", "brutalist light: accent on surface"]);

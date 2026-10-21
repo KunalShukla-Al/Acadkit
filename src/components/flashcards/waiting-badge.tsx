@@ -3,7 +3,7 @@ import { useFlashcards } from "@/hooks/useFlashcards";
 import { useTodayISO } from "@/hooks/useRunup";
 import { waitingCount } from "@/lib/flashcards";
 
-/** The cards waiting today, as a count on the ball's Flashcards; nothing when none wait. */
+/** The cards waiting today, as a count on the corner's Flashcards; nothing when none wait. */
 export function WaitingBadge() {
   const { cards, reviews, loaded } = useFlashcards();
   const today = useTodayISO();

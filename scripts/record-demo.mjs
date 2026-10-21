@@ -4,7 +4,7 @@
  * Starts the mock backend (sample data only - nobody's real marks, and the
  * committed fixture as the study folder), signs in, walks the app in a
  * phone-sized browser (Today, Attendance, Marks and an explainer, the
- * ball opening onto the calendar and marking a class, the days you can
+ * corner opening onto the calendar and marking a class, the days you can
  * skip, Study), and stitches the screenshots into public/demo.webp, an
  * animated WebP (plays everywhere, a fraction of a GIF's size). Needs
  * img2webp: `brew install webp`. Then a still of each tab in light mode,
@@ -110,7 +110,7 @@ try {
   await shot(2600);
   await page.keyboard.press("Escape");
 
-  // The ball, and marking a class from its calendar.
+  // The corner, and marking a class from its calendar.
   await page.goto(`${APP}/`);
   await page.getByRole("button", { name: /More: calendar/ }).click();
   await page.getByRole("dialog", { name: "More" }).waitFor();

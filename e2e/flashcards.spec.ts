@@ -7,7 +7,7 @@ import { expect, serverRows, test, waitForLaunch } from "./fixtures";
 test.use({ reducedMotion: "reduce" });
 
 type Review = { card_id: string; box: number; due: string };
-/** The ball's Flashcards, which opens the deck. */
+/** The corner's Flashcards, which opens the deck. */
 async function openDeck(page: Parameters<typeof waitForLaunch>[0]) {
   await page.getByRole("button", { name: /More: calendar/ }).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /flashcards/i }).click();
@@ -15,7 +15,7 @@ async function openDeck(page: Parameters<typeof waitForLaunch>[0]) {
 const reviews = async (request: Parameters<typeof serverRows>[0]) =>
   (await serverRows<Review>(request, "card_reviews")).map((r) => [r.card_id, r.box, r.due]);
 
-test("the ball opens the deck, counting the cards waiting; picking an answer flips the card and the grade is saved", async ({ signedIn: page, request }) => {
+test("the corner opens the deck, counting the cards waiting; picking an answer flips the card and the grade is saved", async ({ signedIn: page, request }) => {
   await page.getByRole("button", { name: /More: calendar/ }).click();
   const item = page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /flashcards/i });
   await expect(item).toHaveText(/^3\s*flashcards$/i);
@@ -60,7 +60,7 @@ test("a wrong pick says so, and the keyboard grades too", async ({ signedIn: pag
   await expect.poll(() => reviews(request)).toEqual([["c-queue", 1, "2026-10-07"]]);
 });
 
-test("Escape closes the deck and puts focus back on the ball", async ({ signedIn: page }) => {
+test("Escape closes the deck and puts focus back on the corner", async ({ signedIn: page }) => {
   await openDeck(page);
   await expect(page.getByRole("dialog", { name: "Flashcards" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -68,7 +68,7 @@ test("Escape closes the deck and puts focus back on the ball", async ({ signedIn
   await expect(page.getByRole("button", { name: /More: calendar/ })).toBeFocused();
 });
 
-test("before any cards have synced, the ball counts none", async ({ page }) => {
+test("before any cards have synced, the corner counts none", async ({ page }) => {
   await page.route("**/study-files/1234/cards.json", (route) =>
     route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ statusCode: "404", error: "not_found", message: "Object not found" }) })
   );

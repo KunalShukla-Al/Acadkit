@@ -1,4 +1,5 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -12,6 +13,13 @@ const ids = (w: { WFWorkflowActions: { WFWorkflowActionIdentifier: string }[] })
 const params = (w: { WFWorkflowActions: { WFWorkflowActionParameters: Params }[] }, i: number) => w.WFWorkflowActions[i].WFWorkflowActionParameters;
 
 describe("the Shortcuts", () => {
+  it("name every action in full, as iOS looks them up: Shortcuts' own under is.workflow.actions, an app's by its intent", () => {
+    for (const w of [alarmShortcut(URL), focusShortcut(URL), leaveShortcut(LINKS), acadkitShortcut(LINKS), screenshotShortcut(LINKS)])
+      for (const a of w.WFWorkflowActions) expect(a.WFWorkflowActionIdentifier).toMatch(/^(is\.workflow\.actions\.[a-z.]+|com\.apple\.[\w.-]+)$/);
+    expect(focusShortcut(URL).WFWorkflowActions.map((a) => a.WFWorkflowActionIdentifier)).toContain("is.workflow.actions.dnd.set");
+    expect(acadkitShortcut(LINKS).WFWorkflowActions.map((a) => a.WFWorkflowActionIdentifier)).toContain("is.workflow.actions.repeat.each");
+  });
+
   it("call the account's today feed", () => {
     expect(URL).toBe(`https://ref.supabase.co/functions/v1/feeds/today?token=${TOKEN}`);
     expect(params(alarmShortcut(URL), 0).WFURL).toBe(URL);
@@ -131,6 +139,12 @@ describe("syncShortcuts", () => {
     expect([...w.stored.keys()]).toEqual(NAMES.map((n) => `0404/shortcuts/${n}.shortcut`));
     expect(await syncShortcuts(opts(w.supabase))).toBeNull();
     expect(made).toHaveLength(NAMES.length);
+  });
+
+  it("builds them again when what they hold changes, though the token didn't", async () => {
+    // What a Mac kept before the print covered the Shortcuts' contents: the token's alone.
+    await writeFile(path.join(dir, "state"), createHash("sha256").update(TOKEN).digest("hex"));
+    expect(await syncShortcuts(opts(world(TOKEN).supabase))).toBe("built");
   });
 
   it("takes them down once the token is revoked", async () => {

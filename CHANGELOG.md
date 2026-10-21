@@ -5,6 +5,24 @@ All notable changes to AcadKit are listed here. The format follows
 [Semantic Versioning](https://semver.org/): a major version for changes that break
 existing data or installs, a minor version for new features, a patch version for fixes.
 
+## [Unreleased]
+
+### Changed
+
+- The ball is now the corner: a lime quarter-disc fixed in the bottom-right corner, on top of the
+  tab bar, showing today's Day Order. Tapped, the same stickers burst out of it, and it turns into
+  their close button.
+- With an expected end-sem set, a subject's card on Marks says what's left for the tests ("With
+  31 expected in the end-sem, that's 15.5 of the 25 in the tests - 62% of them"), and its
+  explainer shows the step.
+- Timetable's Add class sits beside the heading.
+
+### Fixed
+
+- The AcadKit Focus and AcadKit Shortcuts stopped with "an action could not be found": two of
+  their actions were missing their full name. The Mac now rebuilds a Shortcut whenever the code
+  that builds it changes.
+
 ## [1.0.0] - 2026-10-21
 
 The first release: attendance, marks, the Day Order timetable and my study files, on the phone

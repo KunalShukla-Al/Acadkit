@@ -7,7 +7,7 @@ screenshots to the study folder, and Siri. My Mac builds and signs them for my a
 
 ## Before any of them
 
-1. In the app, tap the ball, then Settings → iPhone and calendar, and tap **Turn on**. This makes a private
+1. In the app, tap the corner, then Settings → iPhone and calendar, and tap **Turn on**. This makes a private
    link to my timetable, attendance and tests (a token, migration 047). Anyone with it can read
    those, so it stays on my devices. **Revoke** there ends it, and the Mac takes the Shortcuts down.
 2. Keep the Mac on for a few minutes. It builds the five Shortcuts for the new link, signs them, and
@@ -20,7 +20,8 @@ screenshots to the study folder, and Siri. My Mac builds and signs them for my a
    what they did in one.
 
 If I revoke the link and turn it on again, the token changes: the Mac rebuilds the Shortcuts, and I
-install them again from Settings.
+install them again from Settings. A change to the code that builds a Shortcut rebuilds it the same
+way, after the Mac pulls it.
 
 ## AcadKit Alarm
 
@@ -112,7 +113,7 @@ these.
 
 ### Checking the link itself
 
-- Settings → iPhone and calendar (from the ball) shows when the link was last used. A time that doesn't
+- Settings → iPhone and calendar (from the corner) shows when the link was last used. A time that doesn't
   move when I run a Shortcut means it never reached AcadKit: the iPhone's connection, or a Shortcut
   still holding an old link.
 - The calendar subscription is the same link. If the calendar stops updating too, the link is the

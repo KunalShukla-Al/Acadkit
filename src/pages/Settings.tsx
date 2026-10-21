@@ -570,7 +570,7 @@ function CollapsibleSection({ title, children }: { title: string; children: Reac
   );
 }
 
-/** Settings, opened from the ball: one short row per setting, grouped. */
+/** Settings, opened from the corner: one short row per setting, grouped. */
 export default function Settings() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">

@@ -6,7 +6,7 @@ import { expect, MOCK_API, openSignIn, test, waitForLaunch } from "./fixtures";
  * axe on every screen, in light and dark: WCAG 2.1 A and AA. A serious or
  * critical violation fails the run; minor ones are left to judgement.
  */
-/** The five tabs (src/lib/screens.ts), what the ball and the top bar open, and the pages opened from inside them. */
+/** The five tabs (src/lib/screens.ts), what the corner and the top bar open, and the pages opened from inside them. */
 const PAGES = [
   "/", "/timetable", "/attendance", "/marks", "/study", "/runup", "/deadlines", "/calendar", "/skips", "/settings", "/history",
   "/runup/2026-10-08", "/runup/event/os-ft2", "/log", "/wrapped", "/electives",
@@ -79,7 +79,7 @@ for (const scheme of ["light", "dark"] as const) {
       }
     });
 
-    test("the ball, open", async ({ signedIn: page }) => {
+    test("the corner, open", async ({ signedIn: page }) => {
       await waitForLaunch(page);
       await page.getByRole("button", { name: /More: calendar/ }).click();
       await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();

@@ -83,7 +83,7 @@ picked from the list. On a day without classes ahead, Focus turns nothing on.
 
 - After the first morning, the Clock app shows "AcadKit · first class", and Do Not Disturb turned
   on when it was stopped.
-- Settings → iPhone and calendar (from the ball) shows when the link was last used.
+- Settings → iPhone and calendar (from the corner) shows when the link was last used.
 - If an automation shows a notification asking to run, its **Run Immediately** is off.
 
 I've set this up from the actions the Shortcuts contain and iOS's automation settings, not on a

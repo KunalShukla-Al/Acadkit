@@ -114,7 +114,7 @@ test.describe("on a Mac", () => {
     await expect(page).toHaveURL(`/study?${new URLSearchParams({ dir: "Operating_Systems" })}`);
   });
 
-  test("Settings' title and its groups share one column, and Today leaves the day order to the sidebar and the ball", async ({ signedIn: page }) => {
+  test("Settings' title and its groups share one column, and Today leaves the day order to the sidebar and the corner", async ({ signedIn: page }) => {
     await page.goto("/settings");
     const left = async (l: import("@playwright/test").Locator) => Math.round((await l.boundingBox())!.x);
     const title = page.getByRole("heading", { level: 1, name: "Settings" });
