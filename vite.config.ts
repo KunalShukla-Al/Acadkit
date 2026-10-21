@@ -83,7 +83,7 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icons/*.png"],
+      includeAssets: ["icons/*.png", "apple-touch-icon*.png", "favicon.ico"],
       manifest: {
         name: "AcadKit",
         short_name: "AcadKit",
