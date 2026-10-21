@@ -116,14 +116,14 @@ Supabase <- src/api/<table>.ts <- src/hooks/useData.ts (React Query) <- pages
 ## Five tabs
 
 The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/screens.ts`).
-`screenOf(path)` says which tab a page lights; what the ball and the top bar open lights none.
+`screenOf(path)` says which tab a page lights; what the corner and the top bar open lights none.
 
 - The phone's bar and the Mac's sidebar list the five, each lit for its pages (Attendance on
   `/log`, Today on `/deadlines`, Study on `/subject/…`). The phone's top bar holds the name and the
   Run-up chip; the Mac's sidebar holds the day order and the same chip above the five.
 - Things move only on change: no page slides or fades in, no card fades up, no ring draws from
   zero and no list staggers in on arrival (each starts with `initial={false}`). What moves is
-  what changed: a number that updates, a tab's pill, a row you open, a sheet, the ball, the
+  what changed: a number that updates, a tab's pill, a row you open, a sheet, the corner, the
   explainers.
 - Today (`src/pages/Today.tsx`, at `/`) is the day and what's due. Its card (`TodayCard`) shows
   today's classes, the one on now and the next, or the next day with classes once today's are
@@ -133,11 +133,11 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   `src/components/home`.
 - The Run-up chip (`src/components/layout/runup-chip.tsx`) rings the day's targets ticked and
   opens `/runup`; another day is `/runup/<date>`.
-- The ball (`src/components/layout/ball.tsx`) is a lime disc on the screen's edge carrying
-  today's Day Order, a star on a day without classes. Dragged, it snaps to the nearer edge and
-  remembers where (`acadkit:ball`). Tapped, it spins into a close button, and Calendar, Skips,
-  Flashcards (with the count waiting), History and Settings burst out of it as tilted stickers,
-  mirrored on the left edge and kept clear of the bars. Escape or a tap elsewhere closes it.
+- The corner (`src/components/layout/corner.tsx`) is a lime quarter-disc fixed in the
+  bottom-right corner, above the tab bar (`--nav-h`, which the bar keeps), carrying today's Day
+  Order, a star on a day without classes. Tapped, it turns into a close button, and Calendar,
+  Skips, Flashcards (with the count waiting), History and Settings burst out of it as tilted
+  stickers, kept clear of the bars. Escape or a tap elsewhere closes it.
 - Attendance (`/attendance`) and Marks (`/marks`) each lead with their number, the overall gauge
   and the predicted SGPA (tap it for its explainer), then Now and Forecast, Marks and Targets.
 - Study (`/study`) is the study folder: its folders, search inside files and lectures, and the
@@ -166,7 +166,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   beyond the start bundle): 34.8 KB, Study. The budget (`bundle-budget.json`) sits a little above
   that day's sizes.
 - `e2e/accessibility.spec.ts` runs axe (WCAG 2.1 A and AA; serious and critical fail) on every
-  tab and every page the ball and the top bar open, light and dark, with the ball open, with
+  tab and every page the corner and the top bar open, light and dark, with the corner open, with
   Continue and Tomorrow offline's hint showing, with an explainer's sheet open, and at midday,
   when some of the day's classes are over. A sheet's body takes focus, so a keyboard can scroll it even when
   nothing in it does.
@@ -197,7 +197,7 @@ where it has one. Notifications and Siri keep the plain line.
   `npm run test:visual` compares it on a phone and a Mac-sized screen, light and dark, with
   pictures of this Mac's rendering (CI skips them: Linux draws text differently). It compares
   the first view of each tab, the Run-up and Settings the same way, at 1x so the pictures stay
-  small, and the ball open, with the study folder's sync time and the build's commit masked.
+  small, and the corner open, with the study folder's sync time and the build's commit masked.
 - Each theme's tokens, light and dark, live in `src/design/tokens.json`. `npm run tokens` writes
   them to `src/design/tokens.css` as custom properties, which a unit test keeps in step. The
   theme list (`THEME_NAMES`), the store's theme-color and the pre-paint script in `index.html`
@@ -205,7 +205,7 @@ where it has one. Notifications and Siri keep the plain line.
 - `src/design/contrast.test.ts` measures every token pair the app sets one on the other, in every
   theme and mode, against WCAG AA: text 4.5:1, the accent as a shape 3:1. It runs with the unit
   tests in CI. Brutalist's light lime is let off as a shape: it is a fill under ink (the active
-  tab, the ball, a lit chip), never a mark on the page by itself.
+  tab, the corner, a lit chip), never a mark on the page by itself.
 
 ## Calendar
 
@@ -269,9 +269,9 @@ expectation counts in the plan without ever being saved as a mark.
 
 ## Flashcards
 
-- The deck opens from the ball's Flashcards, which counts the cards waiting
+- The deck opens from the corner's Flashcards, which counts the cards waiting
   (`components/flashcards/waiting-badge.tsx`) once the sync has sent `<pin>/cards.json`. The
-  count and the deck are lazy chunks, loaded only when the ball opens.
+  count and the deck are lazy chunks, loaded only when the corner opens.
 - The sync writes `cards.json` from the study folder's `_src/acadkit_cards.json` after
   `scripts/lib/cards.mjs` has checked it: a bad card is dropped with a warning, and a repeated id
   is refused so one review can never count for two cards. The file's order is the order new

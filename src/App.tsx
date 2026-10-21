@@ -22,7 +22,7 @@ import { appStore } from "@/lib/offlineStore";
 import { entryScreen } from "@/lib/devices";
 import { useAppStore } from "@/store/app";
 
-// The five tabs (src/lib/screens.ts), then the pages the ball and the top bar open.
+// The five tabs (src/lib/screens.ts), then the pages the corner and the top bar open.
 const Today = lazy(() => import("@/pages/Today"));
 const Timetable = lazy(() => import("@/pages/Timetable"));
 const Attendance = lazy(() => import("@/pages/Attendance"));

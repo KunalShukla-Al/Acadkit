@@ -1,7 +1,7 @@
 import { expect, test, waitForLaunch } from "./fixtures";
 
 /**
- * The design catalog (/design) and the five tabs and the ball in the
+ * The design catalog (/design) and the five tabs and the corner in the
  * brutalist theme, light and dark, on a phone and on a Mac-sized screen, against the
  * pictures in visual.spec.ts-snapshots. A change to a token, a primitive
  * or a screen shows up here as a diff; npm run test:visual --
@@ -69,7 +69,7 @@ for (const { device, use } of SCREENS) {
 }
 
 for (const { device, use } of SCREENS) {
-  test.describe(`the ball on a ${device}`, () => {
+  test.describe(`the corner on a ${device}`, () => {
     test.use({ ...use, deviceScaleFactor: 1 });
     test("open, dark", async ({ signedIn: page }) => {
       await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
@@ -78,7 +78,7 @@ for (const { device, use } of SCREENS) {
       await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(800);
-      await expect(page).toHaveScreenshot(`ball-${device}.png`, { maxDiffPixelRatio: 0.002 });
+      await expect(page).toHaveScreenshot(`corner-${device}.png`, { maxDiffPixelRatio: 0.002 });
     });
   });
 }

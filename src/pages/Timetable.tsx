@@ -87,7 +87,20 @@ export default function Timetable() {
 
   return (
     <div className="relative space-y-4">
-      <h1 className="px-1 text-2xl font-extrabold tracking-tight lg:text-3xl">{say(VOICE.titleTimetable, tone)}</h1>
+      <div className="flex items-center justify-between gap-3 px-1">
+        <h1 className="min-w-0 text-2xl font-extrabold tracking-tight lg:text-3xl">{say(VOICE.titleTimetable, tone)}</h1>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shrink-0"
+          onClick={() => {
+            setEditing(null);
+            setSheetOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Add class
+        </Button>
+      </div>
 
       <TimetableAudit />
 
@@ -195,17 +208,6 @@ export default function Timetable() {
         )}
       </AnimatePresence>
       </div>
-
-      <Button
-        variant="secondary"
-        className="w-full"
-        onClick={() => {
-          setEditing(null);
-          setSheetOpen(true);
-        }}
-      >
-        <Plus className="h-4 w-4" /> Add class
-      </Button>
 
       <SlotSheet
         open={sheetOpen}

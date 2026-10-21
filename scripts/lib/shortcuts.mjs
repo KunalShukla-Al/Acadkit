@@ -48,8 +48,9 @@ function uuid(name) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`.toUpperCase();
 }
 
+/** Shortcuts' own actions by their short name ("dnd.set"); an app's intent by its full one ("com.apple…"). */
 const action = (identifier, params = {}) => ({
-  WFWorkflowActionIdentifier: identifier.includes(".") && !identifier.startsWith("is.") ? identifier : `is.workflow.actions.${identifier}`,
+  WFWorkflowActionIdentifier: /^(com|is)\./.test(identifier) ? identifier : `is.workflow.actions.${identifier}`,
   WFWorkflowActionParameters: params,
 });
 
@@ -299,7 +300,9 @@ export async function syncShortcuts({ supabase, pin, supabaseUrl, state = STATE,
   if (error && /does not exist|schema cache/i.test(error.message)) return null;
   if (error) throw new Error(`Couldn't read the feed token: ${error.message}`);
   const token = data?.token ?? null;
-  const print = token ? createHash("sha256").update(token).digest("hex") : "none";
+  // The token and what each Shortcut holds: a new link or a changed builder both make the Mac build them again.
+  const links = token ? feedLinks(supabaseUrl, token) : null;
+  const print = links ? createHash("sha256").update(token).update(JSON.stringify(BUILDS.map(([, build]) => build(links)))).digest("hex") : "none";
   if ((await readFile(state, "utf8").catch(() => "")) === print) return null;
 
   const bucket = supabase.storage.from(BUCKET);
@@ -308,7 +311,6 @@ export async function syncShortcuts({ supabase, pin, supabaseUrl, state = STATE,
     await bucket.remove(keys);
     log("Shortcuts: token revoked, taken down");
   } else {
-    const links = feedLinks(supabaseUrl, token);
     for (const [i, [, build]] of BUILDS.entries()) {
       const bytes = await make(build(links));
       const { error: upErr } = await bucket.upload(keys[i], bytes, { contentType: "application/octet-stream", upsert: true, cacheControl: "0" });

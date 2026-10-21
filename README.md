@@ -8,7 +8,7 @@ study files, on my phone and my Mac. It's a PWA that syncs across devices, and m
 heavy work: it mirrors my study folder, reads notices and past papers with a local model,
 transcribes lectures and links them all together.
 
-<p align="center"><img src="public/demo.webp" width="300" alt="AcadKit on a phone: Today's classes and deadlines, Attendance, Marks and how its predicted SGPA is worked out, the ball opening onto the calendar and marking a class, the days you can skip, and Study" /></p>
+<p align="center"><img src="public/demo.webp" width="300" alt="AcadKit on a phone: Today's classes and deadlines, Attendance, Marks and how its predicted SGPA is worked out, the corner opening onto the calendar and marking a class, the days you can skip, and Study" /></p>
 
 ## Five tabs
 
@@ -32,7 +32,7 @@ transcribes lectures and links them all together.
   class, a past paper's question, another set of notes ([how a link is chosen](docs/connected.md)).
 
 The **Run-up**, a day-by-day plan to the end-sems, is a chip in the top bar that counts the day's
-targets. The **ball**, a lime disc on the screen's edge showing today's Day Order, opens the rest:
+targets. The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the rest:
 the calendar, the days I can skip, flashcards, past semesters and settings.
 
 Tap a number (classes to spare, marks needed, the predicted SGPA) and it plays how it was worked

@@ -11,7 +11,7 @@ the margin that's left.
 | Marks | the predicted SGPA | each subject's grade points times its credits, added and divided |
 | Attendance | a subject's percentage, classes to spare or to make up | where the count comes from, the percentage, and the sum that keeps it at the bar |
 | Marks → Targets | the marks a grade needs | what's banked, where the grade starts, what's still to play for, and the share it needs |
-| Skips, from the ball | a day's free or needed label | each class that day, and whether missing it holds the bar |
+| Skips, from the corner | a day's free or needed label | each class that day, and whether missing it holds the bar |
 
 Grade odds have an explainer too, though no number on screen opens it yet.
 

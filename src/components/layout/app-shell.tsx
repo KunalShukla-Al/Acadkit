@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, useLocation, useOutlet } from "react-router-dom";
 import { Sparkles } from "lucide-react";
-import { Ball } from "@/components/layout/ball";
+import { Corner } from "@/components/layout/corner";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { OfflineBanner } from "@/components/layout/offline-banner";
@@ -33,8 +33,8 @@ function PageFallback() {
 
 /**
  * Every signed-in page sits in this: the sidebar on a Mac; on a phone the
- * name and the Run-up above, the five tabs below. The ball floats over
- * both. A new page simply replaces the last; things move only when
+ * name and the Run-up above, the five tabs below, and the corner on top
+ * of them. A new page simply replaces the last; things move only when
  * something on the page changes.
  */
 export function AppShell() {
@@ -83,7 +83,7 @@ export function AppShell() {
         <BottomNav />
       </div>
 
-      <Ball />
+      <Corner />
     </div>
   );
 }

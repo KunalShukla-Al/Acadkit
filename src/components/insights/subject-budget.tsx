@@ -274,11 +274,14 @@ export function EndSemRow({ p, c }: { p: SubjectGradeProjection; c: SolvedCompon
 
 /**
  * The one sentence worth reading on the card: what the target costs from
- * here, with any results you're waiting on counted at what you expect.
+ * here, with any results you're waiting on counted at what you expect. An
+ * end-sem you've said what to expect of counts at that, and the share it
+ * names is of the tests left.
  */
 function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
   const { plan } = o;
   const grade = p.targetGrade;
+  const assumed = plan.assumedExternal;
   const rate = plan.requiredRate === null ? null : pct(Math.max(0, plan.requiredRate));
   const counting = o.pending > 0 ? " counting what you expect" : "";
 
@@ -287,6 +290,14 @@ function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
       <>
         Finishes at <b className="tabular">{floorTotal(plan.banked)}/100</b>{counting} —{" "}
         <b style={{ color: GRADE_COLORS[plan.floorGrade] }}>{plan.floorGrade}</b>.
+      </>
+    );
+
+  if (plan.status === "locked" && assumed !== null)
+    return (
+      <>
+        <b>{grade}</b> holds with the <b className="tabular">{have(assumed)}</b> you expect in the end-sem{counting}, even at
+        zero in the tests left.
       </>
     );
 
@@ -301,8 +312,18 @@ function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
   if (plan.status === "out-of-reach")
     return (
       <>
-        <b>{grade}</b> needs <b className="tabular">{need(plan.needed)}</b> marks and only{" "}
-        <b className="tabular">{have(plan.pool)}</b> are left{counting}.{" "}
+        {assumed !== null ? (
+          <>
+            With <b className="tabular">{have(assumed)}</b> expected in the end-sem, <b>{grade}</b> needs{" "}
+            <b className="tabular">{need(plan.needed)}</b> from the tests and only{" "}
+            <b className="tabular">{have(plan.remainingInternal)}</b> are left{counting}.{" "}
+          </>
+        ) : (
+          <>
+            <b>{grade}</b> needs <b className="tabular">{need(plan.needed)}</b> marks and only{" "}
+            <b className="tabular">{have(plan.pool)}</b> are left{counting}.{" "}
+          </>
+        )}
         {plan.bestReachable ? (
           <>
             Best still reachable is <b style={{ color: GRADE_COLORS[plan.bestReachable] }}>{plan.bestReachable}</b>.
@@ -314,7 +335,12 @@ function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
     );
 
   if (!plan.hasAnyMarks)
-    return (
+    return assumed !== null ? (
+      <>
+        Nothing graded yet. With <b className="tabular">{have(assumed)}</b> expected in the end-sem, <b>{grade}</b> needs{" "}
+        <b className="text-accent">{rate}</b> of the <b className="tabular">{have(plan.remainingInternal)}</b> internal marks.
+      </>
+    ) : (
       <>
         Nothing graded yet. <b>{grade}</b> needs <b className="text-accent">{rate}</b> of every mark this
         semester.
@@ -323,15 +349,26 @@ function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
 
   // How much of the ask the results you're waiting on already cover.
   const covered = o.pending > 0 ? o.actual.needed - plan.needed : 0;
+  const needed = (
+    <Explain what={{ kind: "plan", plan }} title={`Marks needed for ${grade} in ${p.subject.short_name?.trim() || p.subject.name}`} className="font-bold tabular">
+      {need(plan.needed)}
+    </Explain>
+  );
   return (
     <>
-      <b>{grade}</b> needs{" "}
-      <Explain what={{ kind: "plan", plan }} title={`Marks needed for ${grade} in ${p.subject.short_name?.trim() || p.subject.name}`} className="font-bold tabular">
-        {need(plan.needed)}
-      </Explain>{" "}
-      of the{" "}
-      <b className="tabular">{have(plan.pool)}</b> marks left - <b className="text-accent">{rate}</b> of
-      everything from here.
+      {assumed !== null ? (
+        <>
+          <b>{grade}</b> needs <b className="tabular">{need(plan.needed + assumed)}</b> of the{" "}
+          <b className="tabular">{have(plan.pool)}</b> marks left. With <b className="tabular">{have(assumed)}</b> expected
+          in the end-sem, that's {needed} of the <b className="tabular">{have(plan.remainingInternal)}</b> in the tests -{" "}
+          <b className="text-accent">{rate}</b> of them.
+        </>
+      ) : (
+        <>
+          <b>{grade}</b> needs {needed} of the <b className="tabular">{have(plan.pool)}</b> marks left -{" "}
+          <b className="text-accent">{rate}</b> of everything from here.
+        </>
+      )}
       {covered >= 0.5 && (
         <span className="text-muted">
           {" "}Your expected {o.pending === 1 ? "mark covers" : "marks cover"}{" "}

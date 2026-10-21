@@ -902,6 +902,22 @@ describe("the plan's working", () => {
     expect(w.steps.map((x) => x.sum)).toEqual([undefined, "71 − 7 = 64", "40 + 40 = 80", "64 ÷ 80 × 100 = 80.0%"]);
   });
 
+  it("with the end-sem assumed, counts it at that and asks the share of the tests left", () => {
+    const p = solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 2, 15)], "A", { assumedExternalPct: 80 });
+    const w = planWorking(p);
+    expect(w.steps.map((x) => x.say)).toEqual([
+      "You've banked 7 of the 20 marks played so far in Data Structures.",
+      "A starts at 71, so you need 64 more.",
+      "You expect 32 of the end-sem's 40, which leaves 32 for the tests.",
+      "40 marks are left in the tests.",
+      "That's 80.0% of the tests left.",
+    ]);
+    expect(w.steps.map((x) => x.sum)).toEqual([undefined, "71 − 7 = 64", "64 − 32 = 32", undefined, "32 ÷ 40 × 100 = 80.0%"]);
+    expect(w.figures).toMatchObject({ banked: 7, needed: 32, pool: 40, assumed: 32 });
+    const covered = planWorking(solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 15, 15)], "C", { assumedExternalPct: 80 }));
+    expect(covered.steps[2].say).toBe("You expect 32 of the end-sem's 40, which covers it: C holds even at zero in the tests left.");
+  });
+
   it("says when the target is banked already, or out of reach", () => {
     const banked = planWorking(solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 15, 15), mark("CT-2", 15, 15), mark("Lab", 10, 10), mark("Model", 15, 15)], "C"));
     expect(banked.steps[1].say).toBe("C starts at 50, and you've banked that already: it holds even at zero from here.");

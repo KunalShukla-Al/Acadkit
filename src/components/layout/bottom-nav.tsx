@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
@@ -25,8 +26,24 @@ export function BottomNav() {
     navigate(next.to);
   };
   const swipe = useSwipe(() => go(1), () => go(-1), { threshold: 40 });
+
+  // The bar's height, as --nav-h, for the corner that sits on top of it; 0 where the bar is hidden (a Mac).
+  const bar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const root = document.documentElement.style;
+    const observer = new ResizeObserver(() => root.setProperty("--nav-h", `${el.getBoundingClientRect().height}px`));
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.removeProperty("--nav-h");
+    };
+  }, []);
+
   return (
     <nav
+      ref={bar}
       aria-label="Primary"
       /* The safe-area inset is a clearance requirement, not a margin. */
       className="glass fixed inset-x-0 bottom-0 z-30 border-t pb-[max(0.25rem,calc(env(safe-area-inset-bottom)-0.6rem))] lg:hidden"

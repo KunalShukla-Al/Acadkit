@@ -1,6 +1,6 @@
 /**
  * The five tabs, and the tab each route belongs to: what the bar and the
- * sidebar light up. Everything else opens from the ball (Calendar, Skips,
+ * sidebar light up. Everything else opens from the corner (Calendar, Skips,
  * Settings, History) or the top bar (Run-up), and lights no tab.
  */
 
@@ -58,7 +58,7 @@ export function studyPath(dir = ""): string {
   return `/study${dir ? `?dir=${encodeURIComponent(dir)}` : ""}`;
 }
 
-/** The tab a path belongs to; null for a page that opens from the ball or the top bar. */
+/** The tab a path belongs to; null for a page that opens from the corner or the top bar. */
 export function screenOf(pathname: string): ScreenId | null {
   if (pathname === "/") return "today";
   const hit = OWNERS.find(([p]) => pathname === p || pathname.startsWith(`${p}/`));

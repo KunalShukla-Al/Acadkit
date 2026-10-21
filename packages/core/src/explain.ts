@@ -97,35 +97,56 @@ const subjectName = (s: Subject) => s.short_name?.trim() || s.name;
 /**
  * A subject plan's marks needed, with its working: what's banked, what the
  * target grade starts at, what's still to play for, the share of it the
- * target needs, and what that asks of the next test.
+ * target needs, and what that asks of the next test. An end-sem you've said
+ * what to expect of counts at that, and the share falls on the tests left.
  */
 export function planWorking(plan: SubjectPlan): Working<{ needed: number; requiredRate: number | null; status: PlanStatus }> {
   const value = { needed: plan.needed, requiredRate: plan.requiredRate, status: plan.status };
   const name = subjectName(plan.subject);
   const banked = floorMarks(plan.banked);
   const { grade, minTotal } = plan.target;
-  const figures = { banked, minTotal, needed: plan.needed, pool: plan.pool, rate: plan.requiredRate ?? 0, ceiling: plan.ceiling };
+  const assumed = plan.assumedExternal;
+  const tests = floorMarks(plan.remainingInternal);
+  const left = assumed === null ? plan.pool : plan.remainingInternal;
+  const figures = { banked, minTotal, needed: plan.needed, pool: left, assumed: assumed ?? 0, rate: plan.requiredRate ?? 0, ceiling: plan.ceiling };
   const steps: Step[] = [{ say: `You've banked ${banked} of the ${floorMarks(plan.gradedMax)} marks played so far in ${name}.` }];
   if (plan.status === "final") {
     steps.push({ say: `Nothing is left to play for, so ${name} ends at ${banked}, which is ${plan.floorGrade}.` });
     return { value, steps, figures };
   }
-  if (plan.needed <= 0) {
+  if (plan.needed <= 0 && assumed === null) {
     steps.push({ say: `${grade} starts at ${minTotal}, and you've banked that already: it holds even at zero from here.`, sum: `${banked} ≥ ${minTotal}` });
     return { value, steps, figures };
   }
-  steps.push({ say: `${grade} starts at ${minTotal}, so you need ${floorMarks(plan.needed)} more.`, sum: `${minTotal} − ${banked} = ${floorMarks(plan.needed)}` });
-  const tests = floorMarks(plan.remainingInternal);
-  steps.push({
-    say: `${floorMarks(plan.pool)} marks are still to play for: ${tests} in tests and ${plan.externalWeight} in the end-sem.`,
-    sum: `${tests} + ${plan.externalWeight} = ${floorMarks(plan.pool)}`,
-  });
-  if (plan.status === "out-of-reach") {
-    steps.push({ say: `Even full marks on all of it come to ${floorMarks(plan.ceiling)}, short of ${minTotal}.` });
-    return { value, steps, figures };
+  const gap = floorMarks(minTotal - plan.banked);
+  steps.push({ say: `${grade} starts at ${minTotal}, so you need ${gap} more.`, sum: `${minTotal} − ${banked} = ${gap}` });
+  if (assumed !== null) {
+    const a = floorMarks(assumed);
+    if (plan.needed <= 0) {
+      steps.push({ say: `You expect ${a} of the end-sem's ${plan.externalWeight}, which covers it: ${grade} holds even at zero in the tests left.`, sum: `${a} ≥ ${gap}` });
+      return { value, steps, figures };
+    }
+    steps.push({ say: `You expect ${a} of the end-sem's ${plan.externalWeight}, which leaves ${floorMarks(plan.needed)} for the tests.`, sum: `${gap} − ${a} = ${floorMarks(plan.needed)}` });
+    steps.push({ say: `${tests} marks are left in the tests.` });
+    if (plan.status === "out-of-reach") {
+      steps.push({ say: `Even full marks in them come to ${floorMarks(plan.banked + assumed + plan.remainingInternal)}, short of ${minTotal}.` });
+      return { value, steps, figures };
+    }
+  } else {
+    steps.push({
+      say: `${floorMarks(plan.pool)} marks are still to play for: ${tests} in tests and ${plan.externalWeight} in the end-sem.`,
+      sum: `${tests} + ${plan.externalWeight} = ${floorMarks(plan.pool)}`,
+    });
+    if (plan.status === "out-of-reach") {
+      steps.push({ say: `Even full marks on all of it come to ${floorMarks(plan.ceiling)}, short of ${minTotal}.` });
+      return { value, steps, figures };
+    }
   }
   const rate = (plan.requiredRate ?? 0) * 100;
-  steps.push({ say: `That's ${pct(rate)} of everything left.`, sum: `${floorMarks(plan.needed)} ÷ ${floorMarks(plan.pool)} × 100 = ${pct(rate)}` });
+  steps.push({
+    say: assumed === null ? `That's ${pct(rate)} of everything left.` : `That's ${pct(rate)} of the tests left.`,
+    sum: `${floorMarks(plan.needed)} ÷ ${floorMarks(left)} × 100 = ${pct(rate)}`,
+  });
   const next = plan.next;
   if (next && next.required !== null) steps.push({ say: `So ${next.label} needs about ${floorMarks(next.required)} of its ${floorMarks(next.max)}.`, sum: `${pct(rate)} × ${floorMarks(next.max)}` });
   return { value, steps, figures };

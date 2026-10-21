@@ -1,11 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-// The five tabs (src/lib/screens.ts), the Run-up in the top bar and the ball (src/components/layout).
+// The five tabs (src/lib/screens.ts), the Run-up in the top bar and the corner (src/components/layout).
 const bar = (page: Page) => page.getByRole("navigation", { name: "Primary" }).last();
-const ball = (page: Page) => page.getByRole("button", { name: /More: calendar/ });
+const corner = (page: Page) => page.getByRole("button", { name: /More: calendar/ });
 
-test("the bar is the five tabs, each lit for its pages, and the ball's and the Run-up's light none", async ({ signedIn: page }) => {
+test("the bar is the five tabs, each lit for its pages, and the corner's and the Run-up's light none", async ({ signedIn: page }) => {
   await expect(bar(page).getByRole("link")).toHaveText(["Today", "Timetable", "Attendance", "Marks", "Study"]);
   const lit = bar(page).locator('[aria-current="page"]');
   await expect(lit).toHaveText("Today");
@@ -78,9 +78,9 @@ test("the Run-up is one tap away from any page, with the day's count", async ({ 
   await expect(runup).toHaveAttribute("aria-current", "page");
 });
 
-test("the ball carries the day order and opens the pages used now and then", async ({ signedIn: page }) => {
-  await expect(ball(page)).toHaveAccessibleName(/^Day Order 3\. More:/);
-  await ball(page).click();
+test("the corner carries the day order and opens the pages used now and then", async ({ signedIn: page }) => {
+  await expect(corner(page)).toHaveAccessibleName(/^Day Order 3\. More:/);
+  await corner(page).click();
   const menu = page.getByRole("dialog", { name: "More" });
   await expect(menu.getByRole("button", { name: "Close" })).toBeFocused();
   await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/calendar/i, /skips/i, /flashcards/i, /history/i, /settings/i]);
@@ -89,17 +89,25 @@ test("the ball carries the day order and opens the pages used now and then", asy
   await expect(page).toHaveURL("/settings");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
-  await ball(page).click();
+  await corner(page).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /^calendar$/i }).click();
   await expect(page).toHaveURL("/calendar");
 
-  await ball(page).click();
+  await corner(page).click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
 });
 
-test("the flashcards open from the ball, which counts the ones waiting", async ({ signedIn: page }) => {
-  await ball(page).click();
+test("the corner sits flush in the bottom-right corner, on the tab bar where there is one", async ({ signedIn: page, isMobile }) => {
+  const box = (await corner(page).boundingBox())!;
+  const { width, height } = page.viewportSize()!;
+  const floor = isMobile ? (await bar(page).boundingBox())!.y : height;
+  expect(Math.round(box.x + box.width)).toBe(width);
+  expect(Math.round(box.y + box.height)).toBe(Math.round(floor));
+});
+
+test("the flashcards open from the corner, which counts the ones waiting", async ({ signedIn: page }) => {
+  await corner(page).click();
   const cards = page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /flashcards/i });
   await expect(cards).toHaveText(/^\d+\s*flashcards$/i);
   await cards.click();

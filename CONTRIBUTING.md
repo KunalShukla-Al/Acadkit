@@ -71,7 +71,7 @@ These run on a Mac only, so CI skips them. Run them when a change touches what t
 
 | Command                  | What it checks                                                  |
 | ------------------------ | --------------------------------------------------------------- |
-| `npm run test:visual`    | Pictures of the design catalog, the tabs and the ball; `-- --update-snapshots` takes new ones |
+| `npm run test:visual`    | Pictures of the design catalog, the tabs and the corner; `-- --update-snapshots` takes new ones |
 | `npm run test:iphone`    | The e2e suite on WebKit as an iPhone                            |
 | `npm run test:mac`       | The e2e suite on WebKit as a Mac                                |
 | `npm run perf:screens`   | Lighthouse on the five tabs, signed in                          |
