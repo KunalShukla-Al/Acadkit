@@ -246,3 +246,45 @@ describe("the projection starts from the portal's totals", () => {
     expect(projectSubject(ml, recs, slots, {}, "2026-09-26").mustAttendStreak).toBe(4);
   });
 });
+
+describe("skips", () => {
+  const slot = (subject_id: string): TimetableSlot => ({
+    id: `t${subject_id}`,
+    device_id: "p",
+    subject_id,
+    day_order: 1,
+    start_time: "08:00:00",
+    end_time: "08:50:00",
+    room: null,
+  });
+  const record = (subject_id: string, i: number, present: boolean): AttendanceRecord => ({
+    id: `${subject_id}${i}`,
+    device_id: "p",
+    subject_id,
+    date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+    start_time: "08:00:00",
+    end_time: "08:50:00",
+    status: present ? "present" : "absent",
+  });
+  const effMap = { "2026-08-11": 1, "2026-08-18": 1 };
+  // Day Order 1 falls on 3, 10 and 17 August: two classes after the 5th.
+  const win = { start: "2026-08-03", end: "2026-08-21" };
+
+  it("never offer more than the classes left, and date the last of them", () => {
+    // 10 of 10, 2 to come: missing both still ends at 83%.
+    const recs = Array.from({ length: 10 }, (_, i) => record("s1", i, true));
+    const p = projectSubject(subj({ id: "s1" }), recs, [slot("s1")], effMap, "2026-08-05");
+    expect(p.skipBudget).toBe(2);
+    expect(p.safeUntil).toBe("2026-08-18");
+  });
+
+  it("are the tightest subject's overall, not a total pooled across subjects", () => {
+    // s1 has 30 of 30; s2 has 15 of 20 and can't miss either class left.
+    const recs = [...Array.from({ length: 30 }, (_, i) => record("s1", i, true)), ...Array.from({ length: 20 }, (_, i) => record("s2", i, i < 15))];
+    const subjects = [subj({ id: "s1", name: "Plenty" }), subj({ id: "s2", name: "Short" })];
+    const { overall, perSubject } = buildProjection(subjects, recs, [slot("s1"), slot("s2")], [], [], "2026-08-05", win);
+    expect(perSubject.map((p) => p.skipBudget)).toEqual([2, 0]);
+    expect(overall.skipBudget).toBe(0);
+    expect(overall.tightest?.name).toBe("Short");
+  });
+});

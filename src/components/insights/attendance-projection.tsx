@@ -207,7 +207,7 @@ export function AttendanceProjection({
               <div className="grid flex-1 grid-cols-2 gap-3 sm:max-w-xs">
                 <Stat label="Now" value={o.currentPct === null ? "—" : `${Math.round(o.currentPct)}%`} />
                 <Stat label="Classes left" value={String(o.remaining)} />
-                <Stat label="Skip budget" value={String(o.skipBudget)} accent />
+                <Stat label="Fewest skips" value={o.tightest ? `${o.skipBudget} · ${subjectShort(o.tightest)}` : "—"} accent />
                 <Stat
                   label={preSem ? "Sem days left" : "Class days left"}
                   value={String(daysLeft)}
