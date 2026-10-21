@@ -59,7 +59,13 @@ export interface OverallProjection {
   bestPct: number;
   worstPct: number;
   pacePct: number | null;
+  /**
+   * The fewest classes any subject can still miss, and that subject. SRM
+   * counts each course on its own, so a total pooled across subjects can
+   * show skips to spare while one of them is already short.
+   */
   skipBudget: number;
+  tightest: Subject | null;
 }
 
 interface FutureOccurrence {
@@ -145,9 +151,10 @@ export function projectSubject(
     rate !== null && finalTotal > 0 ? ((attended + rate * remaining) / finalTotal) * 100 : null;
 
   // Both in integers, with the bar as a whole percentage: 0.65 has no exact binary form, and dividing by 1 − 0.65 asked for one class too many whenever the answer landed exactly on the bar.
-  const skipBudget = Math.max(
-    0,
-    Math.floor((100 * (attended + remaining) - minPct * finalTotal) / 100)
+  // Never more than the classes left: past that, every one of them can go.
+  const skipBudget = Math.min(
+    remaining,
+    Math.max(0, Math.floor((100 * (attended + remaining) - minPct * finalTotal) / 100))
   );
 
   // If below: smallest streak K of future attends so 100·(attended+K) ≥ min·(held+K)
@@ -501,6 +508,9 @@ export function buildProjection(
   const oRemaining = sum((p) => p.remaining);
   const oFinal = oHeld + oRemaining;
   const oRate = oHeld > 0 ? oAttended / oHeld : null;
+  const tightest = perSubject
+    .filter((p) => p.remaining > 0)
+    .reduce<SubjectProjection | null>((low, p) => (!low || p.skipBudget < low.skipBudget ? p : low), null);
   const overall: OverallProjection = {
     attended: oAttended,
     held: oHeld,
@@ -509,17 +519,8 @@ export function buildProjection(
     bestPct: oFinal > 0 ? ((oAttended + oRemaining) / oFinal) * 100 : 0,
     worstPct: oFinal > 0 ? (oAttended / oFinal) * 100 : 0,
     pacePct: oRate !== null && oFinal > 0 ? ((oAttended + oRate * oRemaining) / oFinal) * 100 : null,
-    // Against the semester's bar: 65% when every subject is on medical
-    // leave (it is granted for the semester), else the standard 75%.
-    skipBudget: Math.max(
-      0,
-      Math.floor(
-        oAttended +
-          oRemaining -
-          (perSubject.length && perSubject.every((p) => p.min < MIN_ATTENDANCE) ? Math.max(...perSubject.map((p) => p.min)) / 100 : MIN) *
-            oFinal
-      )
-    ),
+    skipBudget: tightest?.skipBudget ?? 0,
+    tightest: tightest?.subject ?? null,
   };
 
   const whatIf: WhatIfRow[] = perSubject

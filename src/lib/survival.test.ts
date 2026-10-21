@@ -55,6 +55,16 @@ describe("classesNeeded", () => {
   it("never returns a negative", () => {
     expect(classesNeeded(100, 10, 2)).toBe(0);
   });
+
+  it("asks for exactly enough at a bar with no exact binary form", () => {
+    // 65% of 100 is 65, minus 40 attended = 25; 0.65 × 100 in floats is 65.00000000000001, which asked for 26.
+    expect(classesNeeded(40, 60, 40, 65)).toBe(25);
+    for (let total = 1; total <= 200; total++) {
+      const needed = classesNeeded(0, 0, total, 65);
+      expect(100 * needed).toBeGreaterThanOrEqual(65 * total);
+      expect(100 * (needed - 1)).toBeLessThan(65 * total);
+    }
+  });
 });
 
 describe("buildSurvivalPlan", () => {

@@ -1,4 +1,3 @@
-import { MIN } from "@acadkit/core/projections";
 import { computeOverallAttendance, MIN_ATTENDANCE, minAttendanceFor } from "@acadkit/core/attendance";
 import type { AttendanceRecord, PortalSnapshot, Subject, TimetableSlot } from "@acadkit/core/types";
 
@@ -70,15 +69,18 @@ export interface SurvivalPlan {
   onMedicalLeave: Subject[];
 }
 
-/** Classes needed out of `remaining` to finish at or above the bar. */
+/**
+ * Classes needed out of `remaining` to finish at or above the bar, a whole
+ * percentage. In integers, as the forecast does it: 0.65 has no exact
+ * binary form, and 0.65 × 100 asked for one class too many.
+ */
 export function classesNeeded(
   attended: number,
   held: number,
   remaining: number,
-  min: number = MIN
+  minPct: number = MIN_ATTENDANCE
 ): number {
-  const target = min * (held + remaining);
-  return Math.max(0, Math.ceil(target - attended));
+  return Math.max(0, Math.ceil((minPct * (held + remaining) - 100 * attended) / 100));
 }
 
 /** `subject|date|start_time` - the natural key of an attendance row. */
@@ -134,7 +136,7 @@ export function buildSurvivalPlan(
     // planned to 65%, which is often the difference between a plan and
     // a write-off.
     const min = minAttendanceFor(subject);
-    const needed = classesNeeded(attended, held, remaining, min / 100);
+    const needed = classesNeeded(attended, held, remaining, min);
     const reachable = needed <= remaining;
     const slack = reachable ? remaining - needed : remaining;
     const ceiling =

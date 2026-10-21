@@ -22,6 +22,12 @@ existing data or installs, a minor version for new features, a patch version for
 - The AcadKit Focus and AcadKit Shortcuts stopped with "an action could not be found": two of
   their actions were missing their full name. The Mac now rebuilds a Shortcut whenever the code
   that builds it changes.
+- Attendance's forecast showed one skip budget pooled across every subject, which could offer
+  skips while one subject was already short. SRM counts each course on its own, so it now shows
+  the fewest any subject can spare, and which subject that is.
+- A subject's skips were never capped at the classes left ("skip 13 more of the remaining 5"),
+  which also hid the date it was safe to skip everything up to.
+- Skips asked for one class too many on medical leave: 0.65 × 100 came out a hair above 65.
 
 ## [1.0.0] - 2026-10-21
 
