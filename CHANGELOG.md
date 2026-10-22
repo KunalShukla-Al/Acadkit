@@ -9,6 +9,9 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
+  behind the `REMINDERS_VIA_JOBQ` secret (off by default, then shadow, then on). Migration 063 brings
+  back the two database functions it uses.
 - The ball is now the corner: a lime quarter-disc fixed in the bottom-right corner, on top of the
   tab bar, showing today's Day Order. Tapped, the same stickers burst out of it, and it turns into
   their close button.

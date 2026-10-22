@@ -5,7 +5,7 @@
 
 /**
  * The key new subscriptions are made with (send-reminders signs them with
- * VAPID_PUBLIC_V2 / VAPID_PRIVATE_V2).
+ * VAPID_PUBLIC_V2 / VAPID_PRIVATE_V2, jobq with its only pair).
  */
 export const VAPID_PUBLIC_KEY =
   "BProUUQEOe5AskZg0hDybsBBEN0pDZYs0y0RE-RIio4mvgZjSmN-xUINLjErE6lfaJQ9IS5pXj8neUKomnSnvy4";
