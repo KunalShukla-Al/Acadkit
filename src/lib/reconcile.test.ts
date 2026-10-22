@@ -65,6 +65,13 @@ describe("reconcile", () => {
     expect(r.conducted).toBe(21);
   });
 
+  it("counts a class on the sync's own day once it starts after the sync", () => {
+    // Synced at 00:48 IST on 31 Aug.
+    const r = reconcile(subject, [rec("2026-08-31", "present", "09:45")], snap({ synced_at: "2026-08-30T19:18:03Z" }))!;
+    expect(r.sinceCounted).toBe(1);
+    expect(r.conducted).toBe(21);
+  });
+
   it("keeps cancelled classes out of both totals but still tells you about them", () => {
     const r = reconcile(
       subject,

@@ -1,4 +1,4 @@
-import { isAttended, isCounted } from "@acadkit/core/attendance";
+import { afterSnapshot, isAttended, isCounted } from "@acadkit/core/attendance";
 import type { AttendanceRecord, PortalSnapshot, Subject } from "@acadkit/core/types";
 
 /** Why a subject's percentage isn't the one the portal printed. */
@@ -33,7 +33,7 @@ export function reconcile(
 
   const mine = records.filter((r) => r.subject_id === subject.id);
   const since = mine
-    .filter((r) => r.date > snapshot.as_of)
+    .filter((r) => afterSnapshot(r, snapshot))
     .sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
 
   const counted = since.filter((r) => isCounted(r.status));
