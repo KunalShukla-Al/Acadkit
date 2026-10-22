@@ -71,6 +71,23 @@ function themeTokens() {
   };
 }
 
+/**
+ * The touch icon inside the page, as a data URI. iOS's Add to Home Screen
+ * sheet fetches a linked icon with a loader of its own, and when that
+ * fetch fails it draws the name's first letter instead; an icon already
+ * in the page needs no fetch. The PNGs in public/ stay for whatever asks
+ * the site directly.
+ */
+function touchIcon() {
+  return {
+    name: "touch-icon",
+    transformIndexHtml(html: string) {
+      const png = readFileSync(path.resolve(import.meta.dirname, "public/apple-touch-icon.png")).toString("base64");
+      return html.replace('href="/apple-touch-icon.png"', `href="data:image/png;base64,${png}"`);
+    },
+  };
+}
+
 export default defineConfig({
   define: {
     __APP_RELEASE__: JSON.stringify(release()),
@@ -78,6 +95,7 @@ export default defineConfig({
   plugins: [
     pdfjsWasm(),
     themeTokens(),
+    touchIcon(),
     react(),
     // The React Compiler memoizes components and hooks; lint keeps src within its rules.
     babel({ presets: [reactCompilerPreset()] }),
@@ -100,26 +118,15 @@ export default defineConfig({
         background_color: "#0a0a0a",
         display: "standalone",
         orientation: "portrait",
+        id: "/",
         scope: "/",
         start_url: "/",
+        // One purpose an entry: iOS reads only "any" icons, and an entry that
+        // is also "maskable" is one it may skip. Android crops the maskable one.
         icons: [
-          {
-            src: "icons/icon-192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "icons/icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "icons/apple-touch-icon.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
+          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {

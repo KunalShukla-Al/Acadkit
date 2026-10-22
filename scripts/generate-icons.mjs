@@ -34,9 +34,18 @@ async function buildMasterBuffer() {
     .toBuffer();
 }
 
-/** An opaque square PNG: a touch icon with an alpha channel, even one that's all opaque, is one iOS may pass over. */
-async function generate(masterBuffer, size, outName, dir = join(root, "public", "icons")) {
-  await sharp(masterBuffer).resize(size, size).flatten({ background: BACKGROUND }).removeAlpha().png().toFile(join(dir, outName));
+/**
+ * An opaque square PNG: a touch icon with an alpha channel, even one that's
+ * all opaque, is one iOS may pass over. `palette` keeps the touch icon
+ * small enough to sit in the page as a data URI (vite.config.ts).
+ */
+async function generate(masterBuffer, size, outName, dir = join(root, "public", "icons"), { palette = false } = {}) {
+  await sharp(masterBuffer)
+    .resize(size, size)
+    .flatten({ background: BACKGROUND })
+    .removeAlpha()
+    .png(palette ? { palette: true, colours: 16, effort: 10 } : {})
+    .toFile(join(dir, outName));
   console.log(`✓ ${outName} (${size}x${size})`);
 }
 
@@ -70,10 +79,11 @@ async function generateMark() {
 const masterBuffer = await buildMasterBuffer();
 await generate(masterBuffer, 192, "icon-192.png");
 await generate(masterBuffer, 512, "icon-512.png");
-await generate(masterBuffer, 180, "apple-touch-icon.png");
+await generate(masterBuffer, 180, "apple-touch-icon.png", undefined, { palette: true });
 // Where iOS looks when a page names no touch icon, or its share sheet asks the site itself.
-await generate(masterBuffer, 180, "apple-touch-icon.png", join(root, "public"));
-await generate(masterBuffer, 180, "apple-touch-icon-precomposed.png", join(root, "public"));
+for (const name of ["apple-touch-icon", "apple-touch-icon-precomposed", "apple-touch-icon-180x180", "apple-touch-icon-180x180-precomposed"]) {
+  await generate(masterBuffer, 180, `${name}.png`, join(root, "public"), { palette: true });
+}
 await generateFavicon(masterBuffer);
 await generateMark();
 console.log("Icons generated successfully.");
