@@ -10,7 +10,7 @@ Mac picks them, and how far to trust them.
 | --- | --- |
 | Page | a page of a course's notes, PDFs and documents that aren't slides |
 | Slide | a slide of one of the course's decks |
-| Question | a question from a past paper I labelled |
+| Question | a question from a labelled past paper |
 | Moment | about a minute of a recorded lecture |
 | Board photo | the writing on a photo of the board |
 

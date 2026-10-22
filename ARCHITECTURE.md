@@ -507,7 +507,7 @@ tick through `sync:app`): Qwen3-VL 8B through Ollama, on the Mac, with nothing s
   restores each snapshot and mark and deletes what the import added, its screenshot history too
   (the one history an owner may delete).
 - The past-paper reader (`scripts/lib/paper-reader.mjs`) turns a question paper into the fields
-  the hand-labelled dataset has: each question's part, number, marks, unit and topic, the topic
+  the labelled dataset has: each question's part, number, marks, unit and topic, the topic
   chosen from the course's list in `_src/pyq_dataset/topics.tsv`. It reads a page at a time, as
   text when the PDF has a text layer and as a picture when not, and tells each page the number
   the last one ended on, nothing more: told what that question was worth, or not to count on,

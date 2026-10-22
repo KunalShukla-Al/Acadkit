@@ -132,7 +132,7 @@ export function report({ papers, scores, failed, skipped = [], seconds, model, v
     "## Autopilot's past-paper reader",
     "",
     `\`scripts/lib/paper-reader.mjs\` (reader version ${version}, ${model} through Ollama on my Mac) on the ${papers} papers in`,
-    `\`_src/pyq_dataset\` that I labelled by hand, ${all.labelled.toLocaleString("en-IN")} questions. Run on ${date} with \`npm run autopilot:eval\`.`,
+    `\`_src/pyq_dataset\`, ${all.labelled.toLocaleString("en-IN")} questions. I had an AI assistant label them from the page images and macOS Vision's OCR text, separately from this reader, and not every label has been checked by hand. Run on ${date} with \`npm run autopilot:eval\`.`,
     "",
     "| Field | Right | Of | Accuracy |",
     "| --- | --- | --- | --- |",

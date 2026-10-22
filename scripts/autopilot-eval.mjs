@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * The past-paper reader (scripts/lib/paper-reader.mjs) on every paper I
- * labelled by hand (_src/pyq_dataset/papers.tsv): npm run autopilot:eval,
+ * The past-paper reader (scripts/lib/paper-reader.mjs) on every labelled
+ * paper (_src/pyq_dataset/papers.tsv): npm run autopilot:eval,
  * with Ollama running. Each paper's reading is kept on the Mac, by paper,
  * file hash, pages and reader version, so a run that stops picks up where
  * it was and a finished paper isn't read again. A paper in a file of
