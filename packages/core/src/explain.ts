@@ -3,7 +3,7 @@
  * own so only the explainers load it, not the screens that show the
  * numbers. Each function returns the same value as the one it explains.
  */
-import { computeSubjectAttendance, isAttended, isCounted, ML_ATTENDANCE, project, type SubjectAttendance } from "./attendance.ts";
+import { afterSnapshot, computeSubjectAttendance, isAttended, isCounted, ML_ATTENDANCE, project, type SubjectAttendance } from "./attendance.ts";
 import { countsInSgpa, GRADE_TABLE, gradeForTotal } from "./grades.ts";
 import { DEFAULT_DRAWS, formatChance, type SubjectOdds } from "./odds.ts";
 import { floorMarks, type PlanStatus, type SgpaResult, type SubjectPlan } from "./plan.ts";
@@ -40,7 +40,7 @@ export function attendanceWorking(subject: Subject, records: AttendanceRecord[],
   const { attended, total, percentage, min } = value;
   const steps = [];
   if (value.source === "portal" && snapshot) {
-    const since = records.filter((r) => isCounted(r.status) && r.date > snapshot.as_of);
+    const since = records.filter((r) => isCounted(r.status) && afterSnapshot(r, snapshot));
     const kept = since.filter((r) => isAttended(r.status)).length;
     steps.push({
       say: `On ${day(snapshot.as_of)} the portal had you at ${snapshot.conducted - snapshot.absent} of ${count(snapshot.conducted, "class", "classes")} in ${subject.name}.`,

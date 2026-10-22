@@ -21,6 +21,9 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- Classes marked on the day of a portal sync now count. A sync dates itself the day it runs, so
+  one made after midnight hid every class marked later that day; now only classes that started
+  before the sync are left to the portal.
 - The AcadKit Focus and AcadKit Shortcuts stopped with "an action could not be found": two of
   their actions were missing their full name. The Mac now rebuilds a Shortcut whenever the code
   that builds it changes.
