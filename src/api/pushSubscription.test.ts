@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * savePushSubscription is what tells send-reminders which VAPID
+ * savePushSubscription is what tells send-reminders and jobq which VAPID
  * pair a subscription needs (migration 041). Without vapid_public a row on
  * the new key reads as the original one and every push to it is refused.
  */

@@ -1014,6 +1014,8 @@ export type Database = {
           device_id: string;
         }[];
       };
+      jobq_due: { Args: Record<PropertyKey, never>; Returns: number };
+      jobq_enqueue: { Args: { jobs: Json }; Returns: number };
       match_lecture_moments: {
         Args: { match_count?: number; p_device: string; query_embedding: string };
         Returns: {

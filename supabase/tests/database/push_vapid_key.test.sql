@@ -1,5 +1,5 @@
 -- push_subscriptions.vapid_public (migration 041): which VAPID key a
--- subscription was made with, so send-reminders signs it with the
+-- subscription was made with, so send-reminders and jobq sign it with the
 -- matching pair.
 --
 -- The app saves it through the same owner-only policy as every other
