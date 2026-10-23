@@ -46,6 +46,8 @@ existing data or installs, a minor version for new features, a patch version for
 - fast-uri 3.1.9 (was 3.1.2), which the service-worker build pulls in through ajv: fixes seven
   advisories about host confusion, request forgery and port injection. Build tooling only; nothing
   in the app people load used it.
+- brace-expansion 2.1.7 (was 2.1.0), under the same build's file matching: fixes two advisories
+  where a crafted pattern takes quadratic or exponential time.
 
 ## [1.0.0] - 2026-10-21
 
