@@ -118,7 +118,7 @@ The model is set in `scripts/lib/ollama.mjs` (`MODEL`). Pull the new one, change
 scores come from qwen3-vl:8b-instruct, so expect them to change.
 
 **How good is it at past papers?**
-[EVAL.md](../EVAL.md) has it measured on 118 papers I labelled by hand. A paper it isn't sure of
+[EVAL.md](../EVAL.md) has it measured on 110 labelled papers, and says how they were labelled. A paper it isn't sure of
 asks on Today before it joins the past papers.
 
 **What's the difference between Pause and off?**

@@ -1,6 +1,6 @@
 /**
  * A past paper Autopilot read (scripts/lib/paper-reader.mjs) joining my
- * hand-labelled dataset (_src/pyq_dataset): papers.tsv gets the paper and
+ * labelled dataset (_src/pyq_dataset): papers.tsv gets the paper and
  * questions.tsv its questions, the way I label them. A reading that looks
  * right joins at once; one that doesn't asks first, as a suggestion on Today
  * (kind "paper", migration 060), and joins once I say yes.

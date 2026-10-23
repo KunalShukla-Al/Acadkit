@@ -74,7 +74,7 @@ details, how each was run, and the command to run it again.
 
 | Part | Measured on | Result |
 | --- | --- | --- |
-| Autopilot's past-paper reader | 110 papers I labelled by hand, 2,409 questions | Finds 76.2% of the questions (84.6% on end-sems, 52.5% on cycle tests). Of those found, the marks are right 87.8% of the time, the unit 81.3%, the topic 67.2%. |
+| Autopilot's past-paper reader | 110 papers, 2,409 questions labelled by an AI assistant from the page images (not this reader) | Finds 76.2% of the questions (84.6% on end-sems, 52.5% on cycle tests). Of those found, the marks are right 87.8% of the time, the unit 81.3%, the topic 67.2%. |
 | Links by meaning (Everything connected) | 100 links the app shows, a fresh sample, judged by Claude reading both items; my own check is still to do | 73 of the 100 right (64% to 81% at 95% confidence): 80% from a question to notes, 73% from notes to a slide, 68% from a question to a slide. |
 | Class recorder | 3 stand-in lectures, 37 minutes: real decks, explained by a local model and spoken by `say` | The right deck 3 times of 3; the right slide 43% of the time, 51% within a page. Real lectures are still to measure. |
 

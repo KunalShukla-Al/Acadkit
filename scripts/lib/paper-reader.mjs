@@ -2,7 +2,7 @@
  * Autopilot's past-paper reader: a question paper (a PDF, a photo, or a
  * Word file the sync has made a PDF of) becomes its questions, each with
  * its part, number, marks, syllabus unit and topic, the same fields the
- * hand-labelled dataset has (_src/pyq_dataset). The model reads a page at
+ * labelled dataset has (_src/pyq_dataset). The model reads a page at
  * a time: its text when the PDF has a text layer, its picture when not.
  */
 import { spawn } from "node:child_process";

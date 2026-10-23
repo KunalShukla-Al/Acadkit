@@ -482,6 +482,46 @@ export default function Files() {
         </Link>
       )}
 
+      {/* Above the folders: the projects, then the week's notices with the new files. */}
+      {!dir && !searching && <ProjectsCard now={now} />}
+
+      {!dir && !searching && (
+        <ThisWeekCard files={files} now={now}>
+          {recent.length > 0 && (
+            <div className="divide-y">
+              <button
+                type="button"
+                onClick={() => setRecentOpen((v) => !v)}
+                aria-expanded={recentOpen}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left"
+              >
+                <Clock className="h-4 w-4 shrink-0 text-accent" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold">
+                    {recent.length} new file{recent.length === 1 ? "" : "s"} in the last {RECENT_DAYS} days
+                  </span>
+                  <span className="block truncate text-xs font-medium text-muted">Latest: {baseName(recent[0].path)}</span>
+                </span>
+                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted transition-transform", recentOpen && "rotate-180")} />
+              </button>
+              {recentOpen &&
+                recent.map((f) => (
+                  <FileRow
+                    key={f.path}
+                    file={f}
+                    showFolder
+                    course={courseLinkFor(f, null)}
+                    deleting={pendingByPath.has(f.path)}
+                    onDelete={canDelete ? () => askDelete(f) : undefined}
+                    onUndo={() => undoDelete(f.path)}
+                    swipeToDelete
+                  />
+                ))}
+            </div>
+          )}
+        </ThisWeekCard>
+      )}
+
       <section className="card divide-y overflow-hidden p-0">
         {!searching && view.folders.filter((x) => !isReferenceFolder(dir, x.name)).map(folderRow)}
 
@@ -531,45 +571,7 @@ export default function Files() {
         )}
       </section>
 
-      {/* Below the folders: the projects, the week's notices and new files, and how the Mac's jobs went. */}
-      {!dir && !searching && <ProjectsCard now={now} />}
-
-      {!dir && !searching && (
-        <ThisWeekCard files={files} now={now}>
-          {recent.length > 0 && (
-            <div className="divide-y">
-              <button
-                type="button"
-                onClick={() => setRecentOpen((v) => !v)}
-                aria-expanded={recentOpen}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
-              >
-                <Clock className="h-4 w-4 shrink-0 text-accent" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold">
-                    {recent.length} new file{recent.length === 1 ? "" : "s"} in the last {RECENT_DAYS} days
-                  </span>
-                  <span className="block truncate text-xs font-medium text-muted">Latest: {baseName(recent[0].path)}</span>
-                </span>
-                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted transition-transform", recentOpen && "rotate-180")} />
-              </button>
-              {recentOpen &&
-                recent.map((f) => (
-                  <FileRow
-                    key={f.path}
-                    file={f}
-                    showFolder
-                    course={courseLinkFor(f, null)}
-                    deleting={pendingByPath.has(f.path)}
-                    onDelete={canDelete ? () => askDelete(f) : undefined}
-                    onUndo={() => undoDelete(f.path)}
-                    swipeToDelete
-                  />
-                ))}
-            </div>
-          )}
-        </ThisWeekCard>
-      )}
+      {/* Below the folders: how the Mac's jobs went. */}
       {!dir && !searching && <MacLine />}
     </div>
   );

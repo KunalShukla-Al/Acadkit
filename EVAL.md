@@ -25,7 +25,7 @@ every deck in the course, moments of about a minute lined up at a floor of 0.2.
 ## Autopilot's past-paper reader
 
 `scripts/lib/paper-reader.mjs` (reader version 2, qwen3-vl:8b-instruct through Ollama on my Mac) on the 110 papers in
-`_src/pyq_dataset` that I labelled by hand, 2,409 questions. Run on 21 Oct 2026 with `npm run autopilot:eval`.
+`_src/pyq_dataset`, 2,409 questions. I had an AI assistant label them from the page images and macOS Vision's OCR text, separately from this reader, and not every label has been checked by hand. Run on 21 Oct 2026 with `npm run autopilot:eval`.
 
 | Field | Right | Of | Accuracy |
 | --- | --- | --- | --- |
