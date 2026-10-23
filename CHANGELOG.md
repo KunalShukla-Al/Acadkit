@@ -41,6 +41,12 @@ existing data or installs, a minor version for new features, a patch version for
   iOS passes over "any maskable"; and the `-180x180` names iOS also asks the site for are real
   PNGs.
 
+### Security
+
+- fast-uri 3.1.9 (was 3.1.2), which the service-worker build pulls in through ajv: fixes seven
+  advisories about host confusion, request forgery and port injection. Build tooling only; nothing
+  in the app people load used it.
+
 ## [1.0.0] - 2026-10-21
 
 The first release: attendance, marks, the Day Order timetable and my study files, on the phone
