@@ -147,6 +147,30 @@ describe("portal snapshots", () => {
     expect(r.total).toBe(43); // 40 + 3 counted
   });
 
+  it("layers classes on the sync's own day that start after the sync", () => {
+    // Synced at 00:48 IST on 20 Aug, so that day's classes are still to come.
+    const early = { ...snap("A", 40, 6), synced_at: "2026-08-19T19:18:03Z" };
+    const records = [
+      { ...on("A", "present", "2026-08-20"), start_time: "09:45" },
+      { ...on("A", "absent", "2026-08-20"), start_time: "15:10" },
+    ];
+    const r = computeSubjectAttendance(subj("A"), records, early);
+    expect(r.attended).toBe(35);
+    expect(r.total).toBe(42);
+  });
+
+  it("leaves out classes on the sync's own day that started before it", () => {
+    // Synced at 13:00 IST: the 09:45 class is in the portal's count, the 15:10 one isn't.
+    const midday = { ...snap("A", 40, 6), synced_at: "2026-08-20T07:30:00Z" };
+    const records = [
+      { ...on("A", "present", "2026-08-20"), start_time: "09:45" },
+      { ...on("A", "present", "2026-08-20"), start_time: "15:10" },
+    ];
+    const r = computeSubjectAttendance(subj("A"), records, midday);
+    expect(r.attended).toBe(35);
+    expect(r.total).toBe(41);
+  });
+
   it("still excludes cancelled classes from the layered total", () => {
     const records = [on("A", "holiday", "2026-08-21"), on("A", "present", "2026-08-22")];
     const r = computeSubjectAttendance(subj("A"), records, snap("A", 40, 6));

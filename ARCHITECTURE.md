@@ -659,6 +659,19 @@ others about the same thing.
   that page, a board photo in the viewer, a question's paper, a moment in its transcript (found
   by the recording's memo among the synced lectures; a lecture not synced yet is a plain chip).
 
+## Reminders
+
+- `send-reminders` (an Edge Function that `pg_cron` calls every 10 minutes, `cron.sql`) plans the
+  pushes that are due and skips any already in `sent_notifications`.
+- The function secret `REMINDERS_VIA_JOBQ` decides who delivers them:
+  - `off` (the default): the function pushes each one itself.
+  - `shadow`: it still pushes, and also queues a do-nothing job per reminder on
+    [jobq](https://github.com/KunalShukla-Al/jobq), my Go job queue, to compare the two.
+  - `on`: it queues each reminder with `public.jobq_enqueue` (migration 063) and starts jobq's
+    Deliver workflow on GitHub Actions (`dispatch.ts`). jobq pushes it, retries a failure with
+    backoff, and records it sent only once a browser has it.
+- The steps, secrets and rollback are in `supabase/functions/send-reminders/DEPLOY.md`.
+
 ## Feeds
 
 What reads AcadKit without signing in (the iPhone's Shortcuts, a calendar subscription) uses a

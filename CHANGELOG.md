@@ -9,6 +9,9 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
+  behind the `REMINDERS_VIA_JOBQ` secret (off by default, then shadow, then on). Migration 063 brings
+  back the two database functions it uses.
 - The ball is now the corner: a lime quarter-disc fixed in the bottom-right corner, on top of the
   tab bar, showing today's Day Order. Tapped, the same stickers burst out of it, and it turns into
   their close button.
@@ -21,6 +24,9 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- Classes marked on the day of a portal sync now count. A sync dates itself the day it runs, so
+  one made after midnight hid every class marked later that day; now only classes that started
+  before the sync are left to the portal.
 - The AcadKit Focus and AcadKit Shortcuts stopped with "an action could not be found": two of
   their actions were missing their full name. The Mac now rebuilds a Shortcut whenever the code
   that builds it changes.

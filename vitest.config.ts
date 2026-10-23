@@ -11,7 +11,7 @@ export default defineConfig({
       "src/**/*.test.tsx",
       "scripts/**/*.test.ts",
       "packages/*/src/**/*.test.ts",
-      // Only modules with no Deno or npm: imports (send-reminders/vapid.ts).
+      // Only modules with no Deno or npm: imports (send-reminders/vapid.ts, jobq.ts, dispatch.ts).
       "supabase/functions/**/*.test.ts",
     ],
     // Tests never talk to a real project. Without these, anything that

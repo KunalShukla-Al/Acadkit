@@ -1,3 +1,4 @@
+import { istParts } from "./dates.ts";
 import type { AttendanceRecord, AttendanceStatus, PortalSnapshot, Subject } from "./types.ts";
 
 export const MIN_ATTENDANCE = 75;
@@ -29,6 +30,22 @@ export function isCounted(status: AttendanceStatus): boolean {
 /** Did it count as attended? On Duty does, the same way the portal counts it. */
 export function isAttended(status: AttendanceStatus): boolean {
   return status === "present" || status === "od";
+}
+
+/**
+ * Whether a class falls after what a portal snapshot counted: a later day,
+ * or the snapshot's own day, later than the sync. A sync dates itself the
+ * day it runs, so one made before that day's classes (at 00:48, or at
+ * breakfast) would otherwise hide every class marked that day.
+ */
+export function afterSnapshot(
+  record: Pick<AttendanceRecord, "date" | "start_time">,
+  snapshot: Pick<PortalSnapshot, "as_of" | "synced_at">
+): boolean {
+  if (record.date !== snapshot.as_of) return record.date > snapshot.as_of;
+  if (!snapshot.synced_at) return false;
+  const synced = istParts(snapshot.synced_at);
+  return synced.date < record.date || (synced.date === record.date && record.start_time.slice(0, 5) > synced.time);
 }
 
 /** Where a subject's attended/total numbers came from. */
@@ -102,10 +119,9 @@ export function computeSubjectAttendance(
   let source: AttendanceSource = "manual";
 
   if (snapshot && snapshot.conducted > 0) {
-    // The portal is authoritative up to its own as-of date; classes marked
-    // by hand after that layer on so the number stays live between syncs.
-    // Dates are "YYYY-MM-DD", so a string compare is a date compare.
-    const since = counted.filter((r) => r.date > snapshot.as_of);
+    // The portal is authoritative up to its sync; classes marked by hand
+    // after that layer on so the number stays live between syncs.
+    const since = counted.filter((r) => afterSnapshot(r, snapshot));
     attended = snapshot.conducted - snapshot.absent + since.filter((r) => isAttended(r.status)).length;
     total = snapshot.conducted + since.length;
     source = "portal";

@@ -1,6 +1,8 @@
 // Supabase Edge Function: send-reminders
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { dispatchConfig, dispatchDeliver, needsDueCount, shouldDispatch } from "./dispatch.ts";
+import { jobsFor, notYetSent, parseMode } from "./jobq.ts";
 import { vapidFor, vapidKeys } from "./vapid.ts";
 
 // --- semester calendar ---
@@ -376,6 +378,102 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Who delivers: this function (off, shadow) or jobq (on). See jobq.ts.
+  const mode = parseMode(Deno.env.get("REMINDERS_VIA_JOBQ"));
+
+  // Start jobq's Deliver workflow now, rather than leave the work to
+  // GitHub's schedule, which starts late or not at all (dispatch.ts).
+  // Whatever happens here is logged and reported, never thrown: it doesn't
+  // change what was sent or queued, or the status of the answer.
+  const dispatchCfg = dispatchConfig((name) => Deno.env.get(name));
+  async function startDeliver(enqueued: number): Promise<{ dispatched: boolean; dispatch_error?: string }> {
+    try {
+      let due = 0;
+      if (dispatchCfg && needsDueCount(mode, enqueued)) {
+        const { data, error } = await sb.rpc("jobq_due");
+        if (error) {
+          console.error("send-reminders: jobq_due failed", error);
+          return { dispatched: false, dispatch_error: `jobq_due: ${error.message}` };
+        }
+        due = Number(data ?? 0);
+      }
+      if (!shouldDispatch(mode, enqueued, due)) return { dispatched: false };
+      if (!dispatchCfg) {
+        console.log("send-reminders: GITHUB_DISPATCH_TOKEN isn't set, so Deliver waits for its schedule");
+        return { dispatched: false };
+      }
+      const result = await dispatchDeliver(dispatchCfg);
+      if (!result.dispatched) {
+        console.error("send-reminders: starting Deliver failed:", result.error);
+        return { dispatched: false, dispatch_error: result.error };
+      }
+      return { dispatched: true };
+    } catch (err) {
+      const message = (err as { message?: string })?.message ?? String(err);
+      console.error("send-reminders: starting Deliver failed:", message);
+      return { dispatched: false, dispatch_error: message };
+    }
+  }
+
+  // jobq delivers. Queue what hasn't been sent and stop: jobq pushes, and
+  // writes sent_notifications only once a push is delivered.
+  if (mode === "on") {
+    let fresh = msgs;
+    if (msgs.length) {
+      // One query per 50 candidates; notYetSent picks the exact matches.
+      // Not one for all of them: the filter goes in the URL, which has a
+      // length limit, and PostgREST cuts a result at max-rows (1000)
+      // without an error, which would read as "not sent" and send again.
+      const done: Array<{ device_id: string; kind: string; ref: string }> = [];
+      for (let i = 0; i < msgs.length; i += 50) {
+        const batch = msgs.slice(i, i + 50);
+        const { data, error } = await sb
+          .from("sent_notifications")
+          .select("device_id,kind,ref")
+          .in("device_id", [...new Set(batch.map((m) => m.device_id))])
+          .in("ref", [...new Set(batch.map((m) => m.ref))]);
+        if (error) {
+          // Not knowing what went out, anything queued now could repeat a
+          // reminder already sent. Queue nothing; the next run tries again.
+          console.error("send-reminders: reading sent_notifications failed", error);
+          return new Response(
+            JSON.stringify({ candidates: msgs.length, sent: 0, enqueued: 0, mode, error: error.message }),
+            { status: 500, headers: { "content-type": "application/json" } }
+          );
+        }
+        done.push(...(data ?? []));
+      }
+      fresh = notYetSent(msgs, done);
+    }
+
+    let enqueued = 0;
+    if (fresh.length) {
+      const { data, error } = await sb.rpc("jobq_enqueue", { jobs: jobsFor("on", fresh) });
+      if (error) {
+        console.error("send-reminders: jobq_enqueue failed", error);
+        return new Response(
+          JSON.stringify({ candidates: msgs.length, sent: 0, enqueued: 0, mode, error: error.message }),
+          { status: 500, headers: { "content-type": "application/json" } }
+        );
+      }
+      enqueued = Number(data ?? 0);
+    }
+
+    const { dispatched, dispatch_error } = await startDeliver(enqueued);
+    return new Response(
+      JSON.stringify({
+        candidates: msgs.length,
+        sent: 0,
+        already_sent: msgs.length - fresh.length,
+        enqueued,
+        mode,
+        dispatched,
+        dispatch_error,
+      }),
+      { headers: { "content-type": "application/json" } }
+    );
+  }
+
   // Dedupe + send
   let sent = 0;
   const subsByDevice = new Map<string, typeof subs>();
@@ -419,8 +517,33 @@ Deno.serve(async (req) => {
   }
 
   const ms = Date.now() - started;
-  console.log(`send-reminders: ${sent} sent of ${msgs.length} in ${ms} ms`);
-  return new Response(JSON.stringify({ candidates: msgs.length, sent, ms }), {
-    headers: { "content-type": "application/json" },
-  });
+  if (mode === "off") {
+    console.log(`send-reminders: ${sent} sent of ${msgs.length} in ${ms} ms`);
+    return new Response(JSON.stringify({ candidates: msgs.length, sent, ms }), {
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  // Shadow: everything above already happened exactly as with jobq off.
+  // Also queue a do-nothing job per candidate, to compare with
+  // sent_notifications later. Whatever goes wrong here is logged and
+  // reported, never thrown.
+  let enqueued = 0;
+  let enqueueError: string | undefined;
+  try {
+    if (msgs.length) {
+      const { data, error } = await sb.rpc("jobq_enqueue", { jobs: jobsFor("shadow", msgs) });
+      if (error) throw error;
+      enqueued = Number(data ?? 0);
+    }
+  } catch (err) {
+    enqueueError = (err as { message?: string }).message ?? String(err);
+    console.error("send-reminders: shadow jobq_enqueue failed", err);
+  }
+
+  const { dispatched, dispatch_error } = await startDeliver(enqueued);
+  return new Response(
+    JSON.stringify({ candidates: msgs.length, sent, ms, enqueued, mode, enqueue_error: enqueueError, dispatched, dispatch_error }),
+    { headers: { "content-type": "application/json" } }
+  );
 });
