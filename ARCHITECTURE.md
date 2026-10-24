@@ -213,7 +213,9 @@ where it has one. Notifications and Siri keep the plain line.
 
 SRM runs a 5-day rotating Day Order. `packages/core/src/semester.ts` holds the semester window
 and the official holidays; `packages/core/src/calendar.ts` resolves a date. Declared holidays shift the rotation
-onto the remaining working days (`buildEffectiveMap`). After editing official holidays run
+onto the remaining working days (`buildEffectiveMap`). A declared entry with a `day_order` is a
+class day instead: a weekend or holiday that follows that Day Order without moving the rotation.
+`send-reminders` keeps its own copy of this logic. After editing official holidays run
 `node scripts/gen-edge-calendar.mjs` and redeploy `send-reminders`.
 
 ## Marks and grades

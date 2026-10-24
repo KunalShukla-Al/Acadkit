@@ -34,20 +34,33 @@ function generateDayOrderMap(start: string, end: string): Record<string, number>
   return map;
 }
 
-/** Declared holidays drop out and shift the remaining orders forward. */
+/** A row of settings.declared_holidays: a holiday, or with day_order a class day. */
+interface DeclaredDay {
+  date: string;
+  day_order?: number | null;
+}
+
+/**
+ * Declared holidays drop out and shift the remaining orders forward.
+ * Class days are added with their own order and shift nothing,
+ * matching buildEffectiveMap in packages/core/src/calendar.ts.
+ */
 function effectiveMap(
-  declared: string[],
+  declared: DeclaredDay[],
   start: string,
   end: string
 ): Record<string, number> {
   const canonical = generateDayOrderMap(start, end);
   if (!declared.length) return canonical;
-  const set = new Set(declared);
+  const set = new Set(declared.filter((h) => h.day_order == null).map((h) => h.date));
   const dates = Object.keys(canonical);
   const orders = dates.map((d) => canonical[d]);
   const working = dates.filter((d) => !set.has(d));
   const map: Record<string, number> = {};
   working.forEach((d, i) => (map[d] = orders[i]));
+  for (const h of declared) {
+    if (h.day_order != null && h.date >= start && h.date <= end) map[h.date] = h.day_order;
+  }
   return map;
 }
 
@@ -178,13 +191,13 @@ Deno.serve(async (req) => {
     const barById = new Map<string, number>(
       (subjects ?? []).map((s) => [s.id as string, s.medical_leave ? 65 : 75])
     );
-    const declared = ((settings?.declared_holidays ?? []) as Array<{ date: string }>).map((h) => h.date);
+    const declared = (settings?.declared_holidays ?? []) as DeclaredDay[];
     // Per device, exactly as the app reads it. The window has to be read
     // before anything asks whether today is inside it.
     const semStart = (settings?.sem_start as string | null) || DEFAULT_START;
     const semEnd = (settings?.sem_end as string | null) || DEFAULT_END;
     const inSemester = date >= semStart && date <= semEnd;
-    const dayOrder = inSemester && !OFFICIAL_HOLIDAYS[date] ? effectiveMap(declared, semStart, semEnd)[date] : undefined;
+    const dayOrder = inSemester ? effectiveMap(declared, semStart, semEnd)[date] : undefined;
     const todaySlots = (timetable ?? []).filter((s) => s.day_order === dayOrder);
 
     // 1) Class starting in the next ~15 min

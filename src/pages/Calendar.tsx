@@ -7,6 +7,7 @@ import {
   ChevronRight,
   PartyPopper,
   Plus,
+  School,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +22,7 @@ import { useListedDeadlines, useSettings, useSubjects, useUpdateSettings } from 
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { deadlineLabel } from "@/lib/deadlines";
-import { getDayInfo, semesterWindow } from "@acadkit/core/calendar";
+import { getDayInfo, isClassDay, semesterWindow } from "@acadkit/core/calendar";
 import { formatDateLong, parseISODate, toISODate, todayISO } from "@acadkit/core/dates";
 import { cn, haptic } from "@/lib/utils";
 import type { Deadline } from "@acadkit/core/types";
@@ -100,12 +101,14 @@ export default function Calendar() {
 
   const selectedInfo = selected ? getDayInfo(selected, declared, semWindow) : null;
   const selectedDeadlines = selected ? deadlinesByDate.get(selected) ?? [] : [];
-  const isDeclared = selected ? declared.some((h) => h.date === selected) : false;
-  const canDeclare =
-    selectedInfo?.kind === "working" &&
-    selected !== null &&
-    selected >= semWindow.start &&
-    selected <= semWindow.end;
+  const declaredHit = selected ? declared.find((h) => h.date === selected) : undefined;
+  const classDay = declaredHit && isClassDay(declaredHit) ? declaredHit : undefined;
+  const inSemester = selected !== null && selected >= semWindow.start && selected <= semWindow.end;
+  const canDeclare = selectedInfo?.kind === "working" && !classDay && inSemester;
+
+  // A weekend or official holiday the college turns into a class day.
+  const canAddClassDay =
+    inSemester && (selectedInfo?.kind === "weekend" || selectedInfo?.kind === "official-holiday");
 
   async function declareHoliday() {
     if (!selected) return;
@@ -123,12 +126,25 @@ export default function Calendar() {
     setSelected(null);
   }
 
-  function undeclareHoliday() {
+  function addClassDay(dayOrder: number) {
+    if (!selected) return;
+    const weekday = parseISODate(selected).toLocaleDateString("en-IN", { weekday: "long" });
+    updateSettings.mutate({
+      declared_holidays: [
+        ...declared,
+        { date: selected, name: `Working ${weekday}`, day_order: dayOrder },
+      ],
+    });
+    toast.success(say(VOICE.classDayAdded, tone, dayOrder));
+    setSelected(null);
+  }
+
+  function undeclare() {
     if (!selected) return;
     updateSettings.mutate({
       declared_holidays: declared.filter((h) => h.date !== selected),
     });
-    toast.success(say(VOICE.holidayRemoved, tone));
+    toast.success(say(classDay ? VOICE.classDayRemoved : VOICE.holidayRemoved, tone));
     setSelected(null);
   }
 
@@ -271,7 +287,7 @@ export default function Calendar() {
         title={selected ? formatDateLong(selected) : ""}
         description={
           selectedInfo?.kind === "working"
-            ? `Day Order ${selectedInfo.dayOrder}`
+            ? `Day Order ${selectedInfo.dayOrder}${classDay ? ` · ${classDay.name}` : ""}`
             : selectedInfo?.holidayName ??
               (selectedInfo?.kind === "weekend"
                 ? "Weekend"
@@ -323,9 +339,33 @@ export default function Calendar() {
                 <PartyPopper className="h-4 w-4" /> Declare holiday (shifts day orders)
               </Button>
             )}
-            {isDeclared && (
-              <Button variant="danger" className="w-full" onClick={undeclareHoliday}>
-                <Undo2 className="h-4 w-4" /> Remove declared holiday
+            {canAddClassDay && (
+              <div className="space-y-2.5 rounded-2xl border bg-surface-2/40 p-3">
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  <School className="h-4 w-4" /> Classes on this day? Pick its day order
+                </p>
+                <p className="text-xs text-muted">
+                  Its classes count towards attendance. The weekday rotation stays as it is.
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Button
+                      key={n}
+                      variant="secondary"
+                      size="sm"
+                      aria-label={`Day Order ${n}`}
+                      onClick={() => addClassDay(n)}
+                    >
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {declaredHit && (
+              <Button variant="danger" className="w-full" onClick={undeclare}>
+                <Undo2 className="h-4 w-4" />{" "}
+                {classDay ? "Remove class day" : "Remove declared holiday"}
               </Button>
             )}
           </div>

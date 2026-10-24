@@ -192,9 +192,15 @@ export interface Deadline {
   created_at?: string;
 }
 
+/**
+ * A date the user overrides in settings.declared_holidays. Without
+ * day_order it's a holiday. With day_order it's a class day off the
+ * rotation, such as a working Saturday that follows Day Order 3.
+ */
 export interface DeclaredHoliday {
   date: string; // "YYYY-MM-DD"
   name: string;
+  day_order?: number;
 }
 
 export interface SubjectArchiveRow {
