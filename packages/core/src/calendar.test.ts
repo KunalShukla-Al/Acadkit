@@ -44,10 +44,50 @@ describe("declared-holiday shifting", () => {
   });
 });
 
+describe("class days", () => {
+  const saturday = { date: "2026-07-25", name: "Working Saturday", day_order: 3 };
+
+  it("gives a weekend its declared day order", () => {
+    expect(getDayInfo("2026-07-25", [saturday])).toEqual({
+      date: "2026-07-25",
+      kind: "working",
+      dayOrder: 3,
+    });
+  });
+
+  it("leaves the rotation around it unchanged", () => {
+    expect(getDayInfo("2026-07-24", [saturday]).dayOrder).toBe(4);
+    expect(getDayInfo("2026-07-27", [saturday]).dayOrder).toBe(5);
+  });
+
+  it("sits in date order in the effective map", () => {
+    const dates = Object.keys(buildEffectiveMap([saturday]));
+    expect(dates.slice(3, 6)).toEqual(["2026-07-24", "2026-07-25", "2026-07-27"]);
+  });
+
+  it("doesn't count as a holiday when holidays shift the rotation", () => {
+    const declared = [{ date: "2026-07-22", name: "Strike" }, saturday];
+    expect(getDayInfo("2026-07-24", declared).dayOrder).toBe(3);
+    expect(getDayInfo("2026-07-25", declared).dayOrder).toBe(3);
+    expect(getDayInfo("2026-07-27", declared).dayOrder).toBe(4);
+  });
+
+  it("is ignored outside the semester", () => {
+    const late = { date: "2026-12-05", name: "Working Saturday", day_order: 1 };
+    expect(buildEffectiveMap([late])["2026-12-05"]).toBeUndefined();
+    expect(getDayInfo("2026-12-05", [late]).kind).toBe("post-semester");
+  });
+});
+
 describe("nextWorkingDate", () => {
   it("finds the next date with a day order", () => {
     const n = nextWorkingDate("2026-07-24"); // Fri DO4; next working is Mon 07-27 DO5
     expect(n?.date).toBe("2026-07-27");
     expect(n?.dayOrder).toBe(5);
+  });
+
+  it("finds a class Saturday", () => {
+    const n = nextWorkingDate("2026-07-24", [{ date: "2026-07-25", name: "", day_order: 3 }]);
+    expect(n).toEqual({ date: "2026-07-25", kind: "working", dayOrder: 3 });
   });
 });

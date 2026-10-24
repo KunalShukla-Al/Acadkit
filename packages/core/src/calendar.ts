@@ -53,10 +53,15 @@ function generateDayOrderMap(window: SemesterWindow): Record<string, number> {
   return map;
 }
 
+/** A declared class day: a date off the rotation that follows `day_order`. */
+export const isClassDay = (h: DeclaredHoliday): h is DeclaredHoliday & { day_order: number } =>
+  h.day_order != null;
+
 /**
  * Build the effective date → day-order map with declared holidays
  * auto-shifted: removing a working day pushes its day order (and all
- * subsequent ones) onto the next working days.
+ * subsequent ones) onto the next working days. Class days are added
+ * on top with their own day order and leave the rotation as it is.
  */
 export function buildEffectiveMap(
   declared: DeclaredHoliday[],
@@ -64,15 +69,20 @@ export function buildEffectiveMap(
 ): Record<string, number> {
   const canonical = generateDayOrderMap(window);
   if (declared.length === 0) return canonical;
-  const declaredSet = new Set(declared.map((h) => h.date));
+  const holidays = new Set(declared.filter((h) => !isClassDay(h)).map((h) => h.date));
   const dates = Object.keys(canonical);
   const orders = dates.map((d) => canonical[d]);
-  const workingDates = dates.filter((d) => !declaredSet.has(d));
+  const workingDates = dates.filter((d) => !holidays.has(d));
   const map: Record<string, number> = {};
   workingDates.forEach((date, i) => {
     map[date] = orders[i];
   });
-  return map;
+  for (const h of declared.filter(isClassDay)) {
+    if (h.date >= window.start && h.date <= window.end) map[h.date] = h.day_order;
+  }
+
+  // Callers walk the keys as a timeline, so keep them in date order.
+  return Object.fromEntries(Object.entries(map).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 export function getDayInfo(
@@ -82,6 +92,8 @@ export function getDayInfo(
 ): DayInfo {
   if (date < window.start) return { date, kind: "pre-semester", dayOrder: null };
   if (date > window.end) return { date, kind: "post-semester", dayOrder: null };
+  const classDay = declared.filter(isClassDay).find((h) => h.date === date);
+  if (classDay) return { date, kind: "working", dayOrder: classDay.day_order };
   if (isWeekend(date)) return { date, kind: "weekend", dayOrder: null };
   const official = OFFICIAL_HOLIDAYS[date];
   if (official)

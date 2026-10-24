@@ -539,6 +539,16 @@ export const VOICE = {
     plain: () => "Name this holiday",
     brutal: () => "what are we calling this one?",
   }),
+  classDayAdded: pick<[dayOrder: number]>({
+    plain: (n) => `Classes added - this day follows Day Order ${n}`,
+    quiet: (n) => `Class day added. Day Order ${n}.`,
+    brutal: (n) => `no day off after all. day order ${n} it is.`,
+  }),
+  classDayRemoved: pick({
+    plain: () => "Class day removed",
+    quiet: () => "Class day removed.",
+    brutal: () => "classes cancelled. back to bed.",
+  }),
 
   // ---- history ----
 

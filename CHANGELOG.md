@@ -7,6 +7,12 @@ existing data or installs, a minor version for new features, a patch version for
 
 ## [Unreleased]
 
+### Added
+
+- Class Saturdays. A weekend or official holiday that the college runs as a class day can be marked
+  on Calendar with the Day Order it follows. Today, attendance, forecasts, reminders and the
+  iPhone calendar treat it as a working day, and the weekday rotation stays as it is.
+
 ### Changed
 
 - Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
