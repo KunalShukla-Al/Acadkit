@@ -19,6 +19,8 @@ existing data or installs, a minor version for new features, a patch version for
   start while the window is out of focus; AcadKit runs every write in one such queue.
 - supabase-js 2.118.0 (was 2.117.2), with tighter types for generated database types and
   compressed uploads to storage. Nothing AcadKit calls behaves differently.
+- read-excel-file 9.3.12 (was 9.3.10). The file viewer no longer fails on a spreadsheet with a lot
+  of sheet settings before its first row.
 - Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
   behind the `REMINDERS_VIA_JOBQ` secret (off by default, then shadow, then on). Migration 063 brings
   back the two database functions it uses.
