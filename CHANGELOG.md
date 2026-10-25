@@ -17,6 +17,8 @@ existing data or installs, a minor version for new features, a patch version for
 
 - TanStack Query 5.104.5 (was 5.104.0), all three packages. Among the fixes, queued writes now
   start while the window is out of focus; AcadKit runs every write in one such queue.
+- supabase-js 2.118.0 (was 2.117.2), with tighter types for generated database types and
+  compressed uploads to storage. Nothing AcadKit calls behaves differently.
 - Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
   behind the `REMINDERS_VIA_JOBQ` secret (off by default, then shadow, then on). Migration 063 brings
   back the two database functions it uses.
