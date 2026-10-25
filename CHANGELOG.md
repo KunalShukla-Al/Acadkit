@@ -63,6 +63,8 @@ existing data or installs, a minor version for new features, a patch version for
   where a crafted pattern takes quadratic or exponential time.
 - zod 4.6.7 (was 4.6.5), which the React hooks lint rules use to check their options: fixes an
   advisory where validating an oversized collection exhausts memory. Lint only.
+- serialize-javascript 7.1.4 (was 7.0.5), which the service-worker build uses to minify: fixes a
+  low advisory where a function ending in `</script` was left unescaped. Build tooling only.
 
 ## [1.0.0] - 2026-10-21
 
