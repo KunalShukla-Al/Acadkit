@@ -40,6 +40,10 @@ existing data or installs, a minor version for new features, a patch version for
   (was 8.5.30), with better source maps for styles that contain `</style>`.
 - Vite 8.3.5 (was 8.3.4), with fixes to chunk import maps and the bundled dev server. Build tooling
   only.
+- pdf.js 6.4.299 (was 6.3.289), with fixes to fonts, patterns and form fields, and a guard against
+  a PDF that hangs the viewer while sizing a text field. Scanned past papers render exactly as before.
+- lucide-react 1.61.0 (was 1.59.0), which adds icons; of the ones AcadKit uses, only the brain on
+  the habits card changes, by a fraction of a pixel.
 
 ### Fixed
 
