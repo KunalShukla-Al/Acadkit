@@ -32,6 +32,8 @@ existing data or installs, a minor version for new features, a patch version for
   transport, which AcadKit doesn't use.
 - zustand 5.0.16 (was 5.0.15), with fixes to middleware AcadKit doesn't use, and postcss 8.5.31
   (was 8.5.30), with better source maps for styles that contain `</style>`.
+- Vite 8.3.5 (was 8.3.4), with fixes to chunk import maps and the bundled dev server. Build tooling
+  only.
 
 ### Fixed
 
