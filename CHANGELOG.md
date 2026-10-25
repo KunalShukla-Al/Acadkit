@@ -28,6 +28,12 @@ existing data or installs, a minor version for new features, a patch version for
 - Today opens with a greeting by the hour, "you're awake" to "still up?", under a struck-out
   "welcome back, scholar".
 - Study shows Projects and This week, with its new files, above the folders again, as before 1.0.0.
+- React and React DOM 19.3.1 (were 19.3.0). The patch changes only the Server Components
+  transport, which AcadKit doesn't use.
+- zustand 5.0.16 (was 5.0.15), with fixes to middleware AcadKit doesn't use, and postcss 8.5.31
+  (was 8.5.30), with better source maps for styles that contain `</style>`.
+- Vite 8.3.5 (was 8.3.4), with fixes to chunk import maps and the bundled dev server. Build tooling
+  only.
 
 ### Fixed
 
@@ -55,6 +61,10 @@ existing data or installs, a minor version for new features, a patch version for
   in the app people load used it.
 - brace-expansion 2.1.7 (was 2.1.0), under the same build's file matching: fixes two advisories
   where a crafted pattern takes quadratic or exponential time.
+- zod 4.6.7 (was 4.6.5), which the React hooks lint rules use to check their options: fixes an
+  advisory where validating an oversized collection exhausts memory. Lint only.
+- serialize-javascript 7.1.4 (was 7.0.5), which the service-worker build uses to minify: fixes a
+  low advisory where a function ending in `</script` was left unescaped. Build tooling only.
 
 ## [1.0.0] - 2026-10-21
 
