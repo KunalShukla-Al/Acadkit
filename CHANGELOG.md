@@ -61,6 +61,8 @@ existing data or installs, a minor version for new features, a patch version for
   in the app people load used it.
 - brace-expansion 2.1.7 (was 2.1.0), under the same build's file matching: fixes two advisories
   where a crafted pattern takes quadratic or exponential time.
+- zod 4.6.7 (was 4.6.5), which the React hooks lint rules use to check their options: fixes an
+  advisory where validating an oversized collection exhausts memory. Lint only.
 
 ## [1.0.0] - 2026-10-21
 
