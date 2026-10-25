@@ -15,6 +15,8 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- TanStack Query 5.104.5 (was 5.104.0), all three packages. Among the fixes, queued writes now
+  start while the window is out of focus; AcadKit runs every write in one such queue.
 - Reminders can go through [jobq](https://github.com/KunalShukla-Al/jobq) again, my Go job queue,
   behind the `REMINDERS_VIA_JOBQ` secret (off by default, then shadow, then on). Migration 063 brings
   back the two database functions it uses.
