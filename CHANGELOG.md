@@ -28,6 +28,8 @@ existing data or installs, a minor version for new features, a patch version for
 - Today opens with a greeting by the hour, "you're awake" to "still up?", under a struck-out
   "welcome back, scholar".
 - Study shows Projects and This week, with its new files, above the folders again, as before 1.0.0.
+- React and React DOM 19.3.1 (were 19.3.0). The patch changes only the Server Components
+  transport, which AcadKit doesn't use.
 
 ### Fixed
 
