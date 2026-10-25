@@ -30,6 +30,8 @@ existing data or installs, a minor version for new features, a patch version for
 - Study shows Projects and This week, with its new files, above the folders again, as before 1.0.0.
 - React and React DOM 19.3.1 (were 19.3.0). The patch changes only the Server Components
   transport, which AcadKit doesn't use.
+- zustand 5.0.16 (was 5.0.15), with fixes to middleware AcadKit doesn't use, and postcss 8.5.31
+  (was 8.5.30), with better source maps for styles that contain `</style>`.
 
 ### Fixed
 
