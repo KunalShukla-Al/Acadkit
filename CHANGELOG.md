@@ -51,6 +51,8 @@ existing data or installs, a minor version for new features, a patch version for
   AcadKit's lint doesn't turn on; the parser now also rejects `abstract` before `export`. Lint only.
 - globals 17.13.0 (was 17.12.0), whose browser list adds three Web Speech names
   (`SpeechRecognitionResult` and two others). AcadKit uses none of them. Lint only.
+- @types/node 26.6.5 (was 26.6.4): `util.styleText` now accepts hex colors mixed into an array of
+  formats. AcadKit's scripts don't call it. Types only.
 
 ### Fixed
 
