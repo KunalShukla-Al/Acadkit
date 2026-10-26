@@ -47,6 +47,8 @@ existing data or installs, a minor version for new features, a patch version for
 - ESLint 10.13.0 (was 10.12.0). Two of the recommended rules AcadKit runs now look further:
   `no-obj-calls` covers `globalThis`, and `no-unsafe-optional-chaining` checks `yield*`. Neither
   finds anything. Lint only.
+- typescript-eslint 8.72.1 (was 8.71.0). Most fixes are to rules that need type information, which
+  AcadKit's lint doesn't turn on; the parser now also rejects `abstract` before `export`. Lint only.
 
 ### Fixed
 
