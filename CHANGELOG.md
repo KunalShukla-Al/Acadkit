@@ -49,6 +49,8 @@ existing data or installs, a minor version for new features, a patch version for
   finds anything. Lint only.
 - typescript-eslint 8.72.1 (was 8.71.0). Most fixes are to rules that need type information, which
   AcadKit's lint doesn't turn on; the parser now also rejects `abstract` before `export`. Lint only.
+- globals 17.13.0 (was 17.12.0), whose browser list adds three Web Speech names
+  (`SpeechRecognitionResult` and two others). AcadKit uses none of them. Lint only.
 
 ### Fixed
 
