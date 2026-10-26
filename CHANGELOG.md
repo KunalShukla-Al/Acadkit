@@ -44,6 +44,9 @@ existing data or installs, a minor version for new features, a patch version for
   a PDF that hangs the viewer while sizing a text field. Scanned past papers render exactly as before.
 - lucide-react 1.61.0 (was 1.59.0), which adds icons; of the ones AcadKit uses, only the brain on
   the habits card changes, by a fraction of a pixel.
+- ESLint 10.13.0 (was 10.12.0). Two of the recommended rules AcadKit runs now look further:
+  `no-obj-calls` covers `globalThis`, and `no-unsafe-optional-chaining` checks `yield*`. Neither
+  finds anything. Lint only.
 
 ### Fixed
 
