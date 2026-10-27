@@ -44,6 +44,17 @@ existing data or installs, a minor version for new features, a patch version for
   a PDF that hangs the viewer while sizing a text field. Scanned past papers render exactly as before.
 - lucide-react 1.61.0 (was 1.59.0), which adds icons; of the ones AcadKit uses, only the brain on
   the habits card changes, by a fraction of a pixel.
+- ESLint 10.13.0 (was 10.12.0). Two of the recommended rules AcadKit runs now look further:
+  `no-obj-calls` covers `globalThis`, and `no-unsafe-optional-chaining` checks `yield*`. Neither
+  finds anything. Lint only.
+- typescript-eslint 8.72.1 (was 8.71.0). Most fixes are to rules that need type information, which
+  AcadKit's lint doesn't turn on; the parser now also rejects `abstract` before `export`. Lint only.
+- globals 17.13.0 (was 17.12.0), whose browser list adds three Web Speech names
+  (`SpeechRecognitionResult` and two others). AcadKit uses none of them. Lint only.
+- @types/node 26.6.5 (was 26.6.4): `util.styleText` now accepts hex colors mixed into an array of
+  formats. AcadKit's scripts don't call it. Types only.
+- Babel 8.0.9 (was 8.0.6), which runs the React Compiler over AcadKit's components during the
+  build: parser and helper fixes. The built app is byte-for-byte the same. Build tooling only.
 
 ### Fixed
 
