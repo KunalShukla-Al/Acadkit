@@ -86,6 +86,9 @@ existing data or installs, a minor version for new features, a patch version for
   advisory where validating an oversized collection exhausts memory. Lint only.
 - serialize-javascript 7.1.4 (was 7.0.5), which the service-worker build uses to minify: fixes a
   low advisory where a function ending in `</script` was left unescaped. Build tooling only.
+- happy-dom 21.0.4 (was 20.14.5), the DOM the unit tests run against: fixes a high advisory where
+  an unsanitized import alias in parsed markup could run code on the host. Test tooling only; the
+  app people load never parses untrusted HTML through it.
 
 ## [1.0.0] - 2026-10-21
 
