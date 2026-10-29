@@ -55,6 +55,8 @@ existing data or installs, a minor version for new features, a patch version for
   formats. AcadKit's scripts don't call it. Types only.
 - Babel 8.0.9 (was 8.0.6), which runs the React Compiler over AcadKit's components during the
   build: parser and helper fixes. The built app is byte-for-byte the same. Build tooling only.
+- @playwright/test 1.64.1 (was 1.63.0), the end-to-end test runner, with refreshed browser builds
+  and runner fixes. The suite passes unchanged. Test tooling only; the app ships none of it.
 
 ### Fixed
 
