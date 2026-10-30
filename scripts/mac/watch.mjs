@@ -11,7 +11,7 @@
  * runs it at once.
  */
 import { spawn } from "node:child_process";
-import { readFileSync, watch } from "node:fs";
+import { readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +23,11 @@ import { heard, listen } from "./link.mjs";
 
 export const QUIET_MS = 10_000;
 export const EVERY_MS = 180_000;
+
+// A tick takes seconds; a big render-and-upload batch, a few minutes. Past this it has hung
+// (a stuck network fetch inside the sync has no timeout of its own), so it is stopped and the
+// scheduler moves on, instead of every later tick wedging behind it for hours.
+export const TICK_TIMEOUT_MS = 1_200_000;
 
 /**
  * The folders to watch, from a .env.local's text: STUDY_DIR and
@@ -46,12 +51,38 @@ export function ignored(rel) {
 }
 
 /**
+ * Resolves when `p` settles, or after `ms` if it hasn't — then `onTimeout` runs.
+ * Lets a caller give up on a run that never finishes instead of hanging on it.
+ */
+export function raceTimeout(p, ms, onTimeout) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      onTimeout?.();
+      resolve();
+    }, ms);
+    p.then(
+      () => {},
+      () => {},
+    ).finally(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
+/**
  * Runs `run` once nothing has changed for `quietMs`, every `everyMs`, and at
  * once for a request from the phone. One run at a time: a change or a
  * request during a run brings one more after it, and a 3-minute tick that
- * finds a run going is skipped.
+ * finds a run going is skipped. A run that overruns `timeoutMs` is given up on
+ * (`onTimeout` stops it), so one hung tick can't wedge every tick after it.
  */
-export function scheduler({ quietMs = QUIET_MS, everyMs = EVERY_MS, run }) {
+export function scheduler({ quietMs = QUIET_MS, everyMs = EVERY_MS, timeoutMs = 0, onTimeout, run }) {
   let quiet = null;
   let running = false;
   /** The run owed after this one: null for none, true after a change, false for a request. */
@@ -63,7 +94,8 @@ export function scheduler({ quietMs = QUIET_MS, everyMs = EVERY_MS, run }) {
     }
     running = true;
     try {
-      await run({ afterChange });
+      const r = run({ afterChange });
+      await (timeoutMs > 0 ? raceTimeout(r, timeoutMs, onTimeout) : r);
     } finally {
       running = false;
     }
@@ -93,10 +125,47 @@ export function scheduler({ quietMs = QUIET_MS, everyMs = EVERY_MS, run }) {
 
 const log = (line) => console.log(`${new Date().toLocaleString("sv-SE").slice(0, 19)} ${line}`);
 
+/**
+ * Stops a tick that overran, and whatever it spawned: SIGTERM the process group,
+ * then SIGKILL it a grace later if it's still there. The tick is its own group
+ * (detached), so this reaches the npm/node sync and the caffeinate it left running.
+ */
+function killTree(child, graceMs = 10_000) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  log(`a tick ran past ${Math.round(TICK_TIMEOUT_MS / 60_000)} min; stopping it`);
+  const signal = (sig) => {
+    try {
+      process.kill(-child.pid, sig);
+    } catch {
+      try {
+        child.kill(sig);
+      } catch {
+        /* already gone */
+      }
+    }
+  };
+  signal("SIGTERM");
+  setTimeout(() => {
+    if (child.exitCode === null && child.signalCode === null) signal("SIGKILL");
+  }, graceMs).unref();
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
   const envFile = path.join(repo, ".env.local");
-  const tick = path.join(homedir(), "Library", "Application Support", "AcadKit", "auto-sync.sh");
+  const state = path.join(homedir(), "Library", "Application Support", "AcadKit");
+  const tick = path.join(state, "auto-sync.sh");
+
+  // A timestamp written each time a tick finishes, so a stalled watcher is visible from
+  // outside (the menu bar, a check) instead of going quiet for hours as it did on 28 Oct.
+  const heartbeatFile = path.join(state, "watch-heartbeat");
+  const beat = () => {
+    try {
+      writeFileSync(heartbeatFile, new Date().toISOString());
+    } catch {
+      /* best effort */
+    }
+  };
 
   // The phone's requests, heard over Realtime as they are made, and the Mac's state for it (link.mjs).
   let env = {};
@@ -107,6 +176,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   let link = null;
 
+  let activeChild = null;
   const runTick = ({ afterChange }) =>
     new Promise((resolve) => {
       link?.say("syncing");
@@ -114,12 +184,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         cwd: repo,
         env: { ...process.env, ACADKIT_REPO: repo, ...(afterChange ? { AUTO_SYNC_QUIET: "1" } : {}) },
         stdio: "inherit",
+        detached: true, // its own process group, so killTree can stop the whole tick at once
       });
-      const done = () => (link?.say("awake"), resolve());
+      activeChild = child;
+      const done = () => {
+        if (activeChild === child) activeChild = null;
+        link?.say("awake");
+        beat();
+        resolve();
+      };
       child.on("error", (err) => (log(`couldn't run the tick: ${err.message}`), done()));
       child.on("close", done);
     });
-  const sync = scheduler({ run: runTick });
+  const sync = scheduler({ run: runTick, timeoutMs: TICK_TIMEOUT_MS, onTimeout: () => killTree(activeChild) });
 
   // Re-read each tick, so a semester switch's new folder is watched from then on.
   let folders = [];

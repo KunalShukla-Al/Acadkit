@@ -27,6 +27,9 @@ if ! mkdir "$LOCK" 2>/dev/null; then
     rm -rf "$LOCK"; mkdir "$LOCK" || exit 0
 fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+# If the watcher kills a tick that overran, exit through the EXIT trap so the lock is freed now,
+# not left for the 3-hour staleness sweep.
+trap 'exit 143' TERM; trap 'exit 130' INT
 
 # The Mac idles to sleep after a minute (pmset sleep 1), which froze long syncs half-way. Hold an
 # idle-sleep assertion for as long as this tick runs: caffeinate exits when this script does.

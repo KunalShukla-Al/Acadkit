@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ignored, scheduler, watchedFolders } from "./watch.mjs";
+import { ignored, raceTimeout, scheduler, watchedFolders } from "./watch.mjs";
 
 describe("watchedFolders", () => {
   it("watches STUDY_DIR, and STUDY_NEXT_DIR when it's another folder", () => {
@@ -101,5 +101,58 @@ describe("scheduler", () => {
     await vi.advanceTimersByTimeAsync(190_000);
     expect(calls).toEqual([false]);
     s.stop();
+  });
+
+  it("gives up on a run that overruns the timeout, then recovers", async () => {
+    const onTimeout = vi.fn();
+    const run = vi.fn(() => new Promise<void>(() => {})); // never settles
+    const s = scheduler({ run, timeoutMs: 60_000, onTimeout });
+    void s.tick();
+    await vi.advanceTimersByTimeAsync(59_000);
+    expect(onTimeout).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(onTimeout).toHaveBeenCalledTimes(1);
+    // The first run never settled, yet the scheduler is free: a later tick runs.
+    void s.tick();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run).toHaveBeenCalledTimes(2);
+    s.stop();
+  });
+
+  it("leaves a run that finishes before the timeout alone", async () => {
+    const onTimeout = vi.fn();
+    const { run, calls } = runs(5_000);
+    const s = scheduler({ run, timeoutMs: 60_000, onTimeout });
+    void s.tick();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(calls).toEqual([false]);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(onTimeout).not.toHaveBeenCalled();
+    s.stop();
+  });
+});
+
+describe("raceTimeout", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("resolves early and fires onTimeout when the promise hangs", async () => {
+    const onTimeout = vi.fn();
+    let done = false;
+    void raceTimeout(new Promise<void>(() => {}), 1_000, onTimeout).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(999);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(done).toBe(true);
+    expect(onTimeout).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves when the promise settles first, without onTimeout", async () => {
+    const onTimeout = vi.fn();
+    let done = false;
+    void raceTimeout(Promise.resolve(), 1_000, onTimeout).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(done).toBe(true);
+    expect(onTimeout).not.toHaveBeenCalled();
   });
 });
