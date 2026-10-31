@@ -28,6 +28,14 @@ launchctl bootout "gui/$(id -u)/com.acadkit.nightshift" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$NIGHT"
 echo "Night shift: from 23:00, on the charger with the lid open."
 
+# The watchdog: every 10 minutes, restart the watcher if its heartbeat goes stale (scripts/mac/watchdog.mjs).
+WATCHDOG="$HOME/Library/LaunchAgents/com.acadkit.watchdog.plist"
+sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$REPO|g" "$REPO/scripts/mac/com.acadkit.watchdog.plist" > "$WATCHDOG"
+plutil -lint "$WATCHDOG" >/dev/null
+launchctl bootout "gui/$(id -u)/com.acadkit.watchdog" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$WATCHDOG"
+echo "Watchdog: checks the sync every 10 minutes and restarts it if it goes silent."
+
 # Continue from the Mac: "Send to AcadKit phone" in the Finder's Quick Actions (scripts/mac/send-to-phone.mjs).
 SERVICE="$HOME/Library/Services/Send to AcadKit phone.workflow"
 mkdir -p "$HOME/Library/Services"

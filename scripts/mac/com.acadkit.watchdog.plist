@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Installed by npm run mac:install, which fills in __HOME__ and __REPO__. Restarts the sync
+     watcher if it goes silent (scripts/mac/watchdog.mjs). Its own process, so a wedged watcher
+     cannot take it down with it. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.acadkit.watchdog</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>node "__REPO__/scripts/mac/watchdog.mjs"; exit $?</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict><key>PATH</key><string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+    <!-- At login and every 10 minutes. A quick heartbeat check, not a running process. -->
+    <key>RunAtLoad</key><true/>
+    <key>StartInterval</key><integer>600</integer>
+    <key>StandardOutPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>StandardErrorPath</key><string>__HOME__/Library/Logs/AcadKit/study-sync.log</string>
+    <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>
