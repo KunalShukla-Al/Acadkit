@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Link, Navigate, useLocation, useOutlet } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Corner } from "@/components/layout/corner";
+import { CalendarButton } from "@/components/layout/calendar-button";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { OfflineBanner } from "@/components/layout/offline-banner";
@@ -68,9 +69,12 @@ export function AppShell() {
               </span>
               <span className="text-[17px] font-extrabold tracking-tight">AcadKit</span>
             </Link>
-            <Suspense fallback={null}>
-              <RunupChip />
-            </Suspense>
+            <div className="flex items-center gap-2">
+              <CalendarButton />
+              <Suspense fallback={null}>
+                <RunupChip />
+              </Suspense>
+            </div>
           </div>
         </header>
 
