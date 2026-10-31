@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Sparkles } from "lucide-react";
 import { NAV_ITEMS, type NavItem } from "@/components/layout/nav-items";
 import { DayOrderChip } from "@/components/layout/day-order-chip";
+import { CalendarButton } from "@/components/layout/calendar-button";
 import { screenOf } from "@/lib/screens";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ export function Sidebar() {
         <Suspense fallback={null}>
           <RunupChip wide />
         </Suspense>
+        <CalendarButton wide />
       </div>
 
       <nav className="mt-6 flex flex-1 flex-col gap-1" aria-label="Primary">
