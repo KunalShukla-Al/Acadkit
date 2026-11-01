@@ -15,6 +15,7 @@ import { readCourseTitles, subjectIndex, tagFile } from "./lib/tags.mjs";
 import { checkNotices, checkProjects } from "./lib/weekly.mjs";
 import { checkRunup, splitRunup } from "./lib/runup.mjs";
 import { checkCards } from "./lib/cards.mjs";
+import { buildMoveMap, follower } from "./lib/moved.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP, bucketUse, fitUploads } from "./lib/storage.mjs";
 import { findGs, shrinkPdfs } from "./lib/shrink.mjs";
 import { derivedCode, derivedFingerprint, lastDerived, recordDerived } from "./lib/derived.mjs";
@@ -182,6 +183,20 @@ const remoteSize = new Map();
   }
 }
 
+// The last sync's manifest, to follow a file that was moved or renamed since:
+// its path is gone but its contents are up under the same blob key.
+let prevFiles = [];
+{
+  const { data, error } = await bucket.download(manifestKey);
+  if (!error && data) {
+    try {
+      prevFiles = JSON.parse(await data.text()).files ?? [];
+    } catch {
+      // A missing or unreadable manifest just means there's no move to follow.
+    }
+  }
+}
+
 // Files deleted in the app (migration 032) go to the Trash first, and files
 // uploaded from it (033) are saved in, so the manifest below reflects both.
 for (const [apply, what] of [[applyDeletions, "deletions"], [applyUploads, "uploads"]]) {
@@ -308,7 +323,7 @@ for (const s of skippedLarge) console.log(`  skipped, over 50 MB: ${s}`);
 for (const f of storage?.refused ?? []) console.log(`  not uploaded, the bucket would pass ${mb(UPLOAD_CAP)}: ${f.path} (${mb(f.uploadSize ?? f.size)})`);
 
 /** Exam prep: { tests: [{ subject_code, label, due_date, title, portion, pattern, papers, topics: [{ topic, unit, seen, of }], files: [{ path, why }] }] }. */
-async function readPrep(root, known) {
+async function readPrep(root, known, moved) {
   let raw;
   try {
     raw = await readFile(path.join(root, "_src", "acadkit_prep.json"), "utf8");
@@ -316,6 +331,7 @@ async function readPrep(root, known) {
     return null;
   }
   const data = JSON.parse(raw);
+  const { resolve, follows } = follower(moved);
   const warnings = [];
   const tests = [];
   for (const t of data.tests ?? []) {
@@ -323,14 +339,15 @@ async function readPrep(root, known) {
       warnings.push(`prep ${t.subject_code ?? "?"} ${t.label ?? ""}: needs subject_code and a due_date with a time zone`);
       continue;
     }
-    const files = (t.files ?? []).filter((f) => {
-      const ok = known.has(f.path);
-      if (!ok) warnings.push(`prep ${t.subject_code} ${t.label ?? ""}: no such file ${f.path}`);
-      return ok;
-    });
+    const files = [];
+    for (const f of t.files ?? []) {
+      const at = known.has(f.path) ? f.path : resolve(f.path);
+      if (at) files.push({ ...f, path: at });
+      else warnings.push(`prep ${t.subject_code} ${t.label ?? ""}: no such file ${f.path}`);
+    }
     tests.push({ ...t, files, topics: (t.topics ?? []).filter((x) => x.topic) });
   }
-  return { body: { version: 1, generatedAt: Date.now(), tests }, warnings };
+  return { body: { version: 1, generatedAt: Date.now(), tests }, warnings, follows };
 }
 
 /** A JSON file in _src, or null when it isn't there. */
@@ -345,12 +362,15 @@ async function readSrc(root, name) {
 
 const found = await readSuggestions(dir);
 const known = new Set(files.map((f) => f.path));
-const prep = await readPrep(dir, known);
+// A file moved or renamed since the last sync keeps the same contents, so a
+// link to its old path follows it to the new one instead of breaking.
+const moved = buildMoveMap(prevFiles, files);
+const prep = await readPrep(dir, known, moved);
 if (prep) console.log(`Exam prep: ${prep.body.tests.length} tests${prep.warnings.length ? `, ${prep.warnings.length} warning(s)` : ""}`);
 for (const w of prep?.warnings ?? []) console.log(`  ${w}`);
 // The Study page's "This week" and "Projects" cards (scripts/lib/weekly.mjs).
 const rawNotices = await readSrc(dir, "acadkit_notices.json");
-const notices = rawNotices && checkNotices(rawNotices, known);
+const notices = rawNotices && checkNotices(rawNotices, known, moved);
 const rawProjects = await readSrc(dir, "acadkit_projects.json");
 const projects = rawProjects && checkProjects(rawProjects);
 if (notices) console.log(`Notices: ${notices.body.notices.length}${notices.warnings.length ? `, ${notices.warnings.length} warning(s)` : ""}`);
@@ -358,7 +378,7 @@ if (projects) console.log(`Projects: ${projects.body.projects.length}, to-dos: $
 for (const w of [...(notices?.warnings ?? []), ...(projects?.warnings ?? [])]) console.log(`  ${w}`);
 // The Run-up page's day-by-day plan (scripts/lib/runup.mjs).
 const rawRunup = await readSrc(dir, "acadkit_runup.json");
-const runup = rawRunup && checkRunup(rawRunup, known, path.basename(dir));
+const runup = rawRunup && checkRunup(rawRunup, known, path.basename(dir), moved);
 if (runup)
   console.log(
     runup.body
@@ -371,6 +391,12 @@ const rawCards = await readSrc(dir, "acadkit_cards.json");
 const cards = rawCards && checkCards(rawCards);
 if (cards) console.log(cards.body ? `Flashcards: ${cards.body.cards.length}${cards.warnings.length ? `, ${cards.warnings.length} warning(s)` : ""}` : "Flashcards: not sent");
 for (const w of cards?.warnings ?? []) console.log(`  ${w}`);
+// Links that followed a file moved or renamed since the last sync (lib/moved.mjs).
+const followed = new Map([...(prep?.follows ?? []), ...(notices?.follows ?? []), ...(runup?.follows ?? [])]);
+if (followed.size) {
+  console.log(`Followed ${followed.size} moved file(s) by content:`);
+  for (const [from, to] of followed) console.log(`  ${from} → ${to}`);
+}
 if (found.rows.length || found.bad.length)
   console.log(`Suggestions from the scan: ${found.rows.length} valid${found.bad.length ? `, ${found.bad.length} skipped` : ""}`);
 for (const b of found.bad) console.log(`  skipped suggestion ${b}`);

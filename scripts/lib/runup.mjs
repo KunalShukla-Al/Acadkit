@@ -23,6 +23,7 @@
  * working once that folder is the study folder (scripts/lib/semester.mjs).
  */
 import { contentPart } from "./parts.mjs";
+import { follower } from "./moved.mjs";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const ID = /^[A-Za-z0-9][A-Za-z0-9#:._-]{0,79}$/;
@@ -50,10 +51,10 @@ function target(t, what, warnings) {
   return { score, max, note: text(t.note) || null };
 }
 
-/** `known` as a lookup that also takes a path through the folder's own name; null when the sync doesn't have it. */
-function linker(known, root) {
+/** `known` as a lookup that also takes a path through the folder's own name, then follows a moved file by content; null when the sync doesn't have it. */
+function linker(known, root, resolve) {
   const own = root ? `${root}/` : null;
-  return (p) => (known.has(p) ? p : own && p.startsWith(own) && known.has(p.slice(own.length)) ? p.slice(own.length) : null);
+  return (p) => (known.has(p) ? p : own && p.startsWith(own) && known.has(p.slice(own.length)) ? p.slice(own.length) : resolve(p));
 }
 
 function files(list, find, what, warnings) {
@@ -107,8 +108,9 @@ function analysis(a) {
 }
 
 /** `known`: the manifest's paths; `root`: the study folder's name. */
-export function checkRunup(data, known, root = null) {
-  const find = linker(known, root);
+export function checkRunup(data, known, root = null, moved) {
+  const { resolve, follows } = follower(moved);
+  const find = linker(known, root, resolve);
   const warnings = [];
   if (data?.version !== 1) warnings.push(`version should be 1, read as 1`);
   if (!isDay(data?.start) || !isDay(data?.end) || data.start > data.end) {
@@ -202,6 +204,7 @@ export function checkRunup(data, known, root = null) {
   return {
     body: { version: 1, generatedAt: Date.now(), title: text(data.title) || null, start, end, events, days },
     warnings,
+    follows,
   };
 }
 

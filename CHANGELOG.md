@@ -60,6 +60,11 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- A link in Run-up, Exam prep or This week now follows a file that was moved or renamed in the
+  study folder instead of dropping. Each file is stored by its contents, so the sync matches the
+  moved file to its old path by content and re-points the link; renaming a subject folder no
+  longer breaks every link into it. It reports what it followed, and a link whose file is truly
+  gone still falls away with the same warning as before.
 - Classes marked on the day of a portal sync now count. A sync dates itself the day it runs, so
   one made after midnight hid every class marked later that day; now only classes that started
   before the sync are left to the portal.

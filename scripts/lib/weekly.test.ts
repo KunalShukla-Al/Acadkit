@@ -45,6 +45,18 @@ describe("checkNotices", () => {
     expect(warnings).toEqual(["notice 1: no such file gone.pdf, shown without it"]);
   });
 
+  it("follows a notice's file to where it was moved, without a warning", () => {
+    const moved = new Map([["old/FT3_portion.pdf", "Fundamentals_of_Data_Science/FT3_portion.pdf"]]);
+    const { body, warnings, follows } = checkNotices(
+      { notices: [{ text: "FT-III portion", until: "2026-10-15", file: "old/FT3_portion.pdf" }] },
+      known,
+      moved
+    );
+    expect(warnings).toEqual([]);
+    expect(body.notices[0].file).toBe("Fundamentals_of_Data_Science/FT3_portion.pdf");
+    expect(follows).toEqual([["old/FT3_portion.pdf", "Fundamentals_of_Data_Science/FT3_portion.pdf"]]);
+  });
+
   it("is empty for a missing list", () => {
     expect(checkNotices({}, known).body.notices).toEqual([]);
   });

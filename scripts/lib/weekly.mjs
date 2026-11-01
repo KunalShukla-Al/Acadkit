@@ -12,6 +12,8 @@
  * so one bad entry never hides the rest.
  */
 
+import { follower } from "./moved.mjs";
+
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const isDay = (s) => typeof s === "string" && DAY.test(s) && !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime());
 const text = (s) => (typeof s === "string" ? s.trim() : "");
@@ -21,7 +23,8 @@ const https = (s) => (typeof s === "string" && /^https:\/\/\S+$/.test(s.trim()) 
  * `{ notices: [{ subject_code, text, source, posted, until, file }] }`.
  * `text` and `until` are required; `file` must be a path the sync knows.
  */
-export function checkNotices(data, known) {
+export function checkNotices(data, known, moved) {
+  const { resolve, follows } = follower(moved);
   const warnings = [];
   const notices = [];
   for (const [i, n] of (data?.notices ?? []).entries()) {
@@ -36,8 +39,10 @@ export function checkNotices(data, known) {
     }
     let file = text(n.file) || null;
     if (file && !known.has(file)) {
-      warnings.push(`${what}: no such file ${file}, shown without it`);
-      file = null;
+      file = resolve(file);
+      if (!file) {
+        warnings.push(`${what}: no such file ${text(n.file)}, shown without it`);
+      }
     }
     notices.push({
       subject_code: text(n.subject_code) || null,
@@ -48,7 +53,7 @@ export function checkNotices(data, known) {
       file,
     });
   }
-  return { body: { version: 1, generatedAt: Date.now(), notices }, warnings };
+  return { body: { version: 1, generatedAt: Date.now(), notices }, warnings, follows };
 }
 
 const STATES = new Set(["active", "waiting", "paused", "done"]);
