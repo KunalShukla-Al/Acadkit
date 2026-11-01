@@ -80,6 +80,18 @@ describe("checkRunup", () => {
     expect(warnings).toContain("task a: no such file SRM_Sem4/x.pdf");
   });
 
+  it("follows a moved file by content and records the follow", () => {
+    const plan = base({
+      events: [],
+      days: [{ date: "2026-10-13", tasks: [{ id: "a", text: "Threads", files: ["OS/threads.pdf"] }] }],
+    });
+    const moved = new Map([["OS/threads.pdf", "Operating_Systems/02_Notes/Unit_2/threads.pdf"]]);
+    const { body, warnings, follows } = checkRunup(plan, known, null, moved);
+    expect(body!.days[0].tasks[0].files).toEqual(["Operating_Systems/02_Notes/Unit_2/threads.pdf"]);
+    expect(warnings).toEqual([]);
+    expect(follows).toEqual([["OS/threads.pdf", "Operating_Systems/02_Notes/Unit_2/threads.pdf"]]);
+  });
+
   it("refuses a plan without a valid window", () => {
     expect(checkRunup(base({ start: "2026-12-01" }), known).body).toBeNull();
     expect(checkRunup(base({ end: "2026-13-01" }), known).body).toBeNull();
