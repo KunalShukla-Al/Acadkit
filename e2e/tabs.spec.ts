@@ -70,7 +70,7 @@ test("Study is the study folder: files, search, and the viewer closes back onto 
 
 test("the Run-up is one tap away from any page, with the day's count", async ({ signedIn: page }) => {
   await page.goto("/marks");
-  const runup = page.getByRole("link", { name: /^Run-up: \d+ of \d+ targets done$/ });
+  const runup = page.getByRole("link", { name: /^Run-up \d+\/\d+ targets done$/ });
   await expect(runup).toBeVisible();
   await runup.click();
   await expect(page).toHaveURL("/runup");
