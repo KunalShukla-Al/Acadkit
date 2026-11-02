@@ -24,7 +24,7 @@ export function RunupChip({ wide = false }: { wide?: boolean }) {
     <Link
       to="/runup"
       aria-current={active ? "page" : undefined}
-      aria-label={total ? `Run-up: ${ticked} of ${total} targets done` : "Run-up"}
+      aria-label={total ? `Run-up ${ticked}/${total} targets done` : "Run-up"}
       className={cn(
         "flex items-center gap-2 rounded-2xl text-sm font-bold transition-colors",
         wide ? "w-full px-3.5 py-2.5" : "px-3 py-2",
