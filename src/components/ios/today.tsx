@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToday } from "@/hooks/useToday";
 import { useAttendance, usePortalSnapshots, useSubjects } from "@/hooks/useData";
-import { computeOverallAttendance, attendanceColor } from "@acadkit/core/attendance";
+import { computeOverallAttendance } from "@acadkit/core/attendance";
 import { formatDateLong, formatTimeRange, timeToMinutes } from "@acadkit/core/dates";
 import { Chevron } from "./bits";
+import { attnTone } from "./util";
 import "./ios.css";
 
 type SlotPhase = "now" | "next" | "upcoming" | "past";
@@ -105,7 +106,7 @@ export function TodayApple() {
           <div className="ios-group">
             {atRisk.map((s) => {
               const pct = Math.round(s.percentage ?? 0);
-              const color = attendanceColor(s.percentage, s.min);
+              const color = `hsl(var(--${attnTone(s.percentage, s.min)}))`;
               return (
                 <Link className="ios-row has-lead" to="/attendance" key={s.subject.id}>
                   <span className="ios-dot" style={{ background: color }} />

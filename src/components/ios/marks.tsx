@@ -58,8 +58,8 @@ export function MarksApple() {
                   <div className="ios-trail">
                     {o.hasAnyMarks ? (
                       <span
-                        className="ios-grade"
-                        style={{ color, background: `${color}22` }}
+                        className="ios-grade grade-badge"
+                        style={{ background: `${color}22`, "--grade": color } as React.CSSProperties}
                       >
                         {o.grade}
                       </span>

@@ -12,10 +12,11 @@ import {
   useSubjects,
 } from "@/hooks/useData";
 import { fetchStudyManifest } from "@/api/studyFiles";
-import { computeSubjectAttendance, snapshotsByCode, attendanceColor } from "@acadkit/core/attendance";
+import { computeSubjectAttendance, snapshotsByCode } from "@acadkit/core/attendance";
 import { formatDate } from "@acadkit/core/dates";
 import type { FileKind, StudyFile } from "@/lib/studyFiles";
 import { Chevron } from "./bits";
+import { attnTone } from "./util";
 import "./ios.css";
 
 const norm = (code: string) => code.replace(/\s/g, "").toUpperCase();
@@ -110,7 +111,7 @@ export function SubjectApple() {
                   </div>
                 </div>
                 <div className="ios-trail">
-                  <span className="ios-badge" style={{ color: attendanceColor(att.percentage, att.min) }}>
+                  <span className="ios-badge" style={{ color: `hsl(var(--${attnTone(att.percentage, att.min)}))` }}>
                     {Math.round(att.percentage)}%
                   </span>
                   <Chevron />

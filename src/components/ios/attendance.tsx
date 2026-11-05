@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAttendance, usePortalSnapshots, useSubjects } from "@/hooks/useData";
-import { computeOverallAttendance, attendanceColor } from "@acadkit/core/attendance";
+import { computeOverallAttendance } from "@acadkit/core/attendance";
 import { Chevron } from "./bits";
+import { attnTone } from "./util";
 import "./ios.css";
 
 const R = 15;
@@ -27,7 +28,7 @@ export function AttendanceApple() {
   );
 
   const pct = overall.percentage;
-  const ringColor = attendanceColor(pct, 75);
+  const ringColor = `hsl(var(--${attnTone(pct, 75)}))`;
   const offset = pct === null ? CIRC : CIRC * (1 - Math.min(pct, 100) / 100);
 
   return (
@@ -75,7 +76,7 @@ export function AttendanceApple() {
           ) : (
             rows.map((s) => {
               const sp = Math.round(s.percentage ?? 0);
-              const color = attendanceColor(s.percentage, s.min);
+              const color = `hsl(var(--${attnTone(s.percentage, s.min)}))`;
               return (
                 <Link className="ios-row has-lead" to="/skips" key={s.subject.id}>
                   <span className="ios-dot" style={{ background: color }} />
