@@ -464,16 +464,26 @@ function LookGroup() {
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   return (
     <Group>
-      <Row label="Theme" hint={themeName === "oled" ? "True black, no colour" : "Lime, loud, oversized"}>
+      <Row
+        label="Theme"
+        hint={
+          themeName === "oled"
+            ? "True black, no colour"
+            : themeName === "apple"
+              ? "Native iOS look, system font"
+              : "Lime, loud, oversized"
+        }
+      >
         <Segmented<ThemeName>
           layoutId="theme-name"
           options={[
             { value: "brutalist", label: "Brutalist" },
+            { value: "apple", label: "Apple" },
             { value: "oled", label: "OLED" },
           ]}
           value={themeName}
           onChange={setThemeName}
-          className="w-48"
+          className="w-64"
         />
       </Row>
       <div className="px-5 py-3.5">
