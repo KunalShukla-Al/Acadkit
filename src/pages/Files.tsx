@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppStore } from "@/store/app";
+import { StudyApple } from "@/components/ios/study";
 import { warmViewer } from "@/components/viewer/loaders";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -76,6 +78,12 @@ function synced(at: number): string {
 }
 
 export default function Files() {
+  const themeName = useAppStore((s) => s.themeName);
+  if (themeName === "apple") return <StudyApple />;
+  return <FilesInner />;
+}
+
+function FilesInner() {
   // Load the viewer while you browse, so the first file opens without waiting on it.
   useEffect(() => warmViewer(), []);
   const pin = usePin();

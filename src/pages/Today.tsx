@@ -1,7 +1,7 @@
 import { GettingStartedCard } from "@/components/getting-started";
 import { Greeting } from "@/components/home/greeting";
 import { TodayCard } from "@/components/home/today-card";
-import { TodayApple } from "@/components/home/today-apple";
+import { TodayApple } from "@/components/ios/today";
 import { DeadlinesCard } from "@/components/home/deadlines-card";
 import { SuggestionsCard } from "@/components/viz/suggestions-card";
 import { SiriLine } from "@/components/siri-line";

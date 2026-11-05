@@ -1,0 +1,267 @@
+/* iOS grouped-list language for the Apple theme's main tabs. Colours come
+   from the theme tokens, so every screen follows light/dark with the rest
+   of the app. Shared by today/timetable/attendance/marks/study. */
+
+.ios-screen {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.ios-large {
+  padding: 0.25rem 0.25rem 0.5rem;
+}
+.ios-large .date {
+  color: hsl(var(--muted));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.125rem;
+}
+.ios-large h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.125rem;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* day-order selector */
+.ios-days {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: 0.875rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ios-days::-webkit-scrollbar {
+  display: none;
+}
+.ios-days button {
+  flex: none;
+  border: 0;
+  background: hsl(var(--surface-2));
+  color: hsl(var(--ink));
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ios-days button[aria-pressed="true"] {
+  background: hsl(var(--accent));
+  color: hsl(var(--brand-ink));
+}
+
+/* search field */
+.ios-search {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  background: hsl(var(--surface-2));
+  color: hsl(var(--muted));
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.6875rem;
+  font-size: 1rem;
+  margin-top: 0.75rem;
+}
+.ios-search svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* section + group */
+.ios-sec {
+  margin-top: 1.5rem;
+}
+.ios-sec > .hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.625rem;
+  padding: 0 1rem 0.4375rem;
+  color: hsl(var(--muted));
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.ios-sec > .hd a {
+  color: hsl(var(--accent));
+  font-weight: 400;
+}
+.ios-group {
+  background: hsl(var(--surface));
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 0 0 0.5px hsl(var(--line) / var(--line-alpha));
+}
+
+/* summary hero card */
+.ios-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: hsl(var(--surface));
+  border-radius: 0.875rem;
+  padding: 1rem 1.125rem;
+  box-shadow: 0 0 0 0.5px hsl(var(--line) / var(--line-alpha));
+}
+.ios-hero .big {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ios-hero .cap {
+  color: hsl(var(--muted));
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+.ios-hero .grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ios-ring {
+  width: 4rem;
+  height: 4rem;
+  flex: none;
+}
+.ios-ring .track {
+  stroke: hsl(var(--surface-2));
+}
+.ios-ring .val {
+  stroke-linecap: round;
+}
+
+/* rows */
+.ios-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  min-height: 3rem;
+  position: relative;
+  color: inherit;
+  text-decoration: none;
+}
+.ios-row + .ios-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  right: 0;
+  height: 0.5px;
+  background: hsl(var(--line) / var(--line-alpha));
+}
+.ios-row.has-lead + .ios-row.has-lead::before {
+  left: 3.6875rem;
+}
+
+.ios-time {
+  flex: none;
+  width: 3.25rem;
+  text-align: right;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: hsl(var(--muted));
+  font-variant-numeric: tabular-nums;
+}
+.ios-time.is-now {
+  color: hsl(var(--accent));
+}
+.ios-dot {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 999px;
+}
+.ios-lead {
+  flex: none;
+  width: 1.9375rem;
+  height: 1.9375rem;
+  border-radius: 0.5rem;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.ios-lead svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.ios-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ios-body .t {
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ios-body .t.past {
+  color: hsl(var(--muted));
+}
+.ios-body .s {
+  font-size: 0.8125rem;
+  color: hsl(var(--muted));
+  margin-top: 0.0625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-trail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ios-val {
+  color: hsl(var(--muted));
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.ios-badge {
+  border-radius: 0.4375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ios-grade {
+  min-width: 2rem;
+  text-align: center;
+  border-radius: 0.5rem;
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.ios-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: lowercase;
+  color: hsl(var(--accent));
+}
+.ios-chev {
+  width: 0.5625rem;
+  height: 0.9375rem;
+  flex: none;
+}
+.ios-chev path {
+  stroke: hsl(var(--muted) / 0.55);
+}
+
+.ios-empty {
+  padding: 1.25rem 1rem;
+  color: hsl(var(--muted));
+  font-size: 0.9375rem;
+}
+.ios-foot {
+  color: hsl(var(--muted));
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 1.75rem 1rem 0.25rem;
+}

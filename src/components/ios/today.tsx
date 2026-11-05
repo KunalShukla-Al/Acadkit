@@ -1,31 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToday } from "@/hooks/useToday";
-import { useAttendance, useSubjects } from "@/hooks/useData";
+import { useAttendance, usePortalSnapshots, useSubjects } from "@/hooks/useData";
+import { computeOverallAttendance, attendanceColor } from "@acadkit/core/attendance";
 import { formatDateLong, formatTimeRange, timeToMinutes } from "@acadkit/core/dates";
-import { subjectShort } from "@acadkit/core/subjectShort";
-import "./today-apple.css";
+import { Chevron } from "./bits";
+import "./ios.css";
 
 type SlotPhase = "now" | "next" | "upcoming" | "past";
 
-/** A subject's attendance standing, worst first. */
-interface Standing {
-  id: string;
-  name: string;
-  pct: number;
-  bar: number;
-}
-
 /**
  * Today in iOS idiom for the Apple theme: the day's classes and an
- * attendance-at-a-glance, as inset grouped lists. Same hooks as the
- * default Today, a different design language. Today.tsx picks this when
- * the Apple theme is on.
+ * attendance-at-a-glance as inset grouped lists. Same hooks and the same
+ * core computations as the default Today; a different design language.
+ * Today.tsx picks this when the Apple theme is on.
  */
 export function TodayApple() {
   const { date, info, slots, isNextDay } = useToday();
   const { data: attendance } = useAttendance();
   const { data: subjects } = useSubjects();
+  const { data: snapshots } = usePortalSnapshots();
 
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -34,7 +28,6 @@ export function TodayApple() {
   }, []);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  /** Each slot's phase; the first still-upcoming one is "next". */
   const phases = useMemo(() => {
     const nextIdx = isNextDay
       ? -1
@@ -47,48 +40,27 @@ export function TodayApple() {
     });
   }, [slots, nowMin, isNextDay]);
 
-  /** Attendance percent per subject, worst standing first. */
-  const standings = useMemo<Standing[]>(() => {
-    if (!attendance || !subjects) return [];
-    const tally = new Map<string, { held: number; present: number }>();
-    for (const r of attendance) {
-      if (r.status === "holiday") continue;
-      const e = tally.get(r.subject_id) ?? { held: 0, present: 0 };
-      e.held += 1;
-      if (r.status === "present" || r.status === "od") e.present += 1;
-      tally.set(r.subject_id, e);
-    }
-    return subjects
-      .map((s): Standing | null => {
-        const t = tally.get(s.id);
-        if (!t || t.held === 0) return null;
-        return {
-          id: s.id,
-          name: subjectShort(s),
-          pct: Math.round((t.present / t.held) * 100),
-          bar: s.medical_leave ? 65 : 75,
-        };
-      })
-      .filter((s): s is Standing => s !== null)
-      .sort((a, b) => a.pct - b.pct)
-      .slice(0, 6);
-  }, [attendance, subjects]);
-
-  const title = isNextDay ? "Next up" : "Today";
-  const dayOrder = info.dayOrder;
+  /** The subjects nearest their attendance bar, worst first. */
+  const atRisk = useMemo(() => {
+    const overall = computeOverallAttendance(subjects ?? [], attendance ?? [], snapshots ?? []);
+    return overall.subjects
+      .filter((s) => s.percentage !== null)
+      .sort((a, b) => (a.percentage ?? 0) - (b.percentage ?? 0))
+      .slice(0, 4);
+  }, [subjects, attendance, snapshots]);
 
   return (
-    <div className="ios-today">
+    <div className="ios-screen">
       <header className="ios-large">
         <div className="date">{formatDateLong(date)}</div>
-        <h1>{title}</h1>
+        <h1>{isNextDay ? "Next up" : "Today"}</h1>
       </header>
 
-      <section className="ios-sec" aria-labelledby="ios-classes">
-        <div className="hd" id="ios-classes">
+      <section className="ios-sec" aria-labelledby="ios-today-classes">
+        <div className="hd" id="ios-today-classes">
           <span>
             {isNextDay ? "When you're back" : "Classes"}
-            {dayOrder != null ? ` · Day Order ${dayOrder}` : ""}
+            {info.dayOrder != null ? ` · Day Order ${info.dayOrder}` : ""}
           </span>
           <Link to="/timetable">Timetable</Link>
         </div>
@@ -113,10 +85,8 @@ export function TodayApple() {
                     </div>
                   </div>
                   <div className="ios-trail">
-                    {phase === "now" ? (
-                      <span className="ios-pill">now</span>
-                    ) : phase === "next" ? (
-                      <span className="ios-pill">next</span>
+                    {phase === "now" || phase === "next" ? (
+                      <span className="ios-pill">{phase}</span>
                     ) : null}
                   </div>
                 </div>
@@ -126,31 +96,36 @@ export function TodayApple() {
         </div>
       </section>
 
-      {standings.length > 0 && (
-        <section className="ios-sec" aria-labelledby="ios-att">
-          <div className="hd" id="ios-att">
+      {atRisk.length > 0 && (
+        <section className="ios-sec" aria-labelledby="ios-today-att">
+          <div className="hd" id="ios-today-att">
             <span>Attendance</span>
             <Link to="/attendance">See all</Link>
           </div>
           <div className="ios-group">
-            {standings.map((s) => {
-              const tone =
-                s.pct >= s.bar ? "good-deep" : s.pct >= s.bar - 10 ? "warn-deep" : "bad-deep";
+            {atRisk.map((s) => {
+              const pct = Math.round(s.percentage ?? 0);
+              const color = attendanceColor(s.percentage, s.min);
               return (
-                <div className="ios-row has-lead" key={s.id}>
-                  <span className="ios-dot" style={{ background: `hsl(var(--${tone}))` }} />
+                <Link className="ios-row has-lead" to="/attendance" key={s.subject.id}>
+                  <span className="ios-dot" style={{ background: color }} />
                   <div className="ios-body">
-                    <div className="t">{s.name}</div>
+                    <div className="t">{s.subject.name}</div>
                     <div className="s">
-                      {s.pct >= s.bar ? `${s.pct - s.bar}% clear of the ${s.bar}% bar` : `below the ${s.bar}% bar`}
+                      {s.canBunk > 0
+                        ? `can skip ${s.canBunk} more`
+                        : s.needToAttend > 0
+                          ? `attend ${s.needToAttend} to reach ${s.min}%`
+                          : `at the ${s.min}% line`}
                     </div>
                   </div>
                   <div className="ios-trail">
-                    <span className="ios-badge" style={{ color: `hsl(var(--${tone}))` }}>
-                      {s.pct}%
+                    <span className="ios-badge" style={{ color }}>
+                      {pct}%
                     </span>
+                    <Chevron />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
