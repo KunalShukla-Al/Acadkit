@@ -15,6 +15,11 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- The study-folder sync now sends a correct content type for more of what the folder holds: iPhone
+  photos (HEIC/HEIF), voice notes (M4A, MP3 and other audio), short clips (MP4/MOV), SVGs, the older
+  Office formats (DOC/PPT/XLS), RTF and JSON. These used to upload as `application/octet-stream`, so
+  the phone offered a download instead of showing them; now they preview in place. Unknown types
+  still fall back to `application/octet-stream`.
 - TanStack Query 5.104.5 (was 5.104.0), all three packages. Among the fixes, queued writes now
   start while the window is out of focus; AcadKit runs every write in one such queue.
 - supabase-js 2.118.0 (was 2.117.2), with tighter types for generated database types and
