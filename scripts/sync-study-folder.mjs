@@ -53,9 +53,15 @@ if (missing.length) {
 
 const TYPES = {
   pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp",
+  heic: "image/heic", heif: "image/heif", avif: "image/avif", bmp: "image/bmp", tiff: "image/tiff", svg: "image/svg+xml",
   txt: "text/plain; charset=utf-8", md: "text/plain; charset=utf-8", csv: "text/csv; charset=utf-8",
   c: "text/plain; charset=utf-8", py: "text/plain; charset=utf-8", java: "text/plain; charset=utf-8",
-  html: "text/html; charset=utf-8",
+  html: "text/html; charset=utf-8", json: "application/json; charset=utf-8", rtf: "application/rtf",
+  m4a: "audio/mp4", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/aac", ogg: "audio/ogg",
+  mp4: "video/mp4", mov: "video/quicktime",
+  doc: "application/msword",
+  ppt: "application/vnd.ms-powerpoint",
+  xls: "application/vnd.ms-excel",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
