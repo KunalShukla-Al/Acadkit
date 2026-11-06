@@ -39,6 +39,51 @@
     --brand: var(--accent);
     --brand-ink: 0 0% 6%;
   }
+  /* apple: Apple HIG as a theme: the system font (real SF Pro on iOS/macOS), neutral grouped-background grays, system blue accent, soft depth, continuous-corner cards. Light and dark both first-class, so AcadKit reads native beside other apps on the devices it runs on. */
+  [data-theme='apple'] {
+    --bg: 240 24% 96%;
+    --surface: 0 0% 100%;
+    --surface-2: 240 11% 91%;
+    --line: 240 6% 25%;
+    --ink: 240 6% 11%;
+    --muted: 240 5% 40%;
+    --accent: 214 96% 40%;
+    --accent-2: 241 55% 52%;
+    --good-deep: 145 60% 27%;
+    --warn-deep: 36 95% 28%;
+    --bad-deep: 4 72% 40%;
+    --accent-deep: 214 100% 36%;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -14px rgb(0 0 0 / 0.14);
+    --line-alpha: 0.18;
+    --radius-card: 1rem;
+    --brand: var(--accent);
+    --brand-ink: 0 0% 100%;
+    --font-sans: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+    --font-display: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  [data-theme='apple'].dark {
+    --bg: 240 6% 6%;
+    --surface: 240 3% 11%;
+    --surface-2: 240 2% 18%;
+    --line: 240 3% 55%;
+    --ink: 0 0% 98%;
+    --muted: 240 4% 64%;
+    --accent: 214 88% 46%;
+    --accent-2: 241 73% 72%;
+    --good-deep: 135 64% 56%;
+    --warn-deep: 40 95% 62%;
+    --bad-deep: 4 92% 72%;
+    --accent-deep: 214 100% 68%;
+    --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 30px -16px rgb(0 0 0 / 0.8);
+    --line-alpha: 0.28;
+    --radius-card: 1rem;
+    --brand: var(--accent);
+    --brand-ink: 0 0% 100%;
+    --font-sans: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+    --font-display: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
   /* oled: True black and zero saturation: in dark mode --bg is literal #000, pixels off on an OLED panel, and the mark inverts rather than colouring. */
   [data-theme='oled'] {
     --bg: 0 0% 100%;

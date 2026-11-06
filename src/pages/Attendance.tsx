@@ -1,4 +1,6 @@
 import type { AttendanceRecord, PortalSnapshot } from "@acadkit/core/types";
+import { useAppStore } from "@/store/app";
+import { AttendanceApple } from "@/components/ios/attendance";
 import { Explain } from "@/components/explainer/explain";
 import { AttendanceHabitsCard } from "@/components/insights/habits-card";
 import { reconcile, type Reconciliation } from "@/lib/reconcile";
@@ -219,6 +221,12 @@ function SubjectRow({
 }
 
 export default function Attendance() {
+  const themeName = useAppStore((s) => s.themeName);
+  if (themeName === "apple") return <AttendanceApple />;
+  return <AttendanceInner />;
+}
+
+function AttendanceInner() {
   // Which subject a chip at the top last jumped to (and when, so the same chip twice re-opens it).
   const [jumped, setJumped] = useState<{ id: string; at: number } | null>(null);
   const tone = useTone();
