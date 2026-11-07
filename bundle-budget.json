@@ -1,9 +1,9 @@
 {
-  "//": "Gzipped KB, checked by scripts/check-bundle-size.mjs after a build. Set a little above the sizes CI measured when it was set (Node 24, whose gzip comes out about 1% bigger than a Mac on Node 26): visitor load 110.4 (the landing page alone), signed-in start 307.1 (the brutal copy lives in it), heaviest tab's first open 35.0 (Study), largest chunk 143.9 (pdf.js), all JS 779.9, CSS 14.1. The Apple theme added its iOS tab screens (each tab now carries its iOS variant) and a shared iOS stylesheet, so heaviest tab and CSS went up on purpose. Lighthouse on the five tabs then (npm run perf:screens): performance and accessibility 100 on each, LCP 1.4 to 1.8 s, TBT at most 17 ms, CLS at most 0.03. Raise a number only on purpose, in the PR that needs it.",
+  "//": "Gzipped KB, checked by scripts/check-bundle-size.mjs after a build. Set a little above the sizes CI measured when it was set (Node 24, whose gzip comes out about 1% bigger than a Mac on Node 26): visitor load 110.4 (the landing page alone), signed-in start 307.1 (the brutal copy lives in it), heaviest tab's first open 35.0 (Study), largest chunk 143.9 (pdf.js), all JS 779.9, CSS 14.1. The Apple theme added its iOS tab screens (each tab now carries its iOS variant) and a shared iOS stylesheet, so heaviest tab and CSS went up on purpose. Lighthouse on the five tabs then (npm run perf:screens): performance and accessibility 100 on each, LCP 1.4 to 1.8 s, TBT at most 17 ms, CLS at most 0.03. motion 14 (from 12) added ~6.7 KB to signed-in start and all JS — its heavier core carries hardware-accelerated transforms and the press/tap/drag JS gesture API, the groundwork for the Nov motion-driven UX work — so appStartKB and totalJsKB went up on purpose (set above the local Mac build, 310.5 and 789.6, with margin for CI). Raise a number only on purpose, in the PR that needs it.",
   "initialKB": 112,
-  "appStartKB": 309,
+  "appStartKB": 315,
   "screenKB": 38,
   "largestChunkKB": 146,
-  "totalJsKB": 788,
+  "totalJsKB": 794,
   "cssKB": 17
 }
