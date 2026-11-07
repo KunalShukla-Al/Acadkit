@@ -43,6 +43,11 @@ existing data or installs, a minor version for new features, a patch version for
   transport, which AcadKit doesn't use.
 - zustand 5.0.16 (was 5.0.15), with fixes to middleware AcadKit doesn't use, and postcss 8.5.31
   (was 8.5.30), with better source maps for styles that contain `</style>`.
+- motion 14.10.1 (was 12.43.0), the animation library, across two majors. Nothing AcadKit uses
+  changed shape: every call goes through `motion/react`, and the automatic `@emotion/is-prop-valid`
+  prop filter dropped in 13.0.0 was never installed here. Its core is about 6.7 KB heavier, carrying
+  hardware-accelerated transforms and the press/tap/drag JS gesture API - the groundwork for this
+  month's animation work - so the signed-in-start and all-JavaScript budgets went up to match.
 - Vite 8.3.5 (was 8.3.4), with fixes to chunk import maps and the bundled dev server. Build tooling
   only.
 - pdf.js 6.4.299 (was 6.3.289), with fixes to fonts, patterns and form fields, and a guard against
