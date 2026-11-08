@@ -15,6 +15,11 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- A PDF now opens onto paper-shaped pages with a soft sweep where each one is still drawing, instead
+  of blank white boxes, and a page fades in the moment it's ready. The pages below the fold read as
+  pages on the way rather than gaps, and only the ones actually drawing animate, so a long file stays
+  smooth to scroll. Zooming still swaps each page in place, and Reduce Motion turns the sweep and fade
+  off.
 - The study-folder sync now sends a correct content type for more of what the folder holds: iPhone
   photos (HEIC/HEIF), voice notes (M4A, MP3 and other audio), short clips (MP4/MOV), SVGs, the older
   Office formats (DOC/PPT/XLS), RTF and JSON. These used to upload as `application/octet-stream`, so

@@ -3,6 +3,7 @@ import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { TextContent, TextItem } from "pdfjs-dist/types/src/display/api";
 import { createPdfFinder, type Finder, type PdfPageText } from "@/components/viewer/find";
 import { pdfEngine } from "@/components/viewer/pdf-engine";
+import { PdfSkeleton } from "@/components/viewer/skeleton";
 
 type PdfLib = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 
@@ -114,7 +115,7 @@ export default function PdfView({
   }, [doc, scroller, content, onFinder]);
 
   if (error) return <p className="px-4 py-10 text-center text-sm font-medium text-muted">Couldn't open this PDF: {error}</p>;
-  if (!doc) return <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>;
+  if (!doc) return <PdfSkeleton width={width} />;
   return (
     <div className="space-y-3" style={{ width }}>
       {aspects.map((a, i) => (
@@ -159,10 +160,15 @@ function PdfPage({
     const el = wrap.current;
     if (!el) return;
     if (!near) {
-      // Far off screen: give the canvas memory back.
+      // Far off screen: give the canvas memory back and rest as plain paper (no
+      // shimmer off screen - only the pages actually drawing should animate).
       freeCanvases(el);
+      el.classList.remove("pdf-skeleton");
       return;
     }
+    // Near and not yet drawn: shimmer while it renders. A zoom re-draw keeps its
+    // old canvas on screen meanwhile, so don't shimmer over that.
+    if (!el.querySelector("canvas")) el.classList.add("pdf-skeleton");
     let task: RenderTask | null = null;
     let cancelled = false;
     (async () => {
@@ -207,8 +213,12 @@ function PdfPage({
         }
         if (cancelled || !wrap.current) return;
       }
+      // Fade in only the first canvas (from the skeleton); a zoom re-draw swaps in place.
+      const replacing = wrap.current.querySelector("canvas") !== null;
       freeCanvases(wrap.current);
       wrap.current.querySelector(".textLayer")?.remove();
+      if (!replacing) c.classList.add("pdf-canvas-in");
+      wrap.current.classList.remove("pdf-skeleton");
       wrap.current.appendChild(c);
       if (layer) wrap.current.appendChild(layer);
     })();
