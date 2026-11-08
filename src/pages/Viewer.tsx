@@ -8,6 +8,7 @@ import { saveFile } from "@/lib/saveFile";
 import { baseName, formatSize, prettyName, type StudyFile } from "@/lib/studyFiles";
 import { codeLanguage, isRenderable, shownFile, viewerKind, type ViewerKind } from "@/lib/viewer";
 import { ZoomPane } from "@/components/viewer/zoom-pane";
+import { PdfSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
 import {
   loadCodeView,
@@ -199,7 +200,7 @@ export default function Viewer({ overlay = false }: { overlay?: boolean }) {
           label={pager && pager.total > 1 ? <PageCounter pager={pager} /> : undefined}
         >
           {({ width, scroller, content }) => (
-            <Suspense fallback={<p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>}>
+            <Suspense fallback={shown.kind === "pdf" ? <PdfSkeleton width={width} /> : <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>}>
               {shown.kind === "pdf" && (
                 <PdfView
                   blob={data}
