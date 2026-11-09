@@ -57,11 +57,20 @@ function generateDayOrderMap(window: SemesterWindow): Record<string, number> {
 export const isClassDay = (h: DeclaredHoliday): h is DeclaredHoliday & { day_order: number } =>
   h.day_order != null;
 
+/** A holiday that cancels its day order in place, rather than shifting the rotation forward. */
+const cancelsOrder = (h: DeclaredHoliday): boolean => !isClassDay(h) && h.cancels === true;
+
 /**
- * Build the effective date → day-order map with declared holidays
- * auto-shifted: removing a working day pushes its day order (and all
- * subsequent ones) onto the next working days. Class days are added
- * on top with their own day order and leave the rotation as it is.
+ * Build the effective date → day-order map, two kinds of declared holiday
+ * layered on the canonical rotation:
+ *
+ * - A **shifting** holiday (the default) drops out of the rotation and pushes
+ *   its day order, and every one after it, onto the next working days.
+ * - A **cancelling** holiday (`cancels: true`) keeps its place in the rotation,
+ *   so the rest of the week's orders don't move, and its own day order is lost.
+ *
+ * Class days are added on top with their own day order and leave the rotation
+ * as it is.
  */
 export function buildEffectiveMap(
   declared: DeclaredHoliday[],
@@ -69,14 +78,20 @@ export function buildEffectiveMap(
 ): Record<string, number> {
   const canonical = generateDayOrderMap(window);
   if (declared.length === 0) return canonical;
-  const holidays = new Set(declared.filter((h) => !isClassDay(h)).map((h) => h.date));
+  const shifting = new Set(
+    declared.filter((h) => !isClassDay(h) && !cancelsOrder(h)).map((h) => h.date)
+  );
+  const cancelling = new Set(declared.filter(cancelsOrder).map((h) => h.date));
   const dates = Object.keys(canonical);
   const orders = dates.map((d) => canonical[d]);
-  const workingDates = dates.filter((d) => !holidays.has(d));
+  // Only shifting holidays leave the sequence and push the rest forward;
+  // cancelling holidays keep their slot (so the week stays put) and are blanked below.
+  const kept = dates.filter((d) => !shifting.has(d));
   const map: Record<string, number> = {};
-  workingDates.forEach((date, i) => {
+  kept.forEach((date, i) => {
     map[date] = orders[i];
   });
+  for (const d of cancelling) delete map[d];
   for (const h of declared.filter(isClassDay)) {
     if (h.date >= window.start && h.date <= window.end) map[h.date] = h.day_order;
   }

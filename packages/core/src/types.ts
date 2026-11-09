@@ -201,6 +201,12 @@ export interface DeclaredHoliday {
   date: string; // "YYYY-MM-DD"
   name: string;
   day_order?: number;
+  /**
+   * A holiday only (no `day_order`). `true` cancels this day's order and leaves
+   * the rest of the week on its usual rotation; absent/false shifts the
+   * remaining orders forward onto the next working days.
+   */
+  cancels?: boolean;
 }
 
 export interface SubjectArchiveRow {

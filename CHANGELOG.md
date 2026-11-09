@@ -9,6 +9,10 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Added
 
+- A declared holiday can now either shift the day orders forward (as before) or cancel just its own
+  day order, leaving the rest of the week on its usual rotation - the college does both, depending on
+  the holiday. Calendar offers both when you declare one, and names the day order each choice affects;
+  an existing holiday says which kind it is. Holidays declared before this update keep shifting.
 - Class Saturdays. A weekend or official holiday that the college runs as a class day can be marked
   on Calendar with the Day Order it follows. Today, attendance, forecasts, reminders and the
   iPhone calendar treat it as a working day, and the weekday rotation stays as it is.
