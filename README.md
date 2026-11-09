@@ -61,6 +61,20 @@ send files and screenshots to the study folder, read a portal screenshot into th
 Tap, and answer through Siri ("can I skip OS?").
 Setup: [docs/shortcuts.md](docs/shortcuts.md) and [docs/campus.md](docs/campus.md).
 
+## Themes
+
+Settings carries three looks, synced with the account:
+
+- **Brutalist** (the default) — lime on near-black or near-white, oversized lowercase titles in
+  Chakra Petch, bordered squircle cards.
+- **Apple** — the iOS/macOS look: the system font (real SF Pro on my iPhone and Mac), neutral
+  grouped-gray backgrounds, a system-blue accent and continuous-corner cards, with the tabs drawn
+  in the native idiom so AcadKit reads like a system app.
+- **OLED** — true black with no colour, for an always-on screen.
+
+Each is a set of light-and-dark design tokens, and a unit test holds every theme to WCAG AA
+contrast.
+
 ## What stays private
 
 Every model runs on my Mac, and nothing in AcadKit holds a key to a model API; lecture audio and
