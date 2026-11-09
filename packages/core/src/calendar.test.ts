@@ -44,6 +44,33 @@ describe("declared-holiday shifting", () => {
   });
 });
 
+describe("declared-holiday cancelling", () => {
+  const declared = [{ date: "2026-07-22", name: "Holiday", cancels: true }];
+
+  it("cancels the day's order and leaves the rest of the week put", () => {
+    // 07-22 was Day Order 2; cancelled, that order is lost and nothing else moves:
+    expect(getDayInfo("2026-07-22", declared).kind).toBe("declared-holiday");
+    expect(getDayInfo("2026-07-21", declared).dayOrder).toBe(1);
+    expect(getDayInfo("2026-07-23", declared).dayOrder).toBe(3); // unchanged
+    expect(getDayInfo("2026-07-24", declared).dayOrder).toBe(4); // unchanged
+    expect(getDayInfo("2026-07-27", declared).dayOrder).toBe(5); // unchanged
+  });
+
+  it("drops the cancelled date from the effective map", () => {
+    expect(buildEffectiveMap(declared)["2026-07-22"]).toBeUndefined();
+  });
+
+  it("mixes with a shifting holiday the same week", () => {
+    const mixed = [
+      { date: "2026-07-22", name: "Shifted" },
+      { date: "2026-07-23", name: "Cancelled", cancels: true },
+    ];
+    expect(getDayInfo("2026-07-23", mixed).kind).toBe("declared-holiday");
+    expect(getDayInfo("2026-07-24", mixed).dayOrder).toBe(3); // 07-22 shift pulls it to 3, 07-23 cancel holds
+    expect(getDayInfo("2026-07-27", mixed).dayOrder).toBe(4);
+  });
+});
+
 describe("class days", () => {
   const saturday = { date: "2026-07-25", name: "Working Saturday", day_order: 3 };
 

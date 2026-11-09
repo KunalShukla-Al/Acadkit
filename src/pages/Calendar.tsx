@@ -110,18 +110,19 @@ export default function Calendar() {
   const canAddClassDay =
     inSemester && (selectedInfo?.kind === "weekend" || selectedInfo?.kind === "official-holiday");
 
-  async function declareHoliday() {
+  async function declareHoliday(cancels: boolean) {
     if (!selected) return;
     const name = await promptText({
       title: say(VOICE.holidayPromptTitle, tone),
-      body: "Remaining day orders shift forward from here.",
+      body: cancels
+        ? "Only this day order is skipped - the rest of the week keeps its orders."
+        : "Remaining day orders shift forward from here.",
       defaultValue: "Declared holiday",
       placeholder: "Declared holiday",
     });
     if (name === null) return;
-    updateSettings.mutate({
-      declared_holidays: [...declared, { date: selected, name: name || "Declared holiday" }],
-    });
+    const holiday = { date: selected, name: name || "Declared holiday", ...(cancels && { cancels: true }) };
+    updateSettings.mutate({ declared_holidays: [...declared, holiday] });
     toast.success(say(VOICE.holidayDeclared, tone));
     setSelected(null);
   }
@@ -288,7 +289,9 @@ export default function Calendar() {
         description={
           selectedInfo?.kind === "working"
             ? `Day Order ${selectedInfo.dayOrder}${classDay ? ` · ${classDay.name}` : ""}`
-            : selectedInfo?.holidayName ??
+            : selectedInfo?.kind === "declared-holiday"
+              ? `${selectedInfo.holidayName} · day order ${declaredHit?.cancels ? "cancelled" : "shifted forward"}`
+              : selectedInfo?.holidayName ??
               (selectedInfo?.kind === "weekend"
                 ? "Weekend"
                 : selectedInfo?.kind === "pre-semester"
@@ -335,9 +338,22 @@ export default function Calendar() {
               <Plus className="h-4 w-4" /> Add deadline on this date
             </Button>
             {canDeclare && (
-              <Button variant="danger" className="w-full" onClick={declareHoliday}>
-                <PartyPopper className="h-4 w-4" /> Declare holiday (shifts day orders)
-              </Button>
+              <div className="space-y-2.5 rounded-2xl border bg-surface-2/40 p-3">
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  <PartyPopper className="h-4 w-4" /> Declare a holiday
+                </p>
+                <p className="text-xs text-muted">
+                  No classes this day. Choose what happens to its Day Order {selectedInfo?.dayOrder}.
+                </p>
+                <div className="grid gap-2">
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => declareHoliday(false)}>
+                    Shift it forward — Day Order {selectedInfo?.dayOrder} moves to the next working day
+                  </Button>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => declareHoliday(true)}>
+                    Cancel it — Day Order {selectedInfo?.dayOrder} is skipped, the week stays
+                  </Button>
+                </div>
+              </div>
             )}
             {canAddClassDay && (
               <div className="space-y-2.5 rounded-2xl border bg-surface-2/40 p-3">
