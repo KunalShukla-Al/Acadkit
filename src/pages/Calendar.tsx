@@ -347,10 +347,10 @@ export default function Calendar() {
                 </p>
                 <div className="grid gap-2">
                   <Button variant="secondary" size="sm" className="w-full" onClick={() => declareHoliday(false)}>
-                    Shift it forward — Day Order {selectedInfo?.dayOrder} moves to the next working day
+                    Shift it forward
                   </Button>
                   <Button variant="secondary" size="sm" className="w-full" onClick={() => declareHoliday(true)}>
-                    Cancel it — Day Order {selectedInfo?.dayOrder} is skipped, the week stays
+                    Cancel it
                   </Button>
                 </div>
               </div>
