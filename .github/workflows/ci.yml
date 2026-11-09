@@ -45,7 +45,9 @@ jobs:
     # Playwright against `npm run dev:mock`: sign in, mark attendance, add
     # marks, and replay a write made offline. No real Supabase involved.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suite runs ~12.5 min; a slow Chromium install (seen up to ~9 min)
+    # used to push the whole job past a 15-min cap and fail a green run.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
