@@ -9,7 +9,7 @@ AcadKit runs in three places, and the Mac does the heavy work:
 ```
  the app (phone, Mac browser)        Supabase                          the Mac
  ----------------------------        --------                          -------
- five tabs, brutalist look  ---->    Postgres, RLS by PIN    <----     sync tick, Autopilot,
+ five tabs, themeable look  ---->    Postgres, RLS by PIN    <----     sync tick, Autopilot,
  offline cache, file cache  <----    Broadcast on pin:<pin>            recorder, night shift
                                      study-files bucket      <----     files, links, jobs.json
  Shortcuts, Siri, Calendar  ---->    feeds edge function               menu bar, Quick Action
@@ -180,12 +180,17 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
 
 ## Themes
 
-Brutalist (the default) and OLED, set on `[data-theme]` and synced with the account (migration
-018). A theme stored before either existed (quiet, sakura, terminal, aurora) comes back as
-brutalist. Brutalist is lime on near-black or near-white with a coral second accent, squircle
-cards with a real border and no shadow, and its titles and numbers in Chakra Petch
+Brutalist (the default), Apple and OLED, set on `[data-theme]` and synced with the account
+(migration 018). A theme stored before any of them existed (quiet, sakura, terminal, aurora) comes
+back as brutalist. Brutalist is lime on near-black or near-white with a coral second accent,
+squircle cards with a real border and no shadow, and its titles and numbers in Chakra Petch
 (`--font-display`): page titles oversized and lowercase, section labels lowercase and
-wide-tracked (`src/index.css`). OLED is true black with no colour.
+wide-tracked (`src/index.css`). OLED is true black with no colour. Apple is the iOS/macOS look:
+the system font (real SF Pro on the devices it runs on), neutral grouped-gray grounds, a
+system-blue accent and continuous-corner cards, so AcadKit reads native beside the other apps. Its
+five tabs and a few detail screens are drawn as parallel components in `src/components/ios/`, gated
+on the theme and reusing the same hooks and core maths as the default screens, with a native shell
+(a quiet header and tab bar) under `[data-theme="apple"]`.
 
 `src/lib/voice.ts` holds the app's copy in the theme's register (`useTone`). Brutalist talks back,
 lowercase and blunt ("currently trapped", "30 min of your life left"); OLED talks quietly, short
@@ -203,7 +208,10 @@ where it has one. Notifications and Siri keep the plain line.
 - Each theme's tokens, light and dark, live in `src/design/tokens.json`. `npm run tokens` writes
   them to `src/design/tokens.css` as custom properties, which a unit test keeps in step. The
   theme list (`THEME_NAMES`), the store's theme-color and the pre-paint script in `index.html`
-  (filled in by `vite.config.ts`) all read the same file.
+  (filled in by `vite.config.ts`) all read the same file. A theme may set its own `--font-sans`,
+  `--font-display` and `--font-mono`; where it doesn't, the global defaults stand. That is what
+  lets a theme be a whole design system rather than a recolour - Apple sets the system font, so no
+  web font loads for it.
 - `src/design/contrast.test.ts` measures every token pair the app sets one on the other, in every
   theme and mode, against WCAG AA: text 4.5:1, the accent as a shape 3:1. It runs with the unit
   tests in CI. Brutalist's light lime is let off as a shape: it is a fill under ink (the active
