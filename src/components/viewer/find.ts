@@ -22,10 +22,28 @@ function registry(): { set(k: string, v: unknown): void; delete(k: string): void
   return css?.highlights && H ? (css.highlights as ReturnType<typeof registry>) : null;
 }
 
+let styleInjected = false;
+/**
+ * The match styles live here, not in index.css: Tailwind's lightningcss pass
+ * doesn't recognise `::highlight()` and warns on it at build. Injected once,
+ * only where the Custom Highlight API is actually used.
+ */
+function ensureHighlightStyle() {
+  if (styleInjected || typeof document === "undefined") return;
+  styleInjected = true;
+  const style = document.createElement("style");
+  style.textContent =
+    "::highlight(viewer-find){background-color:hsl(var(--accent)/0.32)}" +
+    "::highlight(viewer-find-current){background-color:hsl(var(--accent));color:#000}" +
+    ".textLayer span::highlight(viewer-find-current){color:transparent;background-color:hsl(var(--accent)/0.55)}";
+  document.head.appendChild(style);
+}
+
 function paint(all: Range[], current: Range | null) {
   const reg = registry();
   const H = (globalThis as { Highlight?: HighlightCtor }).Highlight;
   if (!reg || !H) return;
+  ensureHighlightStyle();
   reg.set(ALL, new H(...all));
   if (current) reg.set(CURRENT, new H(current));
   else reg.delete(CURRENT);

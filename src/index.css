@@ -373,11 +373,9 @@
 .textLayer ::selection { background: hsl(var(--accent) / 0.35); }
 .textLayer br::selection { background: transparent; }
 
-/* Find-in-file matches (CSS Custom Highlight API; see viewer/find.ts). */
-::highlight(viewer-find) { background-color: hsl(var(--accent) / 0.32); }
-::highlight(viewer-find-current) { background-color: hsl(var(--accent)); color: #000; }
-/* A PDF's text layer is see-through over the drawing: colour only the box. */
-.textLayer span::highlight(viewer-find-current) { color: transparent; background-color: hsl(var(--accent) / 0.55); }
+/* Find-in-file matches use the CSS Custom Highlight API; their ::highlight()
+   styles are injected from viewer/find.ts (lightningcss doesn't parse that
+   selector, so keeping it out of here keeps the build quiet). */
 
 /* The search button: a lens with a glint, and a ring that turns while
    search is open. */
