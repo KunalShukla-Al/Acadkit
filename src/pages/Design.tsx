@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BookOpen, Clock, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { attendanceWorking, oddsWorking, planWorking, sgpaWorking, skipsWorking } from "@acadkit/core/explain";
@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { contrast } from "@/design/color";
 import { resolve } from "@/design/css";
 import tokens from "@/design/tokens.json";
+import { generateTheme } from "@/design/generate";
 
 const TEXT = new Set(["ink", "muted", "accent-deep", "good-deep", "warn-deep", "bad-deep"]);
 const isColour = (v: string) => /^[\d.]+ [\d.]+% [\d.]+%$/.test(v);
@@ -39,7 +40,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** One theme's tokens, light beside dark, each text colour with its contrast on the background. */
-function ThemeTokens({ name, theme }: { name: string; theme: (typeof tokens.themes)[keyof typeof tokens.themes] }) {
+function ThemeTokens({ name, theme }: { name: string; theme: { $about?: string; light: Record<string, string>; dark: Record<string, string> } }) {
   const keys = Object.keys(theme.light);
   return (
     <div className="card overflow-x-auto p-4">
@@ -77,6 +78,48 @@ function ThemeTokens({ name, theme }: { name: string; theme: (typeof tokens.them
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** A theme generated live from a seed — proof the generator yields an AA-safe system from one hue. */
+function GeneratedTheme() {
+  const [hue, setHue] = useState(265);
+  const [chroma, setChroma] = useState(0.15);
+  const theme = useMemo(() => generateTheme(hue, chroma), [hue, chroma]);
+  return (
+    <div className="space-y-3">
+      <div className="card flex flex-wrap items-center gap-x-8 gap-y-4 p-4">
+        <label className="flex min-w-56 flex-1 items-center gap-3 text-xs font-medium">
+          <span className="w-20 shrink-0 text-muted">Hue {Math.round(hue)}°</span>
+          <input
+            type="range"
+            min={0}
+            max={360}
+            value={hue}
+            onChange={(e) => setHue(Number(e.target.value))}
+            style={{ accentColor: `hsl(${theme.light.accent})` }}
+            className="min-w-0 flex-1"
+            aria-label="Seed hue"
+          />
+          <span aria-hidden className="h-6 w-6 shrink-0 rounded-lg border" style={{ backgroundColor: `hsl(${theme.light.accent})` }} />
+        </label>
+        <label className="flex min-w-56 flex-1 items-center gap-3 text-xs font-medium">
+          <span className="w-20 shrink-0 text-muted">Chroma {chroma.toFixed(2)}</span>
+          <input
+            type="range"
+            min={0.04}
+            max={0.2}
+            step={0.01}
+            value={chroma}
+            onChange={(e) => setChroma(Number(e.target.value))}
+            style={{ accentColor: `hsl(${theme.light.accent})` }}
+            className="min-w-0 flex-1"
+            aria-label="Seed chroma"
+          />
+        </label>
+      </div>
+      <ThemeTokens name={`generated · hue ${Math.round(hue)}`} theme={theme} />
     </div>
   );
 }
@@ -252,6 +295,10 @@ export default function Design() {
             initialStep={3}
           />
         </div>
+      </Section>
+
+      <Section title="Theme generator">
+        <GeneratedTheme />
       </Section>
 
       <Section title="Tokens">
