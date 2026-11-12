@@ -3,7 +3,7 @@ import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { TextContent, TextItem } from "pdfjs-dist/types/src/display/api";
 import { createPdfFinder, type Finder, type PdfPageText } from "@/components/viewer/find";
 import { pdfEngine } from "@/components/viewer/pdf-engine";
-import { sharpRatio } from "@/components/viewer/render-scale";
+import { quickRatio, sharpRatio } from "@/components/viewer/render-scale";
 import { PdfSkeleton } from "@/components/viewer/skeleton";
 
 type PdfLib = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -174,22 +174,37 @@ function PdfPage({
       if (cancelled) return;
       const base = page.getViewport({ scale: 1 });
       const css = width / base.width;
-      const dpr = sharpRatio(window.devicePixelRatio, width, aspect);
-      const viewport = page.getViewport({ scale: css * dpr });
+      const sharp = sharpRatio(window.devicePixelRatio, width, aspect);
+      // A page's first appearance on a dense screen comes in two passes: 1×
+      // first, at a quarter of the pixels, then sharp. A zoom re-draw (a
+      // canvas already there) goes straight to sharp over the stretched page.
+      const quick = wrap.current?.querySelector("canvas") ? null : quickRatio(sharp);
+
+      /** The page drawn off screen at `ratio`, or null once cancelled. */
+      const draw = async (ratio: number) => {
+        const viewport = page.getViewport({ scale: css * ratio });
+        const c = document.createElement("canvas");
+        c.width = Math.floor(viewport.width);
+        c.height = Math.floor(viewport.height);
+        c.className = "block h-full w-full";
+        c.setAttribute("aria-label", `Page ${n}`);
+        task = page.render({ canvas: c, viewport });
+        try {
+          await task.promise;
+          if (!cancelled && wrap.current) return c;
+        } catch {
+          // Cancelled mid-draw: free it below.
+        }
+        // Safari holds a dropped canvas's memory unless it's zeroed.
+        c.width = 0;
+        c.height = 0;
+        return null;
+      };
+
       // Drawn off screen and swapped in, so a re-draw at a new zoom shows
       // the old (stretched) page until the sharp one is ready, not white.
-      const c = document.createElement("canvas");
-      c.width = Math.floor(viewport.width);
-      c.height = Math.floor(viewport.height);
-      c.className = "block h-full w-full";
-      c.setAttribute("aria-label", `Page ${n}`);
-      task = page.render({ canvas: c, viewport });
-      try {
-        await task.promise;
-      } catch {
-        return;
-      }
-      if (cancelled || !wrap.current) return;
+      const c = await draw(quick ?? sharp);
+      if (!c || !wrap.current) return;
       // The text layer: invisible text laid exactly over the drawing, so
       // a page's words can be found, highlighted and selected.
       let layer: HTMLDivElement | null = null;
@@ -219,6 +234,19 @@ function PdfPage({
       wrap.current.classList.remove("pdf-skeleton");
       wrap.current.appendChild(c);
       if (layer) wrap.current.appendChild(layer);
+      if (quick === null) return;
+
+      // The sharp pass, copied into the canvas already on screen: no swap,
+      // so its fade carries on and the text layer stays put.
+      const fine = await draw(sharp);
+      if (!fine) return;
+      if (c.isConnected) {
+        c.width = fine.width;
+        c.height = fine.height;
+        c.getContext("2d")?.drawImage(fine, 0, 0);
+      }
+      fine.width = 0;
+      fine.height = 0;
     })();
     return () => {
       cancelled = true;
