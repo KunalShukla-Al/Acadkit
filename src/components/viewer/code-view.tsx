@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { WrapText } from "lucide-react";
+import { DocSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
 import { splitHighlighted } from "@/lib/viewer";
 
@@ -46,7 +47,7 @@ export default function CodeView({ blob, language }: { blob: Blob; language: str
   }, [blob, language]);
 
   if (error) return <p className="px-4 py-10 text-center text-sm font-medium text-muted">Couldn't read this file: {error}</p>;
-  if (!lines) return <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>;
+  if (!lines) return <DocSkeleton />;
   return (
     <div className="w-full pb-16">
       <div className="mb-2 flex justify-end">

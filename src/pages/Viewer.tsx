@@ -8,7 +8,7 @@ import { saveFile } from "@/lib/saveFile";
 import { baseName, formatSize, prettyName, type StudyFile } from "@/lib/studyFiles";
 import { codeLanguage, isRenderable, shownFile, viewerKind, type ViewerKind } from "@/lib/viewer";
 import { ZoomPane } from "@/components/viewer/zoom-pane";
-import { PdfSkeleton } from "@/components/viewer/skeleton";
+import { DocSkeleton, PdfSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
 import {
   loadCodeView,
@@ -34,6 +34,8 @@ const SAVE_AHEAD_BYTES = 40 * 1024 * 1024;
 
 /** A PDF's largest size at 1×, in CSS px per PDF point (1.33 is "actual size"). */
 const PDF_PX_PER_POINT = 1.5;
+/** An A4 page's width in PDF points, the study folder's usual page. */
+const A4_POINTS = 595;
 
 /** Each paged kind's pages, for the page counter; the rest count screenfuls. */
 const PAGES: Partial<Record<ViewerKind, string>> = {
@@ -200,7 +202,7 @@ export default function Viewer({ overlay = false }: { overlay?: boolean }) {
           label={pager && pager.total > 1 ? <PageCounter pager={pager} /> : undefined}
         >
           {({ width, scroller, content }) => (
-            <Suspense fallback={shown.kind === "pdf" ? <PdfSkeleton width={width} /> : <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>}>
+            <Suspense fallback={shown.kind === "pdf" ? <PdfSkeleton width={width} /> : <DocSkeleton />}>
               {shown.kind === "pdf" && (
                 <PdfView
                   blob={data}
@@ -249,7 +251,15 @@ export default function Viewer({ overlay = false }: { overlay?: boolean }) {
               href={download.data}
             />
           )}
-          {file && renderable && blob.isLoading && <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>}
+          {file && renderable && blob.isLoading &&
+            (shown?.kind === "pdf" ? (
+              // As wide as an A4 page opens at 1x, so the pages that replace it land in the same place.
+              <div className="mx-auto" style={{ maxWidth: Math.round(A4_POINTS * PDF_PX_PER_POINT) }}>
+                <PdfSkeleton />
+              </div>
+            ) : (
+              <DocSkeleton />
+            ))}
           {file && renderable && blob.isError && (
             <NoPreview message="Couldn't load this file. Check your connection and try again." file={file} blob={saveable} href={download.data} />
           )}
