@@ -458,6 +458,12 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
   tick runs. Asleep, its socket drops and its presence with it. The app may listen to that
   presence for a PIN it owns and to nothing else there (migration 055), and Study says "Mac
   awake", "Mac syncing…" or "Mac asleep" beside the last sync (`useMacStatus`).
+- Nothing in a tick waits forever. The Mac's Supabase client (`scripts/lib/mac-client.mjs`) gives
+  every request a limit, 2 minutes, or 10 for a file going up or down, and LibreOffice and the
+  text reader have their own. A request made as the network dropped fails its step, and the next
+  tick tries again. The tick writes what it does to the log as it goes, so one the watcher does
+  stop after 20 minutes shows the step it stopped on. The sync's full output, every warning
+  included, is `last-sync.out` in the state folder.
 - The menu bar is a SwiftBar plugin (`scripts/mac/swiftbar/acadkit.1m.sh`, put in SwiftBar's
   plugin folder by `mac:install`) that runs `menubar.mjs` every minute: the day and the next class
   in the bar ("DO 3 · OS 10:00 AM", "↻" while syncing), and in the menu the day's sentence (the

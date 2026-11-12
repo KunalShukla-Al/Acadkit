@@ -4,12 +4,12 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createClient } from "@supabase/supabase-js";
 import { applyDeletions } from "./apply-study-deletions.mjs";
 import { applyUploads } from "./apply-study-uploads.mjs";
 import { indexStudyFolder } from "./study-index/index.mjs";
 import { buildRenditions } from "./lib/renditions.mjs";
 import { isUnreadable, keepLastUpload } from "./lib/unreadable.mjs";
+import { macClient } from "./lib/mac-client.mjs";
 import { pyqNote, readPaperbank } from "./lib/paperbank.mjs";
 import { studyRoots } from "./lib/roots.mjs";
 import { readCourseTitles, subjectIndex, tagFile } from "./lib/tags.mjs";
@@ -166,7 +166,7 @@ async function readSuggestions(root) {
   return { rows: [...unique.values()], bad };
 }
 
-const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+const supabase = macClient(url, serviceKey);
 const bucket = supabase.storage.from(BUCKET);
 const manifestKey = `${pin}/manifest.json`;
 

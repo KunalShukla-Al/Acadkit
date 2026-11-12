@@ -60,9 +60,9 @@ fi
 
 # What the app asked for: deletes go to the Trash, uploads are saved in, and a heartbeat.
 cd "$REPO" || exit 1
-req=$(npm run -s sync:app 2>&1)
-[ -n "$req" ] && echo "$req" | sed "s/^/    /"
-if echo "$req" | grep -qE "^(Moved|Saved) "; then
+# Output goes to the log as it is written, so a tick that hangs shows the step it stopped on.
+npm run -s sync:app 2>&1 | tee "$STATE/last-app.out" | sed -l "s/^/    /"
+if grep -qE "^(Moved|Saved) " "$STATE/last-app.out"; then
     log "changes from the app -> syncing"
     force=1
 fi
@@ -95,11 +95,15 @@ fi
 
 touch "$STAMP.new"            # time the sync STARTED, so edits made during it are caught next time
 log "change: $changed -> syncing"
-out=$(npm run sync:files 2>&1); rc=$?
-echo "$out" | grep -E "files,|Storage:|Upload|not uploaded|Exam prep|Notices:|Projects:|Run-up:|Search index:|Units and topics|Synced|rror|warning|no such" | sed "s/^/    /"
-if [ $rc -eq 0 ] && echo "$out" | grep -q "^Synced"; then
+# Each kind of warning is counted on its own line ("Run-up: … 130 warning(s)"), so the warnings
+# themselves stay in last-sync.out instead of repeating in the log at every sync.
+npm run sync:files 2>&1 | tee "$STATE/last-sync.out" \
+    | grep --line-buffered -E "files,|Storage:|Upload|not uploaded|couldn't read|Exam prep|Notices:|Projects:|Run-up:|Search index:|Units and topics|Synced|rror|warning" \
+    | sed -l "s/^/    /"
+rc=${PIPESTATUS[0]}
+if [ "$rc" -eq 0 ] && grep -q "^Synced" "$STATE/last-sync.out"; then
     mv "$STAMP.new" "$STAMP"
-    up=$(echo "$out" | sed -n 's/^Upload \([0-9]*\).*/\1/p')
+    up=$(sed -n 's/^Upload \([0-9]*\).*/\1/p' "$STATE/last-sync.out")
     log "ok (uploaded ${up:-0})"
     if [ "${up:-0}" != "0" ]; then osascript -e "display notification \"Uploaded $up file(s) to AcadKit\" with title \"AcadKit sync\"" 2>/dev/null; fi
 else

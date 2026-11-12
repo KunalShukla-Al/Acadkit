@@ -9,6 +9,9 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
+
+/** Reading one file's text, OCR of a long scan included: past this it has hung. */
+const READ_MS = 600_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SWIFT_SOURCE = path.join(here, "extract-text.swift");
 const CACHE = path.join(homedir(), "Library", "Caches", "AcadKit");
@@ -61,7 +64,7 @@ const decode = (s) =>
 
 /** A deck's slides in order, each as its text runs joined up. */
 async function pptxSlides(full) {
-  const { stdout: list } = await run("unzip", ["-Z1", full], { maxBuffer: 16 << 20 });
+  const { stdout: list } = await run("unzip", ["-Z1", full], { maxBuffer: 16 << 20, timeout: READ_MS });
   const slides = list
     .split("\n")
     .map((l) => l.trim())
@@ -69,7 +72,7 @@ async function pptxSlides(full) {
     .sort((a, b) => Number(a.match(/(\d+)\.xml$/)[1]) - Number(b.match(/(\d+)\.xml$/)[1]));
   const pages = [];
   for (const entry of slides) {
-    const { stdout: xml } = await run("unzip", ["-p", full, entry], { maxBuffer: 64 << 20 });
+    const { stdout: xml } = await run("unzip", ["-p", full, entry], { maxBuffer: 64 << 20, timeout: READ_MS });
     // Paragraphs become lines; the text itself lives in <a:t> runs.
     const text = xml
       .split(/<\/a:p>/)
@@ -126,7 +129,7 @@ export async function extractText(full, ext, sha) {
 
   let result = { pages: [], ocr: [] };
   if (NATIVE.has(ext)) {
-    const { stdout } = await run(await extractor(), [full], { maxBuffer: 256 << 20 });
+    const { stdout } = await run(await extractor(), [full], { maxBuffer: 256 << 20, timeout: READ_MS });
     result = JSON.parse(stdout || '{"pages":[],"ocr":[]}');
   } else if (ext === "pptx") {
     const pages = await pptxSlides(full);

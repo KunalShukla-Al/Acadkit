@@ -30,6 +30,9 @@ const DECK_TIDY = 3;
 
 const exec = promisify(execFile);
 
+/** LibreOffice on one file: a deck takes seconds, and one it hangs on is given up on. */
+const CONVERT_MS = 180_000;
+
 /** Where an Office file's PDF rendition is cached, by the file's sha256 (`<sha>.pdf`, a .pptx `<sha>.deck3.pdf`). */
 export function renditionPath(sha, ext, cacheDir = CACHE) {
   const stem = ext === "pptx" ? `${sha}.deck${DECK_TIDY}` : sha;
@@ -73,7 +76,7 @@ export async function buildRenditions(files, { run = exec, exists = fileExists, 
           const tmp = await mkdtemp(path.join(tmpdir(), "acadkit-convert-"));
           try {
             const input = f.ext === "pptx" ? await tidyDeck(f.full, tmp, run) : f.full;
-            await run(soffice, ["--headless", "--convert-to", to, "--outdir", tmp, input, PROFILE]);
+            await run(soffice, ["--headless", "--convert-to", to, "--outdir", tmp, input, PROFILE], { timeout: CONVERT_MS });
             const made = path.join(tmp, `${path.basename(f.full).replace(/\.[^.]+$/, "")}.${to}`);
             // soffice exits 0 on a file it couldn't load; the missing
             // output is the only sign.
