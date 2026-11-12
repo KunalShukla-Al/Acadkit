@@ -301,6 +301,14 @@ code and images.
   scroll position and open groups.
 - Zoom follows a pinch with some resistance and springs back past 1x and 4x
   (`src/lib/zoom.ts`). PDFs redraw sharp at the settled zoom.
+- A PDF page is drawn only near the screen, at the display's density
+  (`src/components/viewer/render-scale.ts`: capped at 3x and 8 million canvas pixels). On a
+  dense screen its first appearance takes two passes, 1x then sharp, copied into the same
+  canvas; a zoom re-draw goes straight to sharp over the stretched page.
+- While a file downloads or a page draws, the viewer shows skeletons
+  (`src/components/viewer/skeleton.tsx`): paper-shaped pages for a PDF, lines of text for
+  Word, sheets and code. The viewer and transcript overlays rise in (`.overlay-in`), and
+  Reduce Motion turns every one of these animations off.
 - Find in file uses the CSS Highlight API; PDFs get a pdf.js text layer.
 - Files opened once are cached on the device (`src/lib/fileCache.ts`, 400 MB), and rows
   prefetch on touch.
