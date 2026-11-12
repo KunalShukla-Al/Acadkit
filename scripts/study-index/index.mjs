@@ -50,7 +50,8 @@ export async function indexStudyFolder({ supabase, pin, files, reindex = false, 
   // One entry per content: the same file in two folders is indexed once.
   const byKey = new Map();
   for (const f of files) if (extractable(f.ext) && !byKey.has(f.key)) byKey.set(f.key, f);
-  const todo = [...byKey.values()].filter((f) => reindex || !indexed.has(f.key));
+  // A file kept from the last sync (no bytes this run) keeps its passages as they are.
+  const todo = [...byKey.values()].filter((f) => f.full && (reindex || !indexed.has(f.key)));
   const gone = [...indexed].filter((k) => !byKey.has(k));
   log(`Search index: ${byKey.size} readable files · ${todo.length} to index · ${gone.length} to drop`);
   if (dryRun) return { todo: todo.length, gone: gone.length };
