@@ -9,6 +9,7 @@ import { applyDeletions } from "./apply-study-deletions.mjs";
 import { applyUploads } from "./apply-study-uploads.mjs";
 import { indexStudyFolder } from "./study-index/index.mjs";
 import { buildRenditions } from "./lib/renditions.mjs";
+import { isUnreadable, keepLastUpload } from "./lib/unreadable.mjs";
 import { pyqNote, readPaperbank } from "./lib/paperbank.mjs";
 import { studyRoots } from "./lib/roots.mjs";
 import { readCourseTitles, subjectIndex, tagFile } from "./lib/tags.mjs";
@@ -215,6 +216,7 @@ for (const [apply, what] of [[applyDeletions, "deletions"], [applyUploads, "uplo
 
 const files = [];
 const skippedLarge = [];
+const unreadable = [];
 const walked = (await walk(dir)).sort();
 // Subject, unit and kind, read off each path (scripts/lib/tags.mjs). A
 // subject folder named by title alone ("Operating_Systems") finds its code
@@ -240,12 +242,22 @@ for (const { root, prefix, rels } of roots) {
   const subjects = subjectIndex(topsOf(rels), courseTitles);
   for (const rel of rels) {
     const full = path.join(root, rel);
-    const info = await stat(full);
-    if (info.size > MAX_BYTES) {
-      skippedLarge.push(`${prefix}${rel} (${mb(info.size)})`);
+    let info, bytes;
+    try {
+      info = await stat(full);
+      if (info.size > MAX_BYTES) {
+        skippedLarge.push(`${prefix}${rel} (${mb(info.size)})`);
+        continue;
+      }
+      bytes = await readFile(full);
+    } catch (err) {
+      // Deleted mid-sync: gone. Anything else (an iCloud placeholder) keeps its last upload (scripts/lib/unreadable.mjs).
+      if (!isUnreadable(err)) continue;
+      const kept = keepLastUpload(`${prefix}${rel}`, prevFiles, remoteKeys);
+      if (kept) files.push({ ...kept, root, rel });
+      unreadable.push(`${prefix}${rel} (${err.code ?? err.message})${kept ? ", kept its last upload" : ""}`);
       continue;
     }
-    const bytes = await readFile(full);
     const sha = createHash("sha256").update(bytes).digest("hex");
     const ext = path.extname(rel).slice(1).toLowerCase();
     files.push({
@@ -267,7 +279,7 @@ for (const { root, prefix, rels } of roots) {
 // .doc/.ppt/.pptx have no reader in the app, and its .docx reader loses bullets, crops and layout.
 // The original stays the download.
 const previews = [];
-for (const [rel, r] of await buildRenditions(files)) {
+for (const [rel, r] of await buildRenditions(files.filter((f) => f.full))) {
   const f = files.find((x) => x.path === rel);
   const key = `${pin}/blobs/${r.sha}.${r.ext}`;
   f.preview = { key, ext: r.ext };
@@ -293,7 +305,7 @@ for (const f of files) {
 // Big PDFs go up shrunk (scripts/lib/shrink.mjs); the Mac keeps the original. A shrunk copy
 // smaller than what the bucket holds replaces it (adds() below), so the night's lower bar sticks.
 const shrinkOpts = { gs: await findGs(), ...(shrinkOver ? { over: shrinkOver * 1024 * 1024 } : {}) };
-if ((await shrinkPdfs(files, shrinkOpts)) === null) console.log("Big PDFs go up as they are: brew install ghostscript to shrink them.");
+if ((await shrinkPdfs(files.filter((f) => f.full), shrinkOpts)) === null) console.log("Big PDFs go up as they are: brew install ghostscript to shrink them.");
 
 for (const p of previews) p.size = (await stat(p.full)).size;
 const blobs = [...files, ...previews];
@@ -326,6 +338,7 @@ for (const { prefix } of roots.slice(1)) console.log(`  of which ${prefix.slice(
 if (storage) console.log(`Storage: ${mb(storage.before)} of ${mb(STORAGE_LIMIT)} in the bucket, ${mb(storage.after)} after this sync`);
 console.log(`Upload ${toUpload.length} (${mb(toUpload.reduce((s, f) => s + (f.uploadSize ?? f.size), 0))}), remove ${toRemove.length}`);
 for (const s of skippedLarge) console.log(`  skipped, over 50 MB: ${s}`);
+for (const s of unreadable) console.log(`  couldn't read, tried again next sync: ${s}`);
 for (const f of storage?.refused ?? []) console.log(`  not uploaded, the bucket would pass ${mb(UPLOAD_CAP)}: ${f.path} (${mb(f.uploadSize ?? f.size)})`);
 
 /** Exam prep: { tests: [{ subject_code, label, due_date, title, portion, pattern, papers, topics: [{ topic, unit, seen, of }], files: [{ path, why }] }] }. */
