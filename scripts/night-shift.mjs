@@ -5,7 +5,7 @@
  * 02:00, then the job, once a night, and its report for the morning push.
  */
 import { spawn } from "node:child_process";
-import { createClient } from "@supabase/supabase-js";
+import { macClient } from "./lib/mac-client.mjs";
 import { addAccepted } from "./lib/paper-dataset.mjs";
 import { autopilotFolders, contentReader, filer, isPaused, readNew } from "./lib/autopilot.mjs";
 import { fileInbox } from "./lib/inbox.mjs";
@@ -62,7 +62,7 @@ async function job() {
   const at = new Date().toISOString();
   log("on the charger: starting the job");
   try {
-    const supabase = createClient(url, key, { auth: { persistSession: false } });
+    const supabase = macClient(url, key);
     const libs = { recorder, handler, recorderMissing, syncLectures, isPaused, modelReady, readNew, autopilotFolders, fileInbox, contentReader, filer, addAccepted };
     const steps = await runSteps(nightSteps({ supabase, pin, dir: studyRoots().dir, night, log: (l) => log(l.trim()), libs }), { log });
     const record = { night, at, finished: new Date().toISOString(), steps };

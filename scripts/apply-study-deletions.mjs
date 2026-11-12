@@ -6,7 +6,7 @@ import { readdir, readFile, rename, rmdir, stat, unlink, writeFile } from "node:
 import { homedir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createClient } from "@supabase/supabase-js";
+import { macClient } from "./lib/mac-client.mjs";
 import { dropFromPrep, resolveRequest, shaOfKey, sourceOf, trashName, webVersionOf } from "./lib/deletions.mjs";
 import { placeOf, studyRoots } from "./lib/roots.mjs";
 
@@ -141,6 +141,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exit(1);
   }
   const { dir, extras } = studyRoots();
-  const supabase = createClient(url, key, { auth: { persistSession: false } });
+  const supabase = macClient(url, key);
   await applyDeletions({ supabase, pin, dir, extras, dryRun: process.argv.includes("--dry-run") });
 }

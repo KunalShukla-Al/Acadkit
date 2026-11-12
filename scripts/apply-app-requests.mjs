@@ -3,7 +3,7 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { createClient } from "@supabase/supabase-js";
+import { macClient } from "./lib/mac-client.mjs";
 import { applyDeletions } from "./apply-study-deletions.mjs";
 import { applyUploads } from "./apply-study-uploads.mjs";
 import { fileInbox } from "./lib/inbox.mjs";
@@ -43,7 +43,7 @@ if (!url || !key || !/^\d{4}$/.test(pin ?? "")) {
   process.exit(1);
 }
 const { dir, extras } = studyRoots();
-const supabase = createClient(url, key, { auth: { persistSession: false } });
+const supabase = macClient(url, key);
 
 // When Autopilot and the recorder last ran, for the Mac line on Today (scripts/lib/jobs.mjs).
 const ran = {};

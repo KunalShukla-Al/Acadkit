@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { createClient } from "@supabase/supabase-js";
+import { macClient } from "../lib/mac-client.mjs";
 import { freeName } from "../lib/deletions.mjs";
 import { INBOX } from "../lib/inbox.mjs";
 import { studyRoots } from "../lib/roots.mjs";
@@ -71,7 +71,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   let line;
   try {
     if (!url || !key || !/^\d{4}$/.test(pin ?? "")) throw new Error("the repo's .env.local needs the Supabase keys and STUDY_PIN");
-    const supabase = createClient(url, key, { auth: { persistSession: false } });
+    const supabase = macClient(url, key);
     line = await sendToPhone({ files: process.argv.slice(2), dir: studyRoots().dir, supabase, pin });
   } catch (err) {
     line = `Couldn't send it: ${err.message}`;
