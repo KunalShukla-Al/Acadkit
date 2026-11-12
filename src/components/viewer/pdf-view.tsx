@@ -3,6 +3,7 @@ import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { TextContent, TextItem } from "pdfjs-dist/types/src/display/api";
 import { createPdfFinder, type Finder, type PdfPageText } from "@/components/viewer/find";
 import { pdfEngine } from "@/components/viewer/pdf-engine";
+import { sharpRatio } from "@/components/viewer/render-scale";
 import { PdfSkeleton } from "@/components/viewer/skeleton";
 
 type PdfLib = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -125,9 +126,6 @@ export default function PdfView({
   );
 }
 
-/** The most pixels one page's canvas may hold. */
-const MAX_CANVAS_PIXELS = 8_000_000;
-
 /** One page: a placeholder of the right height, drawn while it's near the screen. */
 function PdfPage({
   doc,
@@ -176,7 +174,7 @@ function PdfPage({
       if (cancelled) return;
       const base = page.getViewport({ scale: 1 });
       const css = width / base.width;
-      const dpr = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(MAX_CANVAS_PIXELS / (width * width * aspect)));
+      const dpr = sharpRatio(window.devicePixelRatio, width, aspect);
       const viewport = page.getViewport({ scale: css * dpr });
       // Drawn off screen and swapped in, so a re-draw at a new zoom shows
       // the old (stretched) page until the sharp one is ready, not white.
