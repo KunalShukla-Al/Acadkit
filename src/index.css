@@ -440,6 +440,13 @@
   .pdf-skeleton::after, .pdf-canvas-in { animation: none; }
 }
 
+/* The viewer and a lecture transcript rise into place over the page they opened from. Opacity and transform only, ending at none, so nothing fixed inside is re-anchored once it lands. */
+.overlay-in { animation: overlay-rise .26s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes overlay-rise { from { opacity: 0; transform: translateY(16px); } }
+@media (prefers-reduced-motion: reduce) {
+  .overlay-in { animation: none; }
+}
+
 /*
  * Pinch-zoom is allowed (people who need bigger text rely on it), so the
  * viewport no longer sets maximum-scale=1. What that setting was really

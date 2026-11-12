@@ -146,7 +146,7 @@ function AppRoutes() {
           <Route
             path="/view"
             element={
-              <div className="fixed inset-0 z-60 bg-bg">
+              <div className="overlay-in fixed inset-0 z-60 bg-bg">
                 <Suspense fallback={<div className="h-full bg-bg" />}>
                   <Viewer overlay />
                 </Suspense>
@@ -156,7 +156,7 @@ function AppRoutes() {
           <Route
             path="/lecture/:id"
             element={
-              <div className="fixed inset-0 z-60 bg-bg">
+              <div className="overlay-in fixed inset-0 z-60 bg-bg">
                 <Suspense fallback={<div className="h-full bg-bg" />}>
                   <Lecture overlay />
                 </Suspense>
