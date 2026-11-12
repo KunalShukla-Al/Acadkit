@@ -28,6 +28,9 @@ existing data or installs, a minor version for new features, a patch version for
   then the sharp one drawn into the same canvas. Fast scrolling meets drawn pages instead of
   shimmering ones, and the sharp text follows a moment later. Screens at 1× and zoom re-draws still
   draw once.
+- Word files, spreadsheets and code files now open onto lines of placeholder text with the same soft
+  sweep, instead of a bare "Opening…", and a PDF still downloading shows its paper-shaped pages
+  already, at the width it will open at.
 - The study-folder sync now sends a correct content type for more of what the folder holds: iPhone
   photos (HEIC/HEIF), voice notes (M4A, MP3 and other audio), short clips (MP4/MOV), SVGs, the older
   Office formats (DOC/PPT/XLS), RTF and JSON. These used to upload as `application/octet-stream`, so

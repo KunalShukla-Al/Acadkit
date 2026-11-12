@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { DocSkeleton } from "@/components/viewer/skeleton";
 
 /**
  * A Word document, laid out as Word would: page by page on white paper,
@@ -60,7 +61,7 @@ export default function DocxView({ blob }: { blob: Blob }) {
   return (
     <div className="w-full">
       <div ref={styles} />
-      {state === "loading" && <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>}
+      {state === "loading" && <DocSkeleton />}
       {state !== "loading" && state !== "ready" && (
         <p className="px-4 py-10 text-center text-sm font-medium text-muted">Couldn't open this document: {state}</p>
       )}

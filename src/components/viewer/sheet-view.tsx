@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { DocSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
 import { extOf } from "@/lib/studyFiles";
 import { columnName, parseDelimited, trimSheet } from "@/lib/viewer";
@@ -47,7 +48,7 @@ export default function SheetView({ blob, path }: { blob: Blob; path: string }) 
   const cols = shown.reduce((m, r) => Math.max(m, r.length), 0);
 
   if (error) return <p className="px-4 py-10 text-center text-sm font-medium text-muted">Couldn't read this spreadsheet: {error}</p>;
-  if (!sheets) return <p className="py-16 text-center text-sm font-medium text-muted">Opening…</p>;
+  if (!sheets) return <DocSkeleton />;
   return (
     <div className="w-full">
       {sheets.length > 1 && (
