@@ -56,6 +56,28 @@ export interface RunupEvent {
   files: { path: string; why: string | null }[];
 }
 
+/** A video to watch for a task. */
+export interface RunupVideo {
+  title: string;
+  url: string;
+  minutes: number | null;
+  /** The channel or teacher. */
+  by: string | null;
+}
+
+/** A past-paper question to write after a task. */
+export interface RunupTaskPyq {
+  /** Its paper and number as one word; with the task's id, what its tick is stored under. */
+  key: string;
+  /** The paper, e.g. "Jul 2025". */
+  source: string | null;
+  number: string | null;
+  marks: number | null;
+  text: string;
+  file: string | null;
+  page: number | null;
+}
+
 export interface RunupTask {
   id: string;
   text: string;
@@ -63,6 +85,21 @@ export interface RunupTask {
   event: string | null;
   minutes: number | null;
   files: string[];
+  /** The page to open a file at, by path. */
+  pages?: Record<string, number>;
+  videos?: RunupVideo[];
+  pyqs?: RunupTaskPyq[];
+}
+
+/** What a question's tick is stored under in plan_ticks: beside its task's, never equal to a task id. */
+export function pyqTickId(taskId: string, key: string): string {
+  return `${taskId}>${key}`;
+}
+
+/** How many of a task's questions are written. */
+export function pyqProgress(task: RunupTask, done: ReadonlySet<string>): { done: number; total: number } {
+  const all = task.pyqs ?? [];
+  return { done: all.filter((q) => done.has(pyqTickId(task.id, q.key))).length, total: all.length };
 }
 
 export interface RunupDay {

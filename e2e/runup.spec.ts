@@ -41,6 +41,28 @@ test("a tick saves for the account, survives a reload and can be undone", async 
   await expect(page.getByText("0/2 done")).toBeVisible();
 });
 
+test("a task carries its video and the past questions to write, each with its own tick", async ({ signedIn: page, request }) => {
+  await page.goto("/runup");
+  const task = page.locator('[data-task="t3"]');
+  // The file opens at the page the plan names; the video opens on YouTube.
+  await expect(task.getByRole("link", { name: /Unit 2 scheduling notes/ }).first()).toHaveAttribute("href", /page=2/);
+  await expect(task.getByRole("link", { name: /Round robin scheduling\s*16 min · Gate Smashers/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=TxjIlNYRZ5M");
+
+  await task.getByText("Past questions to write").click();
+  await expect(task.getByText("0/2 written")).toBeVisible();
+  await expect(task.getByText("Draw the Gantt chart for round robin")).toBeVisible();
+  await expect(task.getByRole("link", { name: "Open the paper: Jul 2025 · B22a" })).toHaveAttribute("href", /\/view\?path=.*page=1/);
+  // A question whose paper isn't in the folder has no link.
+  await expect(task.getByRole("link", { name: /Nov 2024/ })).toHaveCount(0);
+
+  await task.getByRole("button", { name: "Written: Jul 2025 · B22a" }).click();
+  await expect(task.getByText("1/2 written")).toBeVisible();
+  await expect.poll(async () => (await serverRows<{ task_id: string }>(request, "plan_ticks")).map((r) => r.task_id)).toEqual(["t3>jul-2025-b22a"]);
+  // The task itself is still to do: the day's count hasn't moved.
+  await expect(page.getByText("0/2 done")).toBeVisible();
+  await expect(page.getByRole("button", tickFor("Two Gantt charts: FCFS and Round Robin"))).toHaveAttribute("aria-pressed", "false");
+});
+
 test("a tick made offline lands once the network is back", async ({ signedIn: page, context, request }) => {
   await page.goto("/runup");
   await expect(page.getByText("0/2 done")).toBeVisible();

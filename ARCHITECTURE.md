@@ -269,6 +269,12 @@ expectation counts in the plan without ever being saved as a mark.
 - Ticks live apart from the plan, in `plan_ticks` (migration 043), keyed by task id, so the plan
   can be rewritten without losing them. Ticking is a named write (`runup.tick`), so it survives
   being offline and closing the app.
+- A task may carry what to study it from: its files, each opening at a page when the plan names one;
+  videos (YouTube links over https, with their minutes and channel); and the past-paper questions
+  to write after it, each with its paper, number, marks, text and the paper's file
+  (`components/runup/task-resources.tsx`). A question has its own tick, stored in `plan_ticks` under
+  the task's id, `>`, and the question's paper and number (`pyqTickId`),
+  which no task id can equal, so the day's count stays the tasks'.
 - An unticked task carries to today until the event it prepares for has happened
   (`itemsFor` in `src/lib/runup.ts`). Past and future days show only their own plan.
 - `/runup` opens today's day, from the top bar's chip; another day is its own page, `/runup/<date>`.

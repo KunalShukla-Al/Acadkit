@@ -10,16 +10,37 @@
       "title": "OS FT-II",
       "kind": "test",
       "date": "2026-10-09",
-      "target": { "score": 12, "max": 15, "note": "about two-thirds of the paper" },
+      "target": {
+        "score": 12,
+        "max": 15,
+        "note": "about two-thirds of the paper"
+      },
       "weight": "15% of the grade",
       "format": "Part A 5 marks + Part B 2 x 10, each an either/or",
-      "units": [2, 3],
-      "portion": ["Processes, threads and IPC", "CPU scheduling and deadlocks"],
-      "scoring": ["Draw the three thread models and recommend one for a web server", "Show every Gantt chart step"],
-      "prepare": ["Banker's algorithm: Need matrix and a safe sequence"],
+      "units": [
+        2,
+        3
+      ],
+      "portion": [
+        "Processes, threads and IPC",
+        "CPU scheduling and deadlocks"
+      ],
+      "scoring": [
+        "Draw the three thread models and recommend one for a web server",
+        "Show every Gantt chart step"
+      ],
+      "prepare": [
+        "Banker's algorithm: Need matrix and a safe sequence"
+      ],
       "analysis": {
         "source": "Four papers from last year",
-        "items": [{ "topic": "Multithreading models", "seen": "4 / 4", "note": "three ask it as a web server" }]
+        "items": [
+          {
+            "topic": "Multithreading models",
+            "seen": "4 / 4",
+            "note": "three ask it as a web server"
+          }
+        ]
       },
       "pyqs": [
         {
@@ -45,7 +66,12 @@
           "text": "Explain Banker's algorithm with an example."
         }
       ],
-      "files": [{ "path": "Operating_Systems/Unit 2 scheduling notes.pdf", "why": "the faculty's Unit 2 notes" }]
+      "files": [
+        {
+          "path": "Operating_Systems/Unit 2 scheduling notes.pdf",
+          "why": "the faculty's Unit 2 notes"
+        }
+      ]
     },
     {
       "id": "dsa-lab",
@@ -54,7 +80,10 @@
       "kind": "lab",
       "date": null,
       "when": "postponed, date not announced",
-      "target": { "score": 10, "max": 15 }
+      "target": {
+        "score": 10,
+        "max": 15
+      }
     }
   ],
   "days": [
@@ -62,8 +91,18 @@
       "date": "2026-10-06",
       "focus": "Threads",
       "tasks": [
-        { "id": "t1", "text": "Sketch the three thread models", "event": "os-ft2", "minutes": 30 },
-        { "id": "t2", "text": "Write BST insert from memory", "event": "dsa-lab", "minutes": 40 }
+        {
+          "id": "t1",
+          "text": "Sketch the three thread models",
+          "event": "os-ft2",
+          "minutes": 30
+        },
+        {
+          "id": "t2",
+          "text": "Write BST insert from memory",
+          "event": "dsa-lab",
+          "minutes": 40
+        }
       ]
     },
     {
@@ -75,14 +114,55 @@
           "text": "Two Gantt charts: FCFS and Round Robin",
           "event": "os-ft2",
           "minutes": 45,
-          "files": ["Operating_Systems/Unit 2 scheduling notes.pdf"]
+          "files": [
+            {
+              "path": "Operating_Systems/Unit 2 scheduling notes.pdf",
+              "page": 2
+            }
+          ],
+          "videos": [
+            {
+              "title": "Round robin scheduling",
+              "url": "https://www.youtube.com/watch?v=TxjIlNYRZ5M",
+              "minutes": 16,
+              "by": "Gate Smashers"
+            }
+          ],
+          "pyqs": [
+            {
+              "source": "Jul 2025",
+              "number": "B22a",
+              "marks": 8,
+              "text": "Draw the Gantt chart for round robin with a quantum of 4 and find the average waiting time.",
+              "file": "Operating_Systems/Unit 2 scheduling notes.pdf",
+              "page": 1
+            },
+            {
+              "source": "Nov 2024",
+              "number": "B22b",
+              "marks": 8,
+              "text": "Compare FCFS and round robin on five processes."
+            }
+          ]
         },
-        { "id": "t4", "text": "Pandas groupby, five snippets by hand", "subject_code": "21CSS202T", "minutes": 30 }
+        {
+          "id": "t4",
+          "text": "Pandas groupby, five snippets by hand",
+          "subject_code": "21CSS202T",
+          "minutes": 30
+        }
       ]
     },
     {
       "date": "2026-10-08",
-      "tasks": [{ "id": "t5", "text": "One full past paper, timed", "event": "os-ft2", "minutes": 50 }]
+      "tasks": [
+        {
+          "id": "t5",
+          "text": "One full past paper, timed",
+          "event": "os-ft2",
+          "minutes": 50
+        }
+      ]
     }
   ]
 }

@@ -148,7 +148,7 @@ export default function RunupEvent() {
               <Section icon={ListChecks} title="Tasks for it">
                 <ul className="-mx-4 divide-y">
                   {tasks.map((item) => (
-                    <TaskRow key={item.task.id} item={item} plan={data} onToggle={onToggle} showFrom showEvent={false} />
+                    <TaskRow key={item.task.id} item={item} plan={data} ticked={done} onToggle={onToggle} showFrom showEvent={false} />
                   ))}
                 </ul>
               </Section>

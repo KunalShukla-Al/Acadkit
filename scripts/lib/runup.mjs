@@ -10,8 +10,15 @@
  *              analysis: { source, items: [{ topic, seen, note }] },
  *              pyqs: [{ source, file, page, number, marks, unit, topic, year, kind, text }],
  *              files: [{ path, why }] }],
- *   days: [{ date, focus, tasks: [{ id, text, subject_code, event, minutes, files }] }]
+ *   days: [{ date, focus, tasks: [{ id, text, subject_code, event, minutes,
+ *             files: [path | { path, page }],
+ *             videos: [{ title, url, minutes, by }],
+ *             pyqs: [{ source, number, marks, text, file, page }] }] }]
  * }
+ *
+ * A task's own past-paper questions are the ones to write after it. Each
+ * gets a key from its paper and number, which its tick is stored under
+ * beside the task's (src/lib/runup.ts, pyqTickId).
  *
  * Like the weekly cards (weekly.mjs), one bad entry is dropped with a
  * warning and never hides the rest. Task ids are what a tick is stored
@@ -96,6 +103,60 @@ function pyqs(list, find, what, warnings) {
     });
   }
   if (missing) warnings.push(`${what}: ${missing} past-paper question(s) point at a file the sync doesn't know, shown without the link`);
+  return out;
+}
+
+/** A task's files as paths, and the page to open each at where the plan gives one. */
+function taskFiles(list, find, what, warnings) {
+  const paths = [];
+  const pages = {};
+  for (const f of Array.isArray(list) ? list : []) {
+    const [kept] = files([f], find, what, warnings);
+    if (!kept || paths.includes(kept.path)) continue;
+    paths.push(kept.path);
+    if (Number.isInteger(f?.page) && f.page > 0) pages[kept.path] = f.page;
+  }
+  return { paths, pages };
+}
+
+/** Where a video link may point: YouTube, over https. */
+const VIDEO_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be"]);
+
+function videos(list, what, warnings) {
+  const out = [];
+  for (const v of Array.isArray(list) ? list : []) {
+    const title = text(v?.title);
+    let url = null;
+    try {
+      url = new URL(text(v?.url));
+    } catch {
+      /* not a link */
+    }
+    if (!title || !url || url.protocol !== "https:" || !VIDEO_HOSTS.has(url.hostname)) {
+      warnings.push(`${what}: a video needs a title and a YouTube link, dropped`);
+      continue;
+    }
+    const minutes = Number.isInteger(v.minutes) && v.minutes > 0 && v.minutes <= 600 ? v.minutes : null;
+    out.push({ title, url: url.href, minutes, by: text(v.by) || null });
+  }
+  return out;
+}
+
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/** A task's questions with the key each tick is stored under: its paper and number, each once. */
+function taskPyqs(list, find, what, warnings) {
+  const out = [];
+  const keys = new Set();
+  for (const q of pyqs(list, find, what, warnings)) {
+    const key = slug(`${q.source ?? ""} ${q.number ?? ""}`).slice(0, 60);
+    if (!key || keys.has(key)) {
+      warnings.push(`${what}: a past-paper question needs its own paper and number, dropped`);
+      continue;
+    }
+    keys.add(key);
+    out.push({ key, source: q.source, number: q.number, marks: q.marks, text: q.text, file: q.file, page: q.page });
+  }
   return out;
 }
 
@@ -188,13 +249,20 @@ export function checkRunup(data, known, root = null, moved) {
         event = null;
       }
       const minutes = Number.isInteger(t.minutes) && t.minutes > 0 && t.minutes <= 720 ? t.minutes : null;
+      const { paths, pages } = taskFiles(t.files, find, what, warnings);
+      const watch = videos(t.videos, what, warnings);
+      const write = taskPyqs(t.pyqs, find, what, warnings);
       tasks.push({
         id,
         text: text(t.text),
         subject_code: text(t.subject_code) || null,
         event,
         minutes,
-        files: files(t.files, find, what, warnings).map((f) => f.path),
+        files: paths,
+        // Only where the plan has them, so a plan without them is the file it always was.
+        ...(Object.keys(pages).length ? { pages } : {}),
+        ...(watch.length ? { videos: watch } : {}),
+        ...(write.length ? { pyqs: write } : {}),
       });
     }
     days.push({ date: d.date, focus: text(d.focus) || null, tasks });
