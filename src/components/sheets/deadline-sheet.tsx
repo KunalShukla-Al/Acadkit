@@ -257,7 +257,7 @@ export function DeadlineSheet({ open, onClose, deadline, defaultDate }: Deadline
         )}
 
         {deadline?.source && (
-          <p className="text-[11px] text-muted">Autopilot read this from {deadline.source.split("/").pop()}.</p>
+          <p className="text-[11px] text-muted">Read from {deadline.source.split("/").pop()}.</p>
         )}
 
         <div className="flex gap-2.5 pt-1">

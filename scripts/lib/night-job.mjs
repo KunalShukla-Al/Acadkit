@@ -1,13 +1,8 @@
 /**
- * The night shift's job (scripts/night-shift.mjs, at 02:00): the work the
- * 3-minute tick does a little of, done in full while I sleep.
- *
- * 1. Every recording waiting is transcribed (the tick does one).
- * 2. Every file waiting for Autopilot is read and filed (the tick reads
- *    three), and past papers join the dataset.
- * 3. The study folder is synced with PDFs over 2 MB shrunk (the day's sync
- *    shrinks those over 8 MB), which frees space in the bucket. On Saturday
- *    nights every file is indexed again.
+ * The night shift's job (scripts/night-shift.mjs, at 02:00): the study
+ * folder synced with PDFs over 2 MB shrunk (the day's sync shrinks those over
+ * 8 MB), which frees space in the bucket. On Saturday nights every file is
+ * indexed again.
  *
  * It holds the tick's lock (sync.lock), so neither runs over the other.
  */
@@ -105,32 +100,9 @@ export async function runSteps(steps, { log = console.log } = {}) {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/**
- * The night's steps for runSteps: transcribe, read and file, sync. Each
- * says what it did ("2 lectures transcribed"), or "" when there was nothing.
- */
-export function nightSteps({ supabase, pin, dir, night, env = process.env, log = console.log, libs }) {
-  const { recorder, handler, recorderMissing, syncLectures, isPaused, modelReady, readNew, autopilotFolders, fileInbox, contentReader, filer, addAccepted } = libs;
+/** The night's steps for runSteps. Each says what it did, or "" when there was nothing. */
+export function nightSteps({ night, env = process.env, log = console.log }) {
   return [
-    {
-      name: "Transcribe",
-      run: async () => {
-        const done = await recorder({ env, handle: handler({ supabase, pin, dir }), missing: recorderMissing, perTick: Infinity, log });
-        await syncLectures({ supabase, pin, log });
-        return done.length ? `${plural(done.length, "lecture")} transcribed` : "";
-      },
-    },
-    {
-      name: "Read",
-      run: async () => {
-        if (isPaused(env)) return "";
-        if (!(await modelReady())) throw new Error("Ollama isn't serving the model");
-        const read = await readNew({ supabase, pin, dir, folders: autopilotFolders(env), perTick: Infinity, log });
-        const filed = await fileInbox({ supabase, pin, dir, readOf: await contentReader({ env }), onMove: filer({ supabase, pin, dir, log }), log });
-        const added = await addAccepted({ supabase, pin, datasetDir: path.join(dir, "_src", "pyq_dataset"), log });
-        return [read.length && `${plural(read.length, "file")} read`, filed && `${filed} filed`, added.length && `${plural(added.length, "past paper")} added`].filter(Boolean).join(", ");
-      },
-    },
     {
       name: "Sync",
       run: async () => {

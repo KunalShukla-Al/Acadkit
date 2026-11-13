@@ -4,62 +4,35 @@ import { expect, MOCK_API, test } from "./fixtures";
 // What links to what (scripts/lib/links.mjs), as the sync sends it: an index and a course's part.
 const STORAGE = MOCK_API.replace("/rest/v1", "/storage/v1/object/study-files/1234");
 const NOTES = "Operating_Systems/Unit 2 scheduling notes.pdf";
-const LECTURE = "00001234-0000-4000-8000-000000000000";
-const MEMO = "20261007 080200-A.m4a";
+const PHOTO = "Operating_Systems/02_Notes/Class_Photos/2026-10-07/IMG_1.jpg";
 const PART = {
   course: "Operating_Systems",
   links: {
     [`page:${NOTES}#1`]: [
-      { id: `moment:${MEMO}#3`, kind: "moment", why: "meaning", score: 0.41 },
+      { id: `photo:${PHOTO}`, kind: "photo", why: "meaning", score: 0.41 },
       { id: "question:os-es-2025-12#B21", kind: "question", why: "meaning", score: 0.33 },
       { id: "page:Operating_Systems/Unit 3 deadlocks (6 pages).pdf#2", kind: "page", why: "meaning", score: 0.3 },
     ],
-    [`moment:${MEMO}#3`]: [
-      { id: "slide:Operating_Systems/02_Notes/Unit_3/CPU.pptx#24", kind: "slide", why: "time" },
-      { id: `page:${NOTES}#1`, kind: "page", why: "meaning", score: 0.41 },
-    ],
   },
   questions: { "question:os-es-2025-12#B21": { path: "Operating_Systems/07_PYQs/es-2025-12.pdf", label: "End-sem Dec 2025 · B21", text: "Explain round robin scheduling." } },
-  moments: { [`moment:${MEMO}#3`]: { at: "2026-10-07T08:05" } },
 };
 
 async function seed(request: APIRequestContext) {
   const file = "links/Operating_Systems-0123456789ab.json";
   await request.post(`${STORAGE}/${file}`, { data: PART });
-  await request.post(`${STORAGE}/links.json`, { data: { version: 1, generatedAt: 1, courses: [{ course: "Operating_Systems", items: 2, file }] } });
-  await request.post(`${MOCK_API}/lectures`, {
-    data: { id: LECTURE, device_id: "1234", memo: MEMO, date: "2026-10-07", start_time: "08:02:00", seconds: 2880, subject_code: "21CSC202J", deck: "Operating_Systems/02_Notes/Unit_3/CPU.pptx", words: 4200 },
-  });
-  await request.post(`${MOCK_API}/lecture_moments`, {
-    data: [3].map((idx) => ({ device_id: "1234", lecture_id: LECTURE, idx, start_s: 180, end_s: 240, content: "Round robin gives each process a time quantum.", page: 24 })),
-  });
+  await request.post(`${STORAGE}/links.json`, { data: { version: 1, generatedAt: 1, courses: [{ course: "Operating_Systems", items: 1, file }] } });
 }
 
-test("a page of notes says what links to it: class, papers, other notes", async ({ signedIn: page }) => {
+test("a page of notes says what links to it: board photos, papers, other notes", async ({ signedIn: page }) => {
   await seed(page.request);
   await page.goto(`/view?${new URLSearchParams({ path: NOTES })}`);
   const line = page.getByLabel("Connected");
   await expect(line).toBeVisible();
-  await expect(line.getByText(/^(Lecture 7 Oct, 08:05|End-sem Dec 2025 · B21|p\. 2 · Unit 3 deadlocks \(6 pages\))$/)).toHaveCount(3);
+  await expect(line.getByText(/^(Board photo, 7 Oct|End-sem Dec 2025 · B21|p\. 2 · Unit 3 deadlocks \(6 pages\))$/)).toHaveCount(3);
 
-  // Each chip opens its item: the moment in its transcript, and Back returns to the page.
-  await line.getByRole("link", { name: "Lecture 7 Oct, 08:05" }).click();
-  await expect(page).toHaveURL(new RegExp(`/lecture/${LECTURE}\\?m=3$`));
-  await expect(page.locator("p", { hasText: "Round robin gives each process" })).toHaveClass(/bg-accent/);
-  // The transcript opened over the viewer: its own Back returns there.
-  await page.getByRole("banner").filter({ hasText: "OS lecture" }).getByLabel("Back").click();
-  await expect(page).toHaveURL(/\/view\?path=/);
+  // Each chip opens its item.
+  await expect(line.getByRole("link", { name: "Board photo, 7 Oct" })).toHaveAttribute("href", `/view?${new URLSearchParams({ path: PHOTO })}`);
   await expect(line.getByRole("link", { name: "End-sem Dec 2025 · B21" })).toHaveAttribute("href", `/view?${new URLSearchParams({ path: "Operating_Systems/07_PYQs/es-2025-12.pdf" })}`);
-});
-
-test("a lecture moment says what links to it, but not the slide its run already names", async ({ signedIn: page }) => {
-  await seed(page.request);
-  await page.goto(`/lecture/${LECTURE}`);
-  const line = page.getByLabel("Connected");
-  await expect(line).toContainText("p. 1 · Unit 2 scheduling notes");
-  await expect(line).not.toContainText("Slide 24");
-  await line.getByRole("link", { name: "p. 1 · Unit 2 scheduling notes" }).click();
-  await expect(page).toHaveURL(`/view?${new URLSearchParams({ path: NOTES, page: "1" })}`);
 });
 
 test("a past-paper question on Practice says what links to it, matched by its paper and words", async ({ signedIn: page }) => {

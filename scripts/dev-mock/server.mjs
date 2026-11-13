@@ -9,7 +9,6 @@ import { subjectIndex, tagFile } from "../lib/tags.mjs";
 import { RENDITION } from "../lib/renditions.mjs";
 import { checkNotices, checkProjects } from "../lib/weekly.mjs";
 import { checkRunup, splitRunup } from "../lib/runup.mjs";
-import { checkCards } from "../lib/cards.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP } from "../lib/storage.mjs";
 import { handle as feedsHandle } from "../../supabase/functions/feeds/handle.ts";
 
@@ -281,7 +280,7 @@ const SEED = {
   // Rows keep whatever the app sends, vapid_public (migration 041) included.
   push_subscriptions: [],
   // Migrations 029 and 030. study_chunks stays empty: the preview has no
-  // embedder, so search inside files finds only lectures (mockStudySearch).
+  // embedder, so search inside files finds nothing (mockStudySearch).
   portal_snapshot_history: SNAPSHOT_HISTORY,
   forecast_log: [],
   study_chunks: [],
@@ -295,17 +294,8 @@ const SEED = {
   active_days: [],
   // Migration 043: run-up tasks ticked as done.
   plan_ticks: [],
-  // Migration 045: where each flashcard stands.
-  card_reviews: [],
   // Migration 047: the feeds' private token.
   feed_tokens: [],
-  // Migration 051: what Siri marked, for Today's Undo.
-  siri_marks: [],
-  // Migration 053: what Autopilot added, for Today's Undo.
-  autopilot_actions: [],
-  // Migration 061: lectures the Mac recorded, and their moments.
-  lectures: [],
-  lecture_moments: [],
   // Migration 062: where you're reading, for Continue.
   reading_now: [],
 };
@@ -478,13 +468,6 @@ function mockStorage(req, res, u, { stored }) {
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(part.json);
   }
-  // The flashcards, checked as the real sync checks them.
-  if (m[1] === "1234/cards.json") {
-    const file = path.join(STUDY_DIR, "_src", "acadkit_cards.json");
-    const checked = existsSync(file) && checkCards(JSON.parse(readFileSync(file, "utf8")));
-    if (!checked?.body) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
-    return json(200, checked.body);
-  }
   // What the sync measures of the bucket (scripts/lib/storage.mjs): the folder's bytes, against the free plan.
   if (m[1] === "1234/storage.json") {
     const used = studyFiles.reduce((n, f) => n + f.size, 0);
@@ -554,41 +537,23 @@ const server = createServer((req, res) => {
   if (u.pathname.startsWith("/functions/v1/feeds/")) return mockFeeds(req, res, u, state);
 
   // ---- study search ---- Without its model: word overlap stands in for meaning.
-  if (u.pathname === "/functions/v1/study-search") return mockStudySearch(req, res, state);
+  if (u.pathname === "/functions/v1/study-search") return mockStudySearch(req, res);
 
   handleRest(req, res, u, state);
 });
 
-/**
- * Study search without gte-small: no passages (study_chunks is empty), and
- * each lecture moment 0.7 like the query plus up to 0.25 for the share of
- * the query's words it has. One with them all clears the app's bar for
- * showing a moment (MOMENT_NEAR, src/lib/lectures.ts); one with none doesn't.
- */
-function mockStudySearch(req, res, { db }) {
-  let body = "";
-  req.on("data", (c) => (body += c));
+/** Study search without gte-small: no passages (study_chunks is empty). */
+function mockStudySearch(req, res) {
+  req.resume();
   req.on("end", () => {
-    const { query = "", device_id } = JSON.parse(body || "{}");
-    const words = [...new Set(String(query).toLowerCase().match(/[a-z0-9]{3,}/g) ?? [])];
-    const moments = db.lecture_moments
-      .filter((m) => m.device_id === device_id)
-      .map((m) => {
-        const l = db.lectures.find((x) => x.id === m.lecture_id);
-        const said = m.content.toLowerCase();
-        const share = words.length ? words.filter((w) => said.includes(w)).length / words.length : 0;
-        return { lecture_id: m.lecture_id, idx: m.idx, start_s: m.start_s, page: m.page, content: m.content, similarity: 0.7 + 0.25 * share, date: l?.date, start_time: l?.start_time, subject_code: l?.subject_code ?? null, deck: l?.deck ?? null };
-      })
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 6);
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ results: [], moments }));
+    res.end(JSON.stringify({ results: [] }));
   });
 }
 
 /**
  * The feeds, run by their real handler with the mock's tables behind it:
- * Siri's ask, the share endpoint, today and the calendar, for the e2e specs.
+ * the share endpoint, today and the calendar, for the e2e specs.
  * Its clock is the specs' frozen morning (7:30 IST on MOCK_TODAY) when set.
  */
 function mockFeeds(req, res, u, { db, stored }) {
@@ -610,20 +575,10 @@ function mockFeeds(req, res, u, { db, stored }) {
         attendance: mine("attendance", pin),
         snapshots: mine("portal_snapshots", pin),
         deadlines: mine("deadlines", pin).filter((d) => d.status === "pending"),
-        marks: mine("marks", pin),
       }),
       share: async (pin, f) => {
         stored.set(f.key, Buffer.from(f.bytes).toString());
         db.study_uploads.push({ id: uid("upl", ++seq), device_id: pin, path: f.path, key: f.key, size: f.bytes.length, status: "pending", created_at: new Date().toISOString() });
-      },
-      markAbsent: async (pin, said, rows) => {
-        for (const r of rows) {
-          const { before: _before, ...row } = r;
-          const hit = db.attendance.find((a) => a.device_id === pin && a.subject_id === r.subject_id && a.date === r.date && a.start_time === r.start_time);
-          if (hit) Object.assign(hit, { status: "absent", auto_marked: false });
-          else db.attendance.push({ id: uid("att", ++seq), ...row, device_id: pin, status: "absent", auto_marked: false });
-        }
-        db.siri_marks.push({ id: uid("siri", ++seq), device_id: pin, said, rows, created_at: new Date().toISOString(), undone_at: null });
       },
       now: () => (process.env.MOCK_TODAY ? new Date(`${process.env.MOCK_TODAY}T07:30:00+05:30`) : new Date()),
     };

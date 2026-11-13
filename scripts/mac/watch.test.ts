@@ -11,10 +11,6 @@ describe("watchedFolders", () => {
     expect(watchedFolders("", "/Users/k")).toEqual(["/Users/k/Documents/SRM_Sem3"]);
   });
 
-  it("adds Autopilot's folders unless it is off", () => {
-    expect(watchedFolders('AUTOPILOT_FOLDERS="~/Downloads"\n', "/Users/k")).toEqual(["/Users/k/Documents/SRM_Sem3", "/Users/k/Downloads"]);
-    expect(watchedFolders('AUTOPILOT_FOLDERS="~/Downloads"\nAUTOPILOT=off\n', "/Users/k")).toEqual(["/Users/k/Documents/SRM_Sem3"]);
-  });
 });
 
 describe("ignored", () => {

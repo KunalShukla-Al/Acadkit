@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { AbsentRow } from "../../../packages/core/src/absent.ts";
 import { handle, istDate, shareFolder, type Account, type Shared } from "./handle.ts";
 
 const TOKEN = "a".repeat(48);
@@ -10,23 +9,20 @@ const account: Account = {
   attendance: [],
   snapshots: [],
   deadlines: [],
-  marks: [],
 };
 
 /** The handler with one account behind TOKEN and the clock at `now`. */
 function feeds(now: string) {
   const asked: string[] = [];
   const shared: Shared[] = [];
-  const marked: { said: string; rows: AbsentRow[] }[] = [];
   const deps = {
     use: async (t: string) => (asked.push(t), t === TOKEN ? { pin: "1234", allowed: true } : null),
     load: async () => account,
     share: async (_pin: string, f: Shared) => void shared.push(f),
-    markAbsent: async (_pin: string, said: string, rows: AbsentRow[]) => void marked.push({ said, rows }),
     now: () => new Date(now),
     uuid: () => "u1",
   };
-  return { asked, shared, marked, get: (path: string, init?: RequestInit) => handle(new Request(`https://x.supabase.co/functions/v1/feeds${path}`, init), deps) };
+  return { asked, shared, get: (path: string, init?: RequestInit) => handle(new Request(`https://x.supabase.co/functions/v1/feeds${path}`, init), deps) };
 }
 
 describe("feeds", () => {
@@ -61,7 +57,6 @@ describe("feeds", () => {
       use: async () => ({ pin: "1234", allowed: true }),
       load: async () => withTest,
       share: async () => {},
-      markAbsent: async () => {},
       now: () => new Date("2026-10-07T03:00:00Z"),
     });
     expect(res.headers.get("Content-Type")).toBe("text/calendar; charset=utf-8");
@@ -75,47 +70,15 @@ describe("feeds", () => {
     expect(classes).toContain("20261007");
   });
 
-  it("answers a spoken question in one sentence, saying what it heard", async () => {
-    const res = await feeds("2026-10-07T02:00:00Z").get(`/ask?token=${TOKEN}&q=${encodeURIComponent("when is my next test")}`);
-    expect(await res.json()).toEqual({ kind: "next-test", subject: null, say: "No tests on your list." });
-    const help = await (await feeds("2026-10-07T02:00:00Z").get(`/ask?token=${TOKEN}&q=hello`)).json();
-    expect(help.kind).toBe("unknown");
-  });
-
-  it("marks the classes absent when told, with what was said, and says so", async () => {
-    // 07:30 IST on Wednesday 7 Oct, Day Order 3: OS at 8:00.
-    const f = feeds("2026-10-07T02:00:00Z");
-    const body = await (await f.get(`/ask?token=${TOKEN}&q=${encodeURIComponent("I'm absent in OS")}`)).json();
-    expect(body).toEqual({ kind: "absent", subject: "21CSC202J", say: "Marked you absent in OS: 1 class today. You can undo it in the app.", marked: 1 });
-    expect(f.marked).toEqual([{ said: "I'm absent in OS", rows: [{ subject_id: "os", date: "2026-10-07", start_time: "08:00:00", end_time: "08:50:00", before: null }] }]);
-    // On a holiday nothing is written.
-    const h = feeds("2026-10-02T02:00:00Z");
-    expect((await (await h.get(`/ask?token=${TOKEN}&q=${encodeURIComponent("I'm absent in OS")}`)).json()).marked).toBe(0);
-    expect(h.marked).toEqual([]);
-  });
-
   it("answers 429 once a token is over its limit, and says when to try again", async () => {
     const res = await handle(new Request(`https://x/functions/v1/feeds/today?token=${TOKEN}`), {
       use: async () => ({ pin: "1234", allowed: false }),
       load: async () => account,
       share: async () => {},
-      markAbsent: async () => {},
       now: () => new Date(),
     });
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("60");
-  });
-
-  it("marks the classes still to come absent on leaving early, and only those", async () => {
-    // 07:30 IST, before OS at 8:00: the one class is still to come.
-    const f = feeds("2026-10-07T02:00:00Z");
-    const body = await (await f.get(`/leave?token=${TOKEN}`, { method: "POST" })).json();
-    expect(body).toEqual({ say: "Marked you absent for 1 class left today. You can undo it in the app.", marked: 1 });
-    expect(f.marked[0].said).toBe("Left SRM at 07:30");
-    // 09:00, after it: nothing left.
-    const later = feeds("2026-10-07T03:30:00Z");
-    expect(await (await later.get(`/leave?token=${TOKEN}`, { method: "POST" })).json()).toEqual({ say: "No classes left today.", marked: 0 });
-    expect((await later.get(`/leave?token=${TOKEN}`)).status).toBe(405);
   });
 
   it("knows only its feeds, each with its one method", async () => {

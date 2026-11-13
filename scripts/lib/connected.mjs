@@ -1,19 +1,18 @@
 /**
- * Everything connected: what I study from and what was said in class, in
- * one embedding space (gte-small, the vectors study search uses), so any
- * item can point at the others about the same thing.
+ * Everything connected: what I study from, in one embedding space (gte-small,
+ * the vectors study search uses), so any item can point at the others about
+ * the same thing.
  *
  * | Kind     | What it is                                         | Opens           |
  * | -------- | -------------------------------------------------- | --------------- |
  * | page     | a page of notes: a PDF or document that isn't a deck | the file there |
- * | slide    | a slide of a deck (lecture-align's decks)          | the deck there  |
+ * | slide    | a slide of a deck (scripts/lib/decks.mjs)          | the deck there  |
  * | question | a past-paper question (`_src/pyq_dataset`)          | the paper       |
- * | moment   | about a minute of a recorded lecture               | the transcript  |
  * | photo    | a board photo's text, by OCR (`02_Notes/Class_Photos`) | the photo    |
  *
  * Every item has its course (the study folder's top folder), its unit when
- * the folder or the question's topic says, and a time when it has one (a
- * moment, a photo). Vectors are cached by content, as the slides' are.
+ * the folder or the question's topic says, and a photo the time it was
+ * taken. Vectors are cached by content, as the slides' are.
  */
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -22,13 +21,12 @@ import path from "node:path";
 import { cleanPage } from "../study-index/chunk.mjs";
 import { embedTexts } from "../study-index/embed.mjs";
 import { extractText } from "../study-index/text.mjs";
-import { foldersByCode, istClock } from "./inbox.mjs";
-import { deckSlides, isDeck, meanOf } from "./lecture-align.mjs";
-import { STATE_DIR as RECORDER } from "./recorder.mjs";
+import { istClock } from "./inbox.mjs";
+import { deckSlides, isDeck, meanOf } from "./decks.mjs";
 import { CACHE_DIR } from "./semester.mjs";
 import { readCourseTitles, subjectIndex, unitOf } from "./tags.mjs";
 
-export const KINDS = ["page", "slide", "question", "moment", "photo"];
+export const KINDS = ["page", "slide", "question", "photo"];
 const CACHE = path.join(CACHE_DIR, "connected");
 const DOCUMENT = /\.(pdf|docx?|pptx?)$/i;
 const PHOTO = /\.(jpe?g|png|heic)$/i;
@@ -141,46 +139,11 @@ export async function questionItems({ datasetDir, embed = embedTexts, cacheDir }
   }));
 }
 
-/**
- * Recorded lectures' moments (the recorder's transcripts), each at its time
- * in class, with its class's window on the timetable ("10:00"–"10:50") when
- * the recording matched one.
- */
-export async function momentItems({ dir, transcriptsDir = path.join(RECORDER, "transcripts") }) {
-  const names = (await readdir(transcriptsDir).catch(() => [])).filter((n) => n.endsWith(".json"));
-  if (!names.length) return [];
-  const tops = (await readdir(dir, { withFileTypes: true })).filter((e) => e.isDirectory() && !/^[._]/.test(e.name)).map((e) => e.name);
-  const folderOf = foldersByCode(subjectIndex(tops, await readCourseTitles(dir)));
-  const items = [];
-  for (const name of names) {
-    const t = JSON.parse(await readFile(path.join(transcriptsDir, name), "utf8"));
-    const course = t.class ? folderOf(t.class.code, t.class.type) : null;
-    const [h, m] = t.time.split(":").map(Number);
-    for (const [idx, mo] of (t.moments ?? []).entries()) {
-      if (!mo.vector) continue;
-      const at = h * 60 + m + Math.floor(mo.start / 60);
-      const clock = `${String(Math.floor(at / 60)).padStart(2, "0")}:${String(at % 60).padStart(2, "0")}`;
-      items.push({
-        id: `moment:${t.memo}#${idx}`,
-        kind: "moment",
-        course,
-        unit: t.deck ? placeOf(t.deck).unit : null,
-        ref: { memo: t.memo, idx, ...(t.deck && mo.page ? { deck: t.deck, page: mo.page } : {}) },
-        vector: mo.vector,
-        at: `${t.date}T${clock}`,
-        ...(t.class?.start ? { slot: { start: t.class.start, end: t.class.end } } : {}),
-      });
-    }
-  }
-  return items;
-}
-
 /** The whole space: every item, and each course's mean vector (what its items all share, for centering). */
-export async function buildSpace({ dir, datasetDir = path.join(dir, "_src", "pyq_dataset"), transcriptsDir, embed = embedTexts, read = extractText, cacheDir }) {
+export async function buildSpace({ dir, datasetDir = path.join(dir, "_src", "pyq_dataset"), embed = embedTexts, read = extractText, cacheDir }) {
   const items = [
     ...(await fileItems({ dir, embed, read, cacheDir })),
     ...(await questionItems({ datasetDir, embed, cacheDir })),
-    ...(await momentItems({ dir, transcriptsDir })),
   ];
   const means = {};
   for (const course of new Set(items.map((i) => i.course).filter(Boolean))) means[course] = meanOf(items.filter((i) => i.course === course).map((i) => i.vector));

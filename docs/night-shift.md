@@ -1,7 +1,6 @@
 # Night shift
 
-My Mac does the long jobs while I sleep: transcribing lectures, reading what Autopilot hasn't
-read yet, re-indexing and shrinking scans. At 07:00 my phone gets one notification saying what it
+My Mac does the long jobs while I sleep: re-indexing and shrinking scans. At 07:00 my phone gets one notification saying what it
 did. The day's sync keeps running as it does; the night only takes the work that would make a
 daytime tick slow.
 
@@ -20,25 +19,19 @@ daytime tick slow.
   ```
 - **Installed** with `npm run mac:install`, which adds `com.acadkit.nightshift` beside the sync's
   launch agents.
-- **For the reading step**, Ollama running with Autopilot's model ([autopilot.md](autopilot.md)).
-  **For transcribing**, the recorder set up ([recorder.md](recorder.md)). Without either, that step
-  fails and the others still run.
 
 ## A night, step by step
 
 1. **23:00.** The agent starts. On the charger, the Mac stays awake until 02:00.
 2. **02:00.** It checks the charger again and skips the night on battery. Then it takes the
    sync's lock, waiting up to 15 minutes for a tick to finish, so the two never run at once.
-3. **Transcribe.** Every recording waiting, not the one a tick would take.
-4. **Read.** Every file waiting for Autopilot, then Inbox filed, then the past papers I said yes
-   to added to the dataset. Paused from the menu bar, this step does nothing.
-5. **Sync.** The study folder, with PDFs over 2 MB shrunk for upload (a day's sync shrinks those
+3. **Sync.** The study folder, with PDFs over 2 MB shrunk for upload (a day's sync shrinks those
    over 8 MB). On Saturday nights it rebuilds the search index too.
-6. **07:00.** The notification: "Overnight on your Mac: 2 lectures transcribed; 12 files indexed,
-   96 MB saved by shrinking." A step that failed is named, and the sync log says why. A night
+4. **07:00.** The notification: "Overnight on your Mac: 12 files indexed, 96 MB saved by
+   shrinking." A step that failed is named, and the sync log says why. A night
    that was skipped, or had nothing to do, sends nothing.
 
-A step that fails doesn't stop the next one. It runs once a night; a late start in the day does
+It runs once a night; a late start in the day does
 nothing.
 
 ## Checking on it

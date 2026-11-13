@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mergeJobs, reportJobs, tracked } from "./jobs.mjs";
+import { mergeJobs, reportJobs } from "./jobs.mjs";
 
 let dir: string;
 beforeEach(async () => {
@@ -16,13 +16,6 @@ const bucket = () => {
 };
 
 describe("the Mac's jobs", () => {
-  it("note when each ran and how it went, and still throw a failure", async () => {
-    const ran: Record<string, unknown> = {};
-    await tracked(ran, "autopilot", async () => "paused", () => 5)();
-    await expect(tracked(ran, "recorder", async () => { throw new Error("whisper is missing"); }, () => 6)()).rejects.toThrow("whisper");
-    expect(ran).toEqual({ autopilot: { at: 5, ok: true, note: "paused" }, recorder: { at: 6, ok: false, note: "whisper is missing" } });
-  });
-
   it("call it a change when a job is new, or starts or stops failing", () => {
     const saved = { sync: { at: 1, ok: true } };
     expect(mergeJobs(saved, { sync: { at: 2, ok: true } }).changed).toBe(false);

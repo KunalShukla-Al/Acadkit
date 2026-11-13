@@ -187,7 +187,7 @@ export interface Deadline {
   priority: DeadlinePriority;
   /** What the test is out of, when it carries marks (migration 017). */
   max_marks?: number | null;
-  /** The file Autopilot read it from, e.g. "Inbox/IMG_2041.jpg" (migration 053). */
+  /** The file it was read from, e.g. "Inbox/IMG_2041.jpg" (migration 053). */
   source?: string | null;
   created_at?: string;
 }

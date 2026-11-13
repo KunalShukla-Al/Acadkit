@@ -19,10 +19,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildSpace } from "./lib/connected.mjs";
 import { writeSection } from "./lib/eval-md.mjs";
-import { deckPages } from "./lib/lecture-align.mjs";
+import { deckPages } from "./lib/decks.mjs";
 import { freshReport, judgedReport, sampleLinks } from "./lib/links-judge.mjs";
 import { linkByMeaning } from "./lib/links.mjs";
-import { STUDY } from "./lib/paper-eval.mjs";
+import { studyRoots } from "./lib/roots.mjs";
+
+const STUDY = studyRoots().dir;
 import { CACHE_DIR } from "./lib/semester.mjs";
 
 const EVAL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "eval");

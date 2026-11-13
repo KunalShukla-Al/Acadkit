@@ -52,33 +52,27 @@ const account: Account = {
   attendance,
   snapshots: [],
   deadlines: endSems,
-  marks: [],
 };
 
 async function at(iso: string, feed: string, method = "GET") {
-  let marked = 0;
   const res = await handle(new Request(`https://x/functions/v1/feeds/${feed}${feed.includes("?") ? "&" : "?"}token=${TOKEN}`, { method }), {
     use: async () => ({ pin: "1234", allowed: true }),
     load: async () => account,
     share: async () => {},
-    markAbsent: async (_pin, _why, rows) => void (marked += rows.length),
     now: () => new Date(iso),
   });
   const body = feed.startsWith("calendar") ? await res.text() : await res.json();
-  return { body, marked };
+  return { body };
 }
 
 const ist = (day: string, time: string) => new Date(`2026-11-${day}T${time}:00+05:30`).toISOString();
 const DAYS = ["21", "22", "23", "24", "25", "26", "27", "28", "29", "30"];
-const ask = async (iso: string, q: string) => (await at(iso, `ask?q=${encodeURIComponent(q)}`)).body.say as string;
 
 describe("the end-sems, 21-30 November", () => {
-  it("has no classes, no alarm and nothing to leave on any day", async () => {
+  it("has no classes and no alarm on any day", async () => {
     for (const day of DAYS) {
       const { body: t } = await at(ist(day, "05:00"), "today");
-      expect(t, day).toMatchObject({ kind: "post-semester", dayOrder: null, classes: [], alarm: null, focusUntil: null, leave: null, next: null });
-      const left = await at(ist(day, "10:00"), "leave", "POST");
-      expect([left.body.say, left.marked], day).toEqual(["There are no classes today.", 0]);
+      expect(t, day).toMatchObject({ kind: "post-semester", dayOrder: null, classes: [], alarm: null, focusUntil: null, next: null });
     }
   });
 
@@ -115,23 +109,6 @@ describe("the end-sems, 21-30 November", () => {
     expect(await left(ist("25", "13:59"))).toEqual(["21MAB201T 0", "21CSS202T 1", "21CSC201J 2", "21CSC202J 5"]);
     expect(await left(ist("25", "14:00"))).toEqual(["21CSS202T 1", "21CSC201J 2", "21CSC202J 5"]);
     expect(await left(ist("30", "19:00"))).toEqual([]);
-  });
-
-  it("answers Siri's next test from where the clock stands", async () => {
-    expect(await ask(ist("21", "05:00"), "when is my next test")).toBe("TBVP End-sem is on Wednesday, 25 November at 2:00 PM, in 4 days.");
-    expect(await ask(ist("25", "05:00"), "when is my next test")).toBe("TBVP End-sem is today at 2:00 PM.");
-    expect(await ask(ist("25", "19:00"), "when is my next test")).toBe("FDS End-sem is tomorrow at 2:00 PM.");
-    expect(await ask(ist("27", "19:00"), "when is my next test")).toBe("OS End-sem is on Monday, 30 November at 2:00 PM, in 3 days.");
-    expect(await ask(ist("28", "05:00"), "when is my next OS test")).toBe("OS End-sem is on Monday, 30 November at 2:00 PM, in 2 days.");
-    expect(await ask(ist("30", "19:00"), "when is my next test")).toBe("No tests on your list.");
-  });
-
-  it("tells Siri the classes are over, and marks nothing absent", async () => {
-    expect(await ask(ist("18", "05:00"), "can I skip OS")).toBe("Yes. OS has 5 classes to spare: you're at 85%, and the bar is 75%.");
-    expect(await ask(ist("21", "05:00"), "can I skip OS")).toBe("OS's classes are over: you finished at 85%, and the bar is 75%.");
-    expect(await ask(ist("21", "05:00"), "can I skip today")).toBe("Classes are over for the semester. Ask about a subject to hear where you finished.");
-    const absent = await at(ist("26", "09:00"), `ask?q=${encodeURIComponent("I'm absent in OS")}`);
-    expect([absent.body.say, absent.marked]).toEqual(["There are no classes today.", 0]);
   });
 
   it("keeps the papers in the calendar, with no class after the last teaching day", async () => {

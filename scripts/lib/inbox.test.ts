@@ -43,27 +43,6 @@ describe("filing the Inbox", () => {
     expect(subjectInName("COSMOS.pdf", SUBJECTS)).toBeNull();
   });
 
-  it("files what Autopilot is sure of by what it shows, before the class on then", () => {
-    const read = (kind: string, subject: string | null = null) => ({ kind, subject });
-    const by = (name: string, time: string, r: ReturnType<typeof read>) => destinationFor({ name, at: at(time), classes: CLASSES, subjects: SUBJECTS, folderOf, read: r });
-    // DSA notes photographed in the OS class are DSA's.
-    expect(by("IMG_1.jpg", "08:30", read("notes", "21CSC201J"))).toBe("Data_Structures_and_Algorithms/02_Notes/IMG_1.jpg");
-    expect(by("IMG_2 unit 3.jpg", "16:00", read("slides", "21CSC202J"))).toBe("Operating_Systems/02_Notes/Unit_3/IMG_2 unit 3.jpg");
-    // A board with no course on it is the class's; in the lab, the lab's.
-    expect(by("IMG_3.jpg", "08:30", read("board"))).toBe("Operating_Systems/02_Notes/Class_Photos/2026-10-21/IMG_3.jpg");
-    expect(by("IMG_4.jpg", "10:30", read("board", "21CSC201J"))).toBe("Data_Structures_and_Algorithms_Lab/02_Notes/Class_Photos/2026-10-21/IMG_4.jpg");
-    expect(by("paper.pdf", "16:00", read("question-paper", "21CSC202J"))).toBe("Operating_Systems/07_PYQs/paper.pdf");
-    expect(by("sheet.pdf", "16:00", read("assignment", "21MAB201T"))).toBe("Transforms_and_Boundary_Value_Problems/03_Assignments_Tutorials/sheet.pdf");
-    // A notice, a receipt, or a board with no course out of class hours, stays.
-    expect(by("notice.jpg", "08:30", read("notice", "21CSC202J"))).toBeNull();
-    expect(by("IMG_5.jpg", "08:30", read("other"))).toBeNull();
-    expect(by("IMG_6.jpg", "16:00", read("board"))).toBeNull();
-    // A portal screenshot, once read into the app, goes where the sync never looks.
-    expect(by("IMG_7.PNG", "08:30", read("portal"))).toBe("_portal/2026-10-21/IMG_7.PNG");
-    // The name still comes first.
-    expect(by("OS_unit2.pdf", "08:30", read("notes", "21CSC201J"))).toBe("Operating_Systems/02_Notes/Unit_2/OS_unit2.pdf");
-  });
-
   it("finds the class on at a time", () => {
     expect(classAt(CLASSES, "07:59")).toBeNull();
     expect(classAt(CLASSES, "10:00")?.code).toBe("21CSC201J");
@@ -93,20 +72,6 @@ describe("fileInbox", () => {
       expect(await readdir(path.join(dir, "Operating_Systems", "02_Notes", "Unit_2"))).toEqual(["OS_unit2 (2).pdf", "OS_unit2.pdf"]);
       expect(await readdir(path.join(dir, "Inbox"))).toEqual(["random.jpg"]);
       expect(lines).toEqual(["  Inbox/OS_unit2.pdf → Operating_Systems/02_Notes/Unit_2/OS_unit2 (2).pdf"]);
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
-
-  it("leaves a file Autopilot hasn't read yet for a later tick", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "inbox-"));
-    try {
-      await mkdir(path.join(dir, "Inbox"), { recursive: true });
-      await writeFile(path.join(dir, "Inbox", "OS_unit2.pdf"), "shared");
-      const table = (data: unknown[]) => ({ select: () => ({ eq: async () => ({ data, error: null }) }) });
-      const supabase = { from: (t: string) => table(t === "subjects" ? SUBJECTS : []) };
-      expect(await fileInbox({ supabase, pin: "1234", dir, log: () => {}, readOf: async () => "wait" })).toBe(0);
-      expect(await readdir(path.join(dir, "Inbox"))).toEqual(["OS_unit2.pdf"]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

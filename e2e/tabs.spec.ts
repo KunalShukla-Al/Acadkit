@@ -28,7 +28,7 @@ test("the bar is the five tabs, each lit for its pages, and the corner's and the
 test("Today is the day's classes and what's due, and nothing else unless it needs you", async ({ signedIn: page }) => {
   await expect(page.getByRole("heading", { name: /Wednesday, 7 October/ })).toBeVisible();
   const main = page.getByRole("main");
-  for (const gone of [/Day Order \d/, /predicted sgpa/i, /attended/, /flashcards? (is|are) waiting/]) await expect(main.getByText(gone)).toHaveCount(0);
+  for (const gone of [/Day Order \d/, /predicted sgpa/i, /attended/]) await expect(main.getByText(gone)).toHaveCount(0);
 
   await main.getByRole("link", { name: /^Deadlines\s*All/i }).click();
   await expect(page).toHaveURL("/deadlines");
@@ -83,7 +83,7 @@ test("the corner carries the day order and opens the pages used now and then", a
   await corner(page).click();
   const menu = page.getByRole("dialog", { name: "More" });
   await expect(menu.getByRole("button", { name: "Close" })).toBeFocused();
-  await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/calendar/i, /skips/i, /flashcards/i, /history/i, /settings/i]);
+  await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/calendar/i, /skips/i, /history/i, /settings/i]);
 
   await menu.getByRole("button", { name: /^settings$/i }).click();
   await expect(page).toHaveURL("/settings");
@@ -104,16 +104,6 @@ test("the corner sits flush in the bottom-right corner, on the tab bar where the
   const floor = isMobile ? (await bar(page).boundingBox())!.y : height;
   expect(Math.round(box.x + box.width)).toBe(width);
   expect(Math.round(box.y + box.height)).toBe(Math.round(floor));
-});
-
-test("the flashcards open from the corner, which counts the ones waiting", async ({ signedIn: page }) => {
-  await corner(page).click();
-  const cards = page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /flashcards/i });
-  await expect(cards).toHaveText(/^\d+\s*flashcards$/i);
-  await cards.click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.goto("/study");
-  await expect(page.getByRole("button", { name: /flashcards? (is|are) waiting/ })).toHaveCount(0);
 });
 
 test("old links (notifications, bookmarks, the Shortcuts) land on the page they meant", async ({ signedIn: page }) => {

@@ -8,7 +8,7 @@ export interface FeedToken {
 }
 
 /** The Shortcuts the Mac builds for the token (scripts/lib/shortcuts.mjs). */
-export const SHORTCUTS = ["AcadKit Alarm", "AcadKit Focus", "AcadKit Leave", "AcadKit", "AcadKit Screenshot"] as const;
+export const SHORTCUTS = ["AcadKit Alarm", "AcadKit Focus", "AcadKit"] as const;
 export type ShortcutName = (typeof SHORTCUTS)[number];
 
 const missingTable = (error: { code?: string } | null) => error?.code === "42P01" || error?.code === "PGRST205";

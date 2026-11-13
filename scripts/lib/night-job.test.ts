@@ -54,57 +54,32 @@ describe("the steps", () => {
     const lines: string[] = [];
     const done = await runSteps(
       [
-        { name: "Transcribe", run: async () => "2 lectures" },
-        { name: "Read", run: async () => Promise.reject(new Error("Ollama is down")) },
+        { name: "Shrink", run: async () => "96 MB saved" },
+        { name: "Index", run: async () => Promise.reject(new Error("the embedder is down")) },
         { name: "Sync", run: async () => "" },
       ],
       { log: (l: string) => lines.push(l) }
     );
-    expect(done.map((d: { name: string; said?: string; error?: string }) => [d.name, d.said ?? d.error])).toEqual([["Transcribe", "2 lectures"], ["Read", "Ollama is down"], ["Sync", ""]]);
-    expect(lines).toEqual(["Transcribe: 2 lectures", "Read failed: Ollama is down", "Sync: nothing to do"]);
+    expect(done.map((d: { name: string; said?: string; error?: string }) => [d.name, d.said ?? d.error])).toEqual([["Shrink", "96 MB saved"], ["Index", "the embedder is down"], ["Sync", ""]]);
+    expect(lines).toEqual(["Shrink: 96 MB saved", "Index failed: the embedder is down", "Sync: nothing to do"]);
   });
 });
 
 describe("the night's steps", () => {
-  const libs = (over: Record<string, unknown> = {}) => ({
-    recorder: async (o: { perTick: number }) => (o.perTick === Infinity ? [{ name: "a" }, { name: "b" }] : []),
-    handler: () => async () => ({}),
-    recorderMissing: () => null,
-    syncLectures: async () => [],
-    isPaused: () => false,
-    modelReady: async () => true,
-    readNew: async (o: { perTick: number }) => (o.perTick === Infinity ? [1, 2, 3, 4, 5] : []),
-    autopilotFolders: () => [],
-    fileInbox: async () => 3,
-    contentReader: async () => async () => null,
-    filer: () => async () => {},
-    addAccepted: async () => ["os-es-2025-12-2"],
-    ...over,
-  });
-
-  it("transcribe every recording and read every file waiting, not a tick's share", async () => {
-    const [transcribe, read] = nightSteps({ supabase: {}, pin: "1234", dir: "/study", night: "2026-11-04", libs: libs() });
-    expect(await transcribe.run()).toBe("2 lectures transcribed");
-    expect(await read.run()).toBe("5 files read, 3 filed, 1 past paper added");
-  });
-
-  it("say nothing when there is nothing, and fail when Ollama is away", async () => {
-    const [transcribe, read] = nightSteps({ supabase: {}, pin: "1234", dir: "/study", night: "2026-11-04", libs: libs({ recorder: async () => [], isPaused: () => true }) });
-    expect([await transcribe.run(), await read.run()]).toEqual(["", ""]);
-    const [, away] = nightSteps({ supabase: {}, pin: "1234", dir: "/study", night: "2026-11-04", libs: libs({ modelReady: async () => false }) });
-    await expect(away.run()).rejects.toThrow("Ollama isn't serving the model");
+  it("are the sync alone", () => {
+    expect(nightSteps({ night: "2026-11-04" }).map((s: { name: string }) => s.name)).toEqual(["Sync"]);
   });
 });
 
 describe("the morning's report", () => {
   it("says what the night did in a sentence, and which steps failed", () => {
     const steps = [
-      { name: "Transcribe", said: "2 lectures transcribed", seconds: 400 },
-      { name: "Read", error: "Ollama isn't serving the model", seconds: 1 },
+      { name: "Shrink", said: "96 MB saved", seconds: 400 },
+      { name: "Index", error: "the embedder is down", seconds: 1 },
       { name: "Sync", said: "12 files indexed, 96.4 MB saved by shrinking", seconds: 900 },
     ];
     expect(nightReport({ night: "2026-11-04", at: "a", finished: "b", steps })).toEqual({
-      night: "2026-11-04", at: "a", finished: "b", said: "2 lectures transcribed; 12 files indexed, 96.4 MB saved by shrinking.", failed: ["Read"],
+      night: "2026-11-04", at: "a", finished: "b", said: "96 MB saved; 12 files indexed, 96.4 MB saved by shrinking.", failed: ["Index"],
     });
     expect(nightReport({ night: "n", at: "a", finished: "b", steps: [{ name: "Sync", said: "", seconds: 1 }] })).toMatchObject({ said: "", failed: [] });
   });

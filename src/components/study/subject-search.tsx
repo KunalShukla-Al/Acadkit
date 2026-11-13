@@ -3,8 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Search, Sparkles, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FileRow, SearchHitRow } from "@/components/study/file-row";
-import { LectureHitRow } from "@/components/study/lecture-hit-row";
-import { lectureHits } from "@/lib/lectures";
 import { usePin } from "@/hooks/useData";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
 import { searchStudyFiles } from "@/api/studyFiles";
@@ -14,10 +12,10 @@ const MIN_DEEP = 3;
 
 /**
  * Search one subject's files: typing matches their names at once, Enter
- * searches inside them, and its recorded lectures, by meaning - the Study
+ * searches inside them by meaning - the Study
  * page's search, confined to this subject.
  */
-export function SubjectSearch({ files, name, code }: { files: StudyFile[]; name: string; code: string }) {
+export function SubjectSearch({ files, name }: { files: StudyFile[]; name: string }) {
   const pin = usePin();
   const { pendingByPath, available: canDelete, askDelete, undo } = useStudyDeletions();
   const [query, setQuery] = useState("");
@@ -39,7 +37,6 @@ export function SubjectSearch({ files, name, code }: { files: StudyFile[]; name:
     () => (deepActive && hits.data ? groupHits(hits.data.hits.filter((h) => keys.has(h.file_key)), files) : []),
     [deepActive, hits.data, files, keys]
   );
-  const said = useMemo(() => (deepActive && hits.data ? lectureHits(hits.data.moments, code) : []), [deepActive, hits.data, code]);
 
   return (
     <section className="space-y-2">
@@ -95,12 +92,9 @@ export function SubjectSearch({ files, name, code }: { files: StudyFile[]; name:
           {hits.isError && (
             <p className="px-4 py-6 text-center text-sm font-medium text-muted">Couldn't search inside right now. Try again.</p>
           )}
-          {hits.data && grouped.length === 0 && said.length === 0 && (
+          {hits.data && grouped.length === 0 && (
             <p className="px-4 py-6 text-center text-sm font-medium text-muted">Nothing inside {name}'s files matches that.</p>
           )}
-          {said.map((m) => (
-            <LectureHitRow key={`${m.lecture_id}:${m.idx}`} hit={m} query={deep!} />
-          ))}
           {grouped.map((g) => (
             <SearchHitRow key={g.file.key} file={g.file} hits={g.hits} query={deep!} />
           ))}

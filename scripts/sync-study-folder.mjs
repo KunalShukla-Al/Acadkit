@@ -15,7 +15,6 @@ import { studyRoots } from "./lib/roots.mjs";
 import { readCourseTitles, subjectIndex, tagFile } from "./lib/tags.mjs";
 import { checkNotices, checkProjects } from "./lib/weekly.mjs";
 import { checkRunup, splitRunup } from "./lib/runup.mjs";
-import { checkCards } from "./lib/cards.mjs";
 import { buildMoveMap, follower } from "./lib/moved.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP, bucketUse, fitUploads } from "./lib/storage.mjs";
 import { findGs, shrinkPdfs } from "./lib/shrink.mjs";
@@ -23,8 +22,7 @@ import { derivedCode, derivedFingerprint, lastDerived, recordDerived } from "./l
 import { searchMany } from "./study-index/search.mjs";
 import { mineTopics, splitTopics } from "./study-index/topics.mjs";
 import { buildSpace } from "./lib/connected.mjs";
-import { linkByMeaning, linkByTime, mergeLinks, splitLinks } from "./lib/links.mjs";
-import { STATE_DIR as RECORDER } from "./lib/recorder.mjs";
+import { linkByMeaning, splitLinks } from "./lib/links.mjs";
 import { buildUnits } from "./study-index/units.mjs";
 import { reportJobs } from "./lib/jobs.mjs";
 
@@ -405,11 +403,6 @@ if (runup)
       : "Run-up: not sent"
   );
 for (const w of runup?.warnings ?? []) console.log(`  ${w}`);
-// The flashcards (scripts/lib/cards.mjs).
-const rawCards = await readSrc(dir, "acadkit_cards.json");
-const cards = rawCards && checkCards(rawCards);
-if (cards) console.log(cards.body ? `Flashcards: ${cards.body.cards.length}${cards.warnings.length ? `, ${cards.warnings.length} warning(s)` : ""}` : "Flashcards: not sent");
-for (const w of cards?.warnings ?? []) console.log(`  ${w}`);
 // Links that followed a file moved or renamed since the last sync (lib/moved.mjs).
 const followed = new Map([...(prep?.follows ?? []), ...(notices?.follows ?? []), ...(runup?.follows ?? [])]);
 if (followed.size) {
@@ -589,7 +582,6 @@ if (runup?.body) {
 for (const [name, checked] of [
   ["notices.json", notices],
   ["projects.json", projects],
-  ["cards.json", cards?.body ? cards : null],
 ]) {
   if (!checked) continue;
   const { error } = await bucket.upload(`${pin}/${name}`, JSON.stringify(checked.body), {
@@ -694,9 +686,7 @@ if (!noIndex) {
 const syllabiRaw = await readFile(path.join(dir, "_src", "acadkit_syllabi.json"), "utf8").catch(() => null);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const builders = (await readdir(path.join(here, "study-index"))).filter((n) => n.endsWith(".mjs")).map((n) => path.join(here, "study-index", n));
-const linkers = ["connected.mjs", "links.mjs", "lecture-align.mjs"].map((n) => path.join(here, "lib", n));
-// Links take in the recorder's transcripts too: a new lecture links again.
-const transcripts = await readdir(path.join(RECORDER, "transcripts"), { withFileTypes: true }).catch(() => []);
+const linkers = ["connected.mjs", "links.mjs", "decks.mjs"].map((n) => path.join(here, "lib", n));
 const derived = derivedFingerprint({
   pin,
   files,
@@ -704,7 +694,6 @@ const derived = derivedFingerprint({
   code: await derivedCode([...builders, ...linkers, fileURLToPath(import.meta.url)]),
   switches: {
     STUDY_PAPERBANK_QUESTIONS: process.env.STUDY_PAPERBANK_QUESTIONS === "1" ? JSON.stringify([...paperbank.questions]) : "",
-    transcripts: JSON.stringify(await Promise.all(transcripts.filter((e) => e.name.endsWith(".json")).map(async (e) => [e.name, (await stat(path.join(RECORDER, "transcripts", e.name))).mtimeMs]))),
   },
 });
 const rebuild = reindex || indexChanged || derived !== (await lastDerived());
@@ -762,12 +751,11 @@ if (!noIndex && rebuild) {
     derivedOk = false;
     console.error(`Topics: stopped — ${err.message}`);
   }
-  // Everything connected (scripts/lib/connected.mjs, links.mjs): what each page, slide, question,
-  // lecture moment and board photo links to, by time and by meaning. <pin>/links.json and a part
-  // per course. The vectors are cached, so only new files are embedded.
+  // Everything connected (scripts/lib/connected.mjs, links.mjs): what each page, slide, question
+  // and board photo links to, by meaning. <pin>/links.json and a part per course. The vectors are cached, so only new files are embedded.
   try {
     const { items, means } = await buildSpace({ dir });
-    const links = mergeLinks(linkByTime(items), linkByMeaning(items, means));
+    const links = linkByMeaning(items, means);
     await writeSplit("links.json", "links", splitLinks(links, items), (i) => (i.courses ?? []).map((c) => c.file).filter(Boolean));
     const n = Object.values(links).reduce((a, l) => a + l.length, 0);
     console.log(`Connected: ${n.toLocaleString("en-IN")} links on ${Object.keys(links).length.toLocaleString("en-IN")} items.`);

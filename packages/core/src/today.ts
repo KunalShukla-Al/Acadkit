@@ -1,6 +1,6 @@
 /**
  * A day at a glance, for what can't open the app: the iPhone's Shortcuts
- * (an alarm before the first class, Focus through class hours) and Siri.
+ * (an alarm before the first class, Focus through class hours).
  * It is built from the same rows and the same rules as the app's screens:
  * the Day Order calendar, the timetable, and attendance as the portal and
  * marked classes give it.
@@ -38,7 +38,7 @@ export interface TodayTest {
   name: string;
   code: string | null;
   type: Deadline["type"];
-  /** The notice Autopilot added it from, by file name; null for one you added. */
+  /** The file it was read from, by name; null for one you added. */
   from: string | null;
   /** The deadline's own timestamp. */
   due: string;
@@ -61,14 +61,12 @@ export interface Today {
   next: { date: string; dayOrder: number } | null;
   /** Tests and deadlines still to do in the next seven days, soonest first; with `time`, one already past today has gone. */
   tests: TodayTest[];
-  /** The day in one sentence, for a notification or Siri. */
+  /** The day in one sentence, for a notification. */
   say: string;
   /** Only with `time`: until when Focus should hold, the last class's end while one is still ahead; null once they are over. */
   focusUntil: string | null;
   /** Only with `time`: the day from where you stand, for arriving on campus: the class on now, or the next one. */
   arrive: string;
-  /** Only with `time`: what leaving campus now would miss, as a question ("Mark the rest absent? …"); null with nothing left. */
-  leave: string | null;
 }
 
 export interface TodayInput {
@@ -95,7 +93,7 @@ function minutesToHHMM(min: number): string {
 }
 
 /** "Day Order 3: 4 classes from 8:00 AM, the first OS in TP301. Don't miss DSA." */
-function sentence(t: Omit<Today, "say" | "focusUntil" | "arrive" | "leave">): string {
+function sentence(t: Omit<Today, "say" | "focusUntil" | "arrive">): string {
   const parts: string[] = [];
   if (t.classes.length === 0) {
     const why = t.holiday ? `No classes today: ${t.holiday}.` : "No classes today.";
@@ -124,7 +122,7 @@ function list(items: string[]): string {
 }
 
 /** "Day Order 3. Now: OS in TP301, until 8:50 AM. Last class ends at 12:50 PM." */
-function arrival(t: Omit<Today, "say" | "focusUntil" | "arrive" | "leave">, time: string | undefined): string {
+function arrival(t: Omit<Today, "say" | "focusUntil" | "arrive">, time: string | undefined): string {
   if (!t.classes.length || time === undefined) return sentence(t);
   const now = timeToMinutes(time);
   const on = t.classes.find((c) => timeToMinutes(c.start) <= now && now < timeToMinutes(c.end));
@@ -189,13 +187,12 @@ export function today({ date, settings, subjects, slots, attendance, snapshots, 
       name: testTitle(d.title, d.subject_id ? byId.get(d.subject_id) : undefined),
       code: d.subject_id ? (byId.get(d.subject_id)?.code ?? null) : null,
       type: d.type,
-      // Autopilot keeps the notice's path in `source` (scripts/lib/autopilot-notice.mjs).
       from: d.source ? d.source.slice(d.source.lastIndexOf("/") + 1) : null,
       due: d.due_date,
       inDays: diffDays(date, day),
     }));
 
-  const t: Omit<Today, "say" | "focusUntil" | "arrive" | "leave"> = {
+  const t: Omit<Today, "say" | "focusUntil" | "arrive"> = {
     date,
     kind: info.kind,
     dayOrder: info.dayOrder,
@@ -208,7 +205,5 @@ export function today({ date, settings, subjects, slots, attendance, snapshots, 
     tests,
   };
   const ahead = time !== undefined && last !== null && timeToMinutes(time) < timeToMinutes(last);
-  const rest = time === undefined ? [] : classes.filter((c) => timeToMinutes(c.start) > timeToMinutes(time));
-  const leave = rest.length ? `Mark the rest absent? ${list(rest.map((c) => `${c.short} at ${formatTime(c.start)}`))}.` : null;
-  return { ...t, say: sentence(t), focusUntil: ahead ? last : null, arrive: arrival(t, time), leave };
+  return { ...t, say: sentence(t), focusUntil: ahead ? last : null, arrive: arrival(t, time) };
 }

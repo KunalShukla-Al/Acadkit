@@ -25,7 +25,6 @@ const OWNERS: [prefix: string, screen: ScreenId][] = [
   ["/subject", "study"],
   ["/practice", "study"],
   ["/view", "study"],
-  ["/lecture", "study"],
 ];
 
 /** Old screens and pages, by the tab (`?show=`) they were on: where each now lives. */

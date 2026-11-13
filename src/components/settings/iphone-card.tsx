@@ -68,7 +68,7 @@ export function IphoneCard() {
     <section className="card space-y-3 p-5">
       <div>
         <p className="text-sm font-bold">iPhone and calendar</p>
-        <p className="mt-0.5 text-xs text-muted">Alarm, Do Not Disturb, Siri, Back Tap and every class in Calendar</p>
+        <p className="mt-0.5 text-xs text-muted">Alarm, Do Not Disturb, the share sheet and every class in Calendar</p>
       </div>
 
       {token.isLoading ? null : !links ? (
@@ -127,10 +127,7 @@ export function IphoneCard() {
                 runs AcadKit Focus, and one more for arriving at SRM that runs it too. Allow notifications for Shortcuts to see the day it
                 says.
               </li>
-              <li>Add one for leaving SRM that runs AcadKit Leave: with classes still to come, it asks before marking them absent.</li>
               <li>AcadKit is in the share sheet: share a photo, PDF or file to it and it goes to your study folder's Inbox.</li>
-              <li>In Settings → Accessibility → Touch → Back Tap, set Double Tap to AcadKit Screenshot: it sends what's on screen, and a portal attendance page goes straight into the app.</li>
-              <li>Say "Hey Siri, AcadKit", then ask: can I skip OS, what do I need in DSA, when is my next test, or I'm absent in OS.</li>
             </ol>
           )}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-xs">

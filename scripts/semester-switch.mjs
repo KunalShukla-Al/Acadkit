@@ -2,7 +2,7 @@
 /**
  * Move AcadKit to the next semester's study folder (scripts/lib/semester.mjs).
  *
- *   npm run semester:switch -- 4              # ~/Documents/SRM_Sem4, asks first
+ *   npm run semester:switch -- 4              # SRM_Sem4 beside the current folder, asks first
  *   npm run semester:switch -- 4 --dry-run    # what it would do, nothing changed
  *   npm run semester:switch -- 4 --keep-old   # switch, but leave the old folder and its data
  *   npm run semester:switch -- --to ~/Documents/Some_Folder --yes
@@ -33,7 +33,7 @@ if (!url || !key || !/^\d{4}$/.test(pin ?? "")) {
   process.exit(1);
 }
 const from = expandHome(process.env.STUDY_DIR || "~/Documents/SRM_Sem3");
-const to = toArg ? path.resolve(expandHome(toArg)) : semesterDir(n);
+const to = toArg ? path.resolve(expandHome(toArg)) : semesterDir(n, path.dirname(path.resolve(from)));
 
 console.log(`${dryRun ? "Dry run: " : ""}${path.basename(from)} → ${path.basename(to)}`);
 if (!dryRun && !yes) {

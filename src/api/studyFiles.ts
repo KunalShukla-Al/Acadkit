@@ -4,7 +4,6 @@ import { MAX_UPLOAD_BYTES, safeUploadName } from "@acadkit/core/uploads";
 import { baseName, type StorageData, type StudyFile, type StudyHit, type StudyManifest } from "@/lib/studyFiles";
 import type { PrepData, TopicsData, TopicsIndex } from "@/lib/examPrep";
 import type { NoticesData, ProjectsData } from "@/lib/thisWeek";
-import type { LectureHit } from "@/lib/lectures";
 import { shownFile } from "@/lib/viewer";
 
 const BUCKET = "study-files";
@@ -127,29 +126,22 @@ export async function fetchPart<T>(pin: string, name: string): Promise<T> {
   return part;
 }
 
-/** The flashcards (scripts/lib/cards.mjs), or null before any sync has sent them. */
-export async function fetchCards(pin: string): Promise<import("@/lib/flashcards").CardsData | null> {
-  return storedJson(`${pin}/cards.json`);
-}
-
 /** Where my projects stand and my to-dos (scripts/lib/weekly.mjs), or null before any sync has sent them. */
 export async function fetchStudyProjects(pin: string): Promise<ProjectsData | null> {
   return storedJson<ProjectsData>(`${pin}/projects.json`);
 }
 
 /**
- * Passages nearest to a query by meaning, and the lecture moments nearest
- * it, from the study-search edge function (gte-small embeddings,
- * migrations 030 and 061). It runs as you, so row-level security limits
- * it to your own files and lectures.
+ * Passages nearest to a query by meaning, from the study-search edge
+ * function (gte-small embeddings, migration 030). It runs as you, so
+ * row-level security limits it to your own files.
  */
-export async function searchStudyFiles(pin: string, query: string): Promise<{ hits: StudyHit[]; moments: LectureHit[] }> {
+export async function searchStudyFiles(pin: string, query: string): Promise<{ hits: StudyHit[] }> {
   const { data, error } = await supabase.functions.invoke("study-search", {
     body: { query, device_id: pin, limit: 24 },
   });
   if (error) throw error;
-  const found = data as { results?: StudyHit[]; moments?: LectureHit[] } | null;
-  return { hits: found?.results ?? [], moments: found?.moments ?? [] };
+  return { hits: (data as { results?: StudyHit[] } | null)?.results ?? [] };
 }
 
 /** A file you deleted in the app, waiting for (or just handled by) the Mac. Migration 032. */

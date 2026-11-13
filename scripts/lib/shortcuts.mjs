@@ -12,18 +12,9 @@
  *                   Run it from an automation on any alarm being stopped
  *                   (the alarm is a new one each day, so it can't be picked),
  *                   and one on arriving at SRM.
- *   AcadKit Leave   on leaving SRM: if classes are still to come today, asks
- *                   "Mark the rest absent?" and, on OK, has the feeds mark
- *                   them (Today can undo it).
  *   AcadKit         in the share sheet: sends what is shared (photos, PDFs,
  *                   files) to the study folder's Inbox, through the feeds'
- *                   share endpoint. Run with nothing shared ("Hey Siri,
- *                   AcadKit"), it listens, asks the feeds' ask endpoint,
- *                   and speaks the answer.
- *   AcadKit Screenshot  sends the latest screenshot the same way. Set it on
- *                   Back Tap (Settings → Accessibility → Touch), so a double
- *                   tap on the back of the phone sends what's on screen: a
- *                   portal page is read into the app (scripts/lib/portal-shot.mjs).
+ *                   share endpoint.
  *
  * The calendar is the feed's webcal subscription, which Settings adds. A
  * Shortcut is a plist of actions, written here the way Cherri writes them
@@ -168,36 +159,12 @@ export function focusShortcut(feedUrl) {
   );
 }
 
-/** AcadKit Leave: see the top of the file. Cancel on the question stops it there. */
-export function leaveShortcut(links) {
-  const [get, question] = feedValue(links.today, "leave");
-  const reply = uuid("leave:reply");
-  const said = uuid("leave:say");
-  return workflow(
-    [
-      ...get,
-      ...ifPresent(question, [
-        action("alert", { WFAlertActionTitle: "AcadKit", WFAlertActionMessage: textOf(question, "Dictionary Value"), WFAlertActionCancelButtonShown: true }),
-        action("downloadurl", { WFURL: links.leave, WFHTTPMethod: "POST", UUID: reply }),
-        action("getvalueforkey", { WFInput: output(reply, "Contents of URL"), WFDictionaryKey: "say", UUID: said }),
-        action("notification", { WFNotificationActionTitle: "AcadKit", WFNotificationActionBody: textOf(said, "Dictionary Value") }),
-      ]),
-    ],
-    62228,
-    4282601983
-  );
-}
-
 /** What the share sheet offers this Shortcut: photos, PDFs and any other file. */
 const SHARED = ["WFAVAssetContentItem", "WFGenericFileContentItem", "WFImageContentItem", "WFPDFContentItem"];
 
 /** AcadKit: see the top of the file. Each shared item goes up as it is, named; the feed puts it in Inbox/. */
 export function acadkitShortcut(links) {
   const shared = uuid("share:if");
-  const heard = uuid("ask:heard");
-  const question = uuid("ask:encoded");
-  const reply = uuid("ask:reply");
-  const sentence = uuid("ask:say");
   const each = uuid("share:each");
   const name = uuid("share:name");
   const encoded = uuid("share:encoded");
@@ -216,12 +183,6 @@ export function acadkitShortcut(links) {
       }),
       action("repeat.each", { GroupingIdentifier: each, WFControlFlowMode: 2, UUID: uuid("share:each:end") }),
       action("notification", { WFNotificationActionTitle: "AcadKit", WFNotificationActionBody: "Sent to your study folder's Inbox. Your Mac files it at its next sync." }),
-      action("conditional", { GroupingIdentifier: shared, WFControlFlowMode: 1 }),
-      action("dictatetext", { WFDictateTextStopListening: "After Pause", UUID: heard }),
-      action("urlencode", { WFInput: textOf(heard, "Dictated Text"), UUID: question }),
-      action("downloadurl", { WFURL: text(`${links.ask}&q=`, ref(question, "URL Encoded Text")), UUID: reply }),
-      action("getvalueforkey", { WFInput: output(reply, "Contents of URL"), WFDictionaryKey: "say", UUID: sentence }),
-      action("speaktext", { WFText: textOf(sentence, "Dictionary Value"), WFSpeakTextWait: true }),
       action("conditional", { GroupingIdentifier: shared, WFControlFlowMode: 2 }),
     ],
     59708,
@@ -230,34 +191,10 @@ export function acadkitShortcut(links) {
   );
 }
 
-/** AcadKit Screenshot: see the top of the file. The screenshot goes up under its own name (IMG_1234.PNG). */
-export function screenshotShortcut(links) {
-  const shot = uuid("shot:latest");
-  const name = uuid("shot:name");
-  const encoded = uuid("shot:encoded");
-  return workflow(
-    [
-      action("getlastscreenshot", { WFGetLatestPhotoCount: 1, UUID: shot }),
-      action("getitemname", { WFInput: output(shot, "Latest Screenshots"), UUID: name }),
-      action("urlencode", { WFInput: textOf(name, "Name"), UUID: encoded }),
-      action("downloadurl", {
-        WFURL: text(`${links.share}&name=`, ref(encoded, "URL Encoded Text")),
-        WFHTTPMethod: "POST",
-        WFHTTPBodyType: "File",
-        WFRequestVariable: output(shot, "Latest Screenshots"),
-        UUID: uuid("shot:send"),
-      }),
-      action("notification", { WFNotificationActionTitle: "AcadKit", WFNotificationActionBody: "Screenshot sent. A portal page goes into the app at your Mac's next sync." }),
-    ],
-    59474,
-    463140863
-  );
-}
-
-/** Where the Shortcuts call: today's feed, the share endpoint, Siri's ask and Leave's leave. */
+/** Where the Shortcuts call: today's feed and the share endpoint. */
 export function feedLinks(supabaseUrl, token) {
   const root = `${String(supabaseUrl).replace(/\/$/, "")}/functions/v1/feeds`;
-  return { today: `${root}/today?token=${token}`, share: `${root}/share?token=${token}`, ask: `${root}/ask?token=${token}`, leave: `${root}/leave?token=${token}` };
+  return { today: `${root}/today?token=${token}`, share: `${root}/share?token=${token}` };
 }
 
 /** A workflow as a signed .shortcut: JSON → binary plist (plutil) → `shortcuts sign`. */
@@ -281,11 +218,11 @@ export async function signedShortcut(workflowObject, { sign = true } = {}) {
 const BUILDS = [
   ["AcadKit Alarm", (l) => alarmShortcut(l.today)],
   ["AcadKit Focus", (l) => focusShortcut(l.today)],
-  ["AcadKit Leave", (l) => leaveShortcut(l)],
   ["AcadKit", (l) => acadkitShortcut(l)],
-  ["AcadKit Screenshot", (l) => screenshotShortcut(l)],
 ];
 export const NAMES = BUILDS.map(([n]) => n);
+/** Shortcuts no longer built, taken down at the next build. */
+const RETIRED = ["AcadKit Leave", "AcadKit Screenshot"];
 
 /**
  * Build, sign and upload the Shortcuts when the account's token has
@@ -311,6 +248,7 @@ export async function syncShortcuts({ supabase, pin, supabaseUrl, state = STATE,
     await bucket.remove(keys);
     log("Shortcuts: token revoked, taken down");
   } else {
+    await bucket.remove(RETIRED.map((n) => `${pin}/shortcuts/${n}.shortcut`));
     for (const [i, [, build]] of BUILDS.entries()) {
       const bytes = await make(build(links));
       const { error: upErr } = await bucket.upload(keys[i], bytes, { contentType: "application/octet-stream", upsert: true, cacheControl: "0" });

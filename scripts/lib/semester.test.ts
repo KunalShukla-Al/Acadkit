@@ -133,9 +133,10 @@ describe("helpers", () => {
     expect(execFileSync("/bin/bash", [script], { env: { HOME: tmp, PATH: "/usr/bin:/bin" } }).toString().trim()).toBe(`${tmp}/Documents/SRM_Sem4`);
   });
 
-  it("only ever calls an SRM_Sem<n> in Documents a semester folder", () => {
+  it("only ever calls an SRM_Sem<n> in Documents or Downloads a semester folder", () => {
     expect(isSemesterFolder("/Users/k/Documents/SRM_Sem3", "/Users/k")).toBe(true);
     expect(isSemesterFolder("/Users/k/Documents/SRM_Sem3/", "/Users/k")).toBe(true);
+    expect(isSemesterFolder("/Users/k/Downloads/SRM_Sem4", "/Users/k")).toBe(true);
     for (const p of ["/Users/k", "/Users/k/Documents", "/Users/k/Documents/Notes", "/Users/k/Documents/a/SRM_Sem3", "/", "/Users/k/Desktop/SRM_Sem3"])
       expect(isSemesterFolder(p, "/Users/k")).toBe(false);
   });
@@ -227,7 +228,6 @@ describe("switchSemester", () => {
         syllabus_progress: [{ device_id: "0404", course_code: "21CSC202J" }, { device_id: "0404", course_code: "21CSE251T" }],
         portal_snapshot_history: [{ device_id: "0404" }],
         forecast_log: [{ device_id: "0404" }],
-        lectures: [{ device_id: "0404" }, { device_id: "9999" }],
       }
     );
   }
@@ -273,7 +273,6 @@ describe("switchSemester", () => {
     expect(fake.db.get("syllabus_progress")).toEqual([{ device_id: "0404", course_code: "21CSE251T" }]);
     expect(fake.db.get("portal_snapshot_history")).toEqual([]);
     expect(fake.db.get("forecast_log")).toEqual([]);
-    expect(fake.db.get("lectures")).toEqual([{ device_id: "9999" }]);
     expect(fake.store.has("0404/inbox/u1/stray.pdf")).toBe(false);
     expect(await readdir(path.join(p.cacheDir, "text"))).toEqual([]);
     expect(trashed).toEqual([p.from]);

@@ -6,15 +6,13 @@
  * builders, plutil and `shortcuts sign` together before a release. Nothing
  * is uploaded or kept.
  */
-import { acadkitShortcut, alarmShortcut, feedLinks, focusShortcut, leaveShortcut, screenshotShortcut, signedShortcut } from "./lib/shortcuts.mjs";
+import { acadkitShortcut, alarmShortcut, feedLinks, focusShortcut, signedShortcut } from "./lib/shortcuts.mjs";
 
 const links = feedLinks("https://example.supabase.co", "0".repeat(48));
 const builds = {
   "AcadKit Alarm": alarmShortcut(links.today),
   "AcadKit Focus": focusShortcut(links.today),
-  "AcadKit Leave": leaveShortcut(links),
   AcadKit: acadkitShortcut(links),
-  "AcadKit Screenshot": screenshotShortcut(links),
 };
 
 let failed = 0;

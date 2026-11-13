@@ -3,7 +3,7 @@
  * The Mac's menu bar, through SwiftBar (scripts/mac/swiftbar/acadkit.1m.sh
  * runs this every minute): the day and the next class in the bar, and in
  * the menu what Today says (the day's sentence, the classes, the Mac's
- * line with its jobs), with Sync now, Open Today and Pause Autopilot. An
+ * line with its jobs), with Sync now and Open Today. An
  * action runs the plugin again with its name (`menubar.mjs sync`).
  *
  * The day's rows come from Supabase at most every 30 minutes and are kept
@@ -12,7 +12,7 @@
  * keeps (scripts/lib/jobs.mjs).
  */
 import { spawn } from "node:child_process";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,8 +23,6 @@ import { ago, JOBS, macLine } from "../../src/lib/macJobs.ts";
 import { formatTime } from "../../packages/core/src/dates.ts";
 import { JOBS_FILE } from "../lib/jobs.mjs";
 import { istClock } from "../lib/inbox.mjs";
-import { modelReady } from "../lib/ollama.mjs";
-import { isPaused, pausedFile } from "../lib/autopilot.mjs";
 
 export const STATE_DIR = path.join(homedir(), "Library", "Application Support", "AcadKit");
 export const LOG = path.join(homedir(), "Library", "Logs", "AcadKit", "study-sync.log");
@@ -53,10 +51,10 @@ export async function syncState({ stateDir = STATE_DIR, log = LOG, now = Date.no
 /**
  * The bar and the menu, as SwiftBar reads them: the first line is the bar,
  * "---" starts the menu, "--" a line's submenu, and "| key=value" styles a
- * line. The menu has the day's sentence (the one Siri says), the classes,
+ * line. The menu has the day's sentence, the classes,
  * then the Mac's line with its jobs.
  */
-export function render({ day, time, sync, autopilot, jobs = null, reading = null, now = Date.now(), self = null, appUrl = APP_URL }) {
+export function render({ day, time, sync, jobs = null, reading = null, now = Date.now(), self = null, appUrl = APP_URL }) {
   /** A menu line that runs this plugin with an action, then redraws. */
   const action = (label, name) => (self ? `${label} | bash="${self}" param1=${name} terminal=false refresh=true` : null);
   const lines = [];
@@ -72,7 +70,7 @@ export function render({ day, time, sync, autopilot, jobs = null, reading = null
   lines.push(`${bar}${sync.syncing ? " ↻" : ""}`, "---");
 
   if (day) {
-    // The sentence Today opens on, Siri says and the morning notification sends (core's today().say).
+    // The sentence Today opens on and the morning notification sends (core's today().say).
     if (day.say) lines.push(day.say);
     const date = new Date(`${day.date}T12:00:00+05:30`).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" });
     lines.push(`${date} | color=gray`);
@@ -108,8 +106,6 @@ export function render({ day, time, sync, autopilot, jobs = null, reading = null
     lines.push(sync.lastSync ? `Synced ${ago(now - sync.lastSync)}` : "Not synced yet");
   }
   if (!sync.syncing) lines.push(action("Sync now", "sync"));
-  lines.push(autopilot === "on" ? "Autopilot is on" : autopilot === "paused" ? "Autopilot is paused" : "Autopilot is waiting for Ollama");
-  lines.push(autopilot === "paused" ? action("Resume Autopilot", "resume") : action("Pause Autopilot", "pause"));
   return lines.filter((l) => l !== null).join("\n");
 }
 
@@ -129,10 +125,7 @@ async function timetable({ supabase, pin, stateDir = STATE_DIR, now = Date.now()
   return fresh;
 }
 
-/**
- * What a menu line asked for: "sync" starts the tick now (it holds its own
- * lock, so it never runs twice), "pause" and "resume" Autopilot.
- */
+/** What a menu line asked for: "sync" starts the tick now (it holds its own lock, so it never runs twice). */
 export async function act(name, { stateDir = STATE_DIR, repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..") } = {}) {
   if (name === "sync") {
     const child = spawn("/bin/bash", [path.join(stateDir, "auto-sync.sh")], {
@@ -141,11 +134,6 @@ export async function act(name, { stateDir = STATE_DIR, repo = path.resolve(path
       stdio: "ignore",
     });
     child.unref();
-  } else if (name === "pause") {
-    await mkdir(path.join(stateDir, "autopilot"), { recursive: true });
-    await writeFile(pausedFile(path.join(stateDir, "autopilot")), new Date().toISOString());
-  } else if (name === "resume") {
-    await rm(pausedFile(path.join(stateDir, "autopilot")), { force: true });
   }
 }
 
@@ -164,11 +152,10 @@ export async function main({ env = process.env, now = Date.now() } = {}) {
       /* offline: the menu shows the sync, without the day */
     }
   }
-  const autopilot = isPaused(env) ? "paused" : (await modelReady()) ? "on" : "waiting";
   // SwiftBar names the plugin it is running, which the actions run again.
   const saved = JSON.parse(await readFile(JOBS_FILE, "utf8").catch(() => "null"));
   const jobs = saved ? { version: 1, jobs: saved.jobs ?? {} } : null;
-  return render({ day, time: clock.time, sync: await syncState({ now }), autopilot, jobs, reading, now, self: env.SWIFTBAR_PLUGIN_PATH ?? null, appUrl: env.APP_URL ?? APP_URL });
+  return render({ day, time: clock.time, sync: await syncState({ now }), jobs, reading, now, self: env.SWIFTBAR_PLUGIN_PATH ?? null, appUrl: env.APP_URL ?? APP_URL });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

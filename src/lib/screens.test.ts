@@ -5,7 +5,7 @@ describe("the five tabs", () => {
   it("own their pages, under their roots and below", () => {
     expect(SCREENS.map((s) => screenOf(s.to))).toEqual(["today", "timetable", "attendance", "marks", "study"]);
     expect(["/deadlines", "/log", "/marks"].map(screenOf)).toEqual(["today", "attendance", "marks"]);
-    expect(["/subject/21CSC202J", "/practice/21CSC202J", "/view", "/lecture/9"].map(screenOf)).toEqual(Array(4).fill("study"));
+    expect(["/subject/21CSC202J", "/practice/21CSC202J", "/view"].map(screenOf)).toEqual(Array(3).fill("study"));
   });
 
   it("light no tab for what the corner and the top bar open", () => {

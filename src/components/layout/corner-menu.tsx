@@ -1,11 +1,8 @@
-import { lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { CalendarDays, CalendarX2, History, Layers, Settings, X, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarX2, History, Settings, X, type LucideIcon } from "lucide-react";
 import { CORNER, CornerMark } from "@/components/layout/corner-mark";
 import { cn } from "@/lib/utils";
-
-const WaitingBadge = lazy(() => import("@/components/flashcards/waiting-badge").then((m) => ({ default: m.WaitingBadge })));
 
 const STICKER = 68;
 /** Clear of the top bar above, and how far the stickers reach above and below their anchor, labels included. */
@@ -16,9 +13,7 @@ const REACH_DOWN = 70;
 interface Item {
   label: string;
   icon: LucideIcon;
-  /** Where it goes; none opens the flashcards. */
-  to?: string;
-  badge?: boolean;
+  to: string;
   tone: keyof typeof TONES;
   /** Where its sticker lands from the anchor, and its tilt. */
   at: [dx: number, dy: number, tilt: number];
@@ -27,14 +22,12 @@ interface Item {
 const TONES = {
   lime: "bg-brand text-brand-ink",
   coral: "bg-accent-2 text-brand-ink",
-  ink: "bg-ink text-bg",
 };
 
 /** What the corner holds: the pages used now and then, as a cluster of stickers beside it. */
 const ITEMS: Item[] = [
   { label: "Calendar", icon: CalendarDays, to: "/calendar", tone: "lime", at: [-106, -230, -8] },
   { label: "Skips", icon: CalendarX2, to: "/skips", tone: "coral", at: [-210, -160, 7] },
-  { label: "Flashcards", icon: Layers, badge: true, tone: "ink", at: [-80, -108, -4] },
   { label: "History", icon: History, to: "/history", tone: "lime", at: [-238, -40, 9] },
   { label: "Settings", icon: Settings, to: "/settings", tone: "coral", at: [-134, 8, -6] },
 ];
@@ -46,13 +39,12 @@ function navHeight(): number {
 
 interface Props {
   onClose: () => void;
-  onPick: (to: string | undefined) => void;
+  onPick: (to: string) => void;
 }
 
 /**
  * The corner, open: the stickers burst out of it, and the corner turns
- * into its close button. `onPick` gets an item's page, or nothing for the
- * flashcards.
+ * into its close button. `onPick` gets an item's page.
  */
 export default function CornerMenu({ open, ...props }: Props & { open: boolean }) {
   return createPortal(<AnimatePresence>{open && <Burst key="menu" {...props} />}</AnimatePresence>, document.body);
@@ -108,11 +100,6 @@ function Burst({ onClose, onPick }: Props) {
               style={{ width: STICKER, height: STICKER }}
             >
               <item.icon className="h-7 w-7" strokeWidth={2.2} />
-              {item.badge && (
-                <Suspense fallback={null}>
-                  <WaitingBadge />
-                </Suspense>
-              )}
             </motion.span>
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-ink">{item.label}</span>
           </motion.button>

@@ -1,5 +1,7 @@
 # 0002. AI stays local
 
+> **13 November 2026:** Autopilot, the class recorder, Siri's questions and the flashcards were removed after a month unused. The decision below still holds for what remains: the sync, search and Everything connected.
+
 - Status: accepted, 16 Nov 2026
 - Builds on: [0001, the Mac is the brain](0001-the-mac-is-the-brain.md)
 

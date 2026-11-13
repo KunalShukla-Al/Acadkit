@@ -7,10 +7,6 @@ import { macClient } from "./lib/mac-client.mjs";
 import { applyDeletions } from "./apply-study-deletions.mjs";
 import { applyUploads } from "./apply-study-uploads.mjs";
 import { fileInbox } from "./lib/inbox.mjs";
-import { autopilot, contentReader, filer } from "./lib/autopilot.mjs";
-import { handler, isOn as recorderOn, recorder, recorderMissing } from "./lib/recorder.mjs";
-import { reportJobs, tracked } from "./lib/jobs.mjs";
-import { syncLectures } from "./lib/lecture-sync.mjs";
 import { fileURLToPath } from "node:url";
 import { studyRoots } from "./lib/roots.mjs";
 import { applySemesterSwitch } from "./lib/semester.mjs";
@@ -45,30 +41,13 @@ if (!url || !key || !/^\d{4}$/.test(pin ?? "")) {
 const { dir, extras } = studyRoots();
 const supabase = macClient(url, key);
 
-// When Autopilot and the recorder last ran, for the Mac line on Today (scripts/lib/jobs.mjs).
-const ran = {};
 let failed = false;
 for (const step of [
   () => applyDeletions({ supabase, pin, dir, extras }),
   () => applyUploads({ supabase, pin, dir, extras }),
-  // What reached Inbox, read by the Mac's model first (scripts/lib/autopilot.mjs), so what it
-  // shows can decide where it goes...
-  tracked(ran, "autopilot", () => autopilot({ supabase, pin, dir })),
-  // ...then filed into its subject (scripts/lib/inbox.mjs).
-  async () => fileInbox({ supabase, pin, dir, readOf: await contentReader(), onMove: filer({ supabase, pin, dir }) }),
+  // What reached Inbox, filed into its subject (scripts/lib/inbox.mjs).
+  () => fileInbox({ supabase, pin, dir }),
   () => heartbeat({ supabase, pin }),
-  // Lectures recorded with Voice Memos, when RECORDER=on (scripts/lib/recorder.mjs).
-  recorderOn()
-    ? tracked(ran, "recorder", async () => {
-        // Without whisper it does nothing; say so rather than looking done.
-        const lacking = recorderMissing();
-        if (lacking) return `waiting for ${lacking}`;
-        const done = await recorder({ handle: handler({ supabase, pin, dir }), missing: recorderMissing });
-        return done.length ? `${done.length} lecture${done.length === 1 ? "" : "s"}` : undefined;
-      })
-    : () => {},
-  // ...and their transcripts to the app (scripts/lib/lecture-sync.mjs).
-  () => syncLectures({ supabase, pin }),
   // The iPhone's Day Order Shortcuts, rebuilt when the feed token changes (scripts/lib/shortcuts.mjs).
   () => syncShortcuts({ supabase, pin, supabaseUrl: url }),
   // Last: it moves STUDY_DIR, which the steps above read as `dir`.
@@ -88,5 +67,4 @@ for (const step of [
     failed = true;
   }
 }
-await reportJobs({ supabase, pin, ran });
 process.exit(failed ? 1 : 0);

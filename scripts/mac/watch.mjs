@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
  * The study-folder watcher, kept running by launchd (com.acadkit.studysync,
- * npm run mac:install). A change in the study folder, or in a folder
- * Autopilot watches (scripts/lib/autopilot.mjs), runs the auto-sync
+ * npm run mac:install). A change in the study folder runs the auto-sync
  * tick (auto-sync.sh) once nothing has changed for 10 seconds, so a saved
  * note reaches the phone in about 15 seconds instead of up to 7 minutes.
  * The tick also runs every 3 minutes for what the app asks of the Mac
@@ -18,7 +17,6 @@ import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 import { studyRoots } from "../lib/roots.mjs";
 import { createClient } from "@supabase/supabase-js";
-import { autopilotFolders } from "../lib/autopilot.mjs";
 import { heard, listen } from "./link.mjs";
 
 export const QUIET_MS = 10_000;
@@ -30,14 +28,12 @@ export const EVERY_MS = 180_000;
 export const TICK_TIMEOUT_MS = 1_200_000;
 
 /**
- * The folders to watch, from a .env.local's text: STUDY_DIR and
- * STUDY_NEXT_DIR, and Autopilot's AUTOPILOT_FOLDERS unless it is off.
+ * The folders to watch, from a .env.local's text: STUDY_DIR and STUDY_NEXT_DIR.
  */
 export function watchedFolders(envText, home = homedir()) {
   const env = parseEnv(envText);
   const { dir, extras } = studyRoots(env, home);
-  const picked = env.AUTOPILOT === "off" ? [] : autopilotFolders(env, home);
-  return [...new Set([dir, ...extras.map((x) => x.dir), ...picked])];
+  return [...new Set([dir, ...extras.map((x) => x.dir)])];
 }
 
 /**

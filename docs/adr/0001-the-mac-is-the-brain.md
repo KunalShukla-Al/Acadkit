@@ -1,5 +1,7 @@
 # 0001. The Mac is the brain
 
+> **13 November 2026:** Autopilot, the class recorder, Siri's questions and the flashcards were removed after a month unused. The decision below still holds for what remains: the sync, search and Everything connected.
+
 - Status: accepted, 15 Nov 2026
 - Covers: the study sync, Autopilot, the class recorder, Everything connected, the night shift
 

@@ -10,8 +10,10 @@
  * prints how often they do at each bar, and the lowest bar at which 80% do.
  */
 import { buildSpace, spaceSummary } from "./lib/connected.mjs";
-import { checkBar, linkByMeaning, linkByTime, mergeLinks, unitPairs } from "./lib/links.mjs";
-import { STUDY } from "./lib/paper-eval.mjs";
+import { checkBar, linkByMeaning, unitPairs } from "./lib/links.mjs";
+import { studyRoots } from "./lib/roots.mjs";
+
+const STUDY = studyRoots().dir;
 
 const started = Date.now();
 const { items, means } = await buildSpace({ dir: STUDY });
@@ -19,11 +21,10 @@ console.log(`The space: ${items.length.toLocaleString("en-IN")} items, built in 
 for (const line of spaceSummary(items)) console.log(`  ${line}`);
 
 const linking = Date.now();
-const byTime = linkByTime(items);
-const links = mergeLinks(byTime, linkByMeaning(items, means));
+const links = linkByMeaning(items, means);
 const count = (set) => Object.values(set).reduce((n, l) => n + l.length, 0);
 console.log(
-  `Links: ${Object.keys(links).length.toLocaleString("en-IN")} items with ${count(links).toLocaleString("en-IN")} links, ${count(byTime).toLocaleString("en-IN")} of them by time, in ${Math.round((Date.now() - linking) / 1000)} s.`
+  `Links: ${Object.keys(links).length.toLocaleString("en-IN")} items with ${count(links).toLocaleString("en-IN")} links, in ${Math.round((Date.now() - linking) / 1000)} s.`
 );
 
 if (process.argv.includes("--check")) {
