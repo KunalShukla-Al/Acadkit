@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
 import { ChevronDown, GraduationCap, Target } from "lucide-react";
-import { useDeadlines, useMarks, useSettings } from "@/hooks/useData";
+import { useDeadlines, useMarks } from "@/hooks/useData";
 import { useTone } from "@/hooks/useTone";
 import { CgpaCard } from "@/components/insights/cgpa-card";
 import { SubjectBudgetCard } from "@/components/insights/subject-budget";
@@ -21,7 +21,6 @@ export function GradesProjection({ report }: { report: ReturnType<typeof buildPr
   const tone = useTone();
   const { data: marks } = useMarks();
   const { data: deadlines } = useDeadlines();
-  const { data: settings } = useSettings();
   const bySubject = useMemo(() => groupMarksBySubject(marks ?? []), [marks]);
 
   // One expected solve per subject, shared by its card and the headline,
@@ -32,11 +31,11 @@ export function GradesProjection({ report }: { report: ReturnType<typeof buildPr
         p,
         o: expectedOutlook(p.subject, bySubject.get(p.subject.id) ?? [], p.targetGrade, {
           deadlines: deadlines ?? [],
-          assumedExternalPct: settings?.assumed_external_pct ?? null,
+          assumedExternalPct: null,
           today: todayISO(),
         }),
       })),
-    [report.gradeProjections, bySubject, deadlines, settings?.assumed_external_pct]
+    [report.gradeProjections, bySubject, deadlines]
   );
   const graded = items.filter(({ p }) => countsInSgpa(p.subject));
   const ungraded = items.filter(({ p }) => !countsInSgpa(p.subject));

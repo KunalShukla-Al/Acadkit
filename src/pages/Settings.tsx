@@ -11,9 +11,7 @@ import { Dot } from "@/components/ui/misc";
 import { Switch } from "@/components/ui/switch";
 import { SubjectSheet } from "@/components/sheets/subject-sheet";
 import { PortalPasteSheet } from "@/components/sheets/portal-paste-sheet";
-import { CopyAllMarks } from "@/components/settings/copy-all-marks";
 import { DataCard } from "@/components/settings/data-card";
-import { IphoneCard } from "@/components/settings/iphone-card";
 import { usePush } from "@/hooks/usePush";
 import { useSession } from "@/hooks/useSession";
 import { useResetOn } from "@/hooks/useResetOn";
@@ -39,7 +37,7 @@ import { parseTomorrow, savedTomorrow, TOMORROW_EVENT, tomorrowLine } from "@/li
 import type { ThemeName } from "@/lib/themes";
 import { cn, haptic } from "@/lib/utils";
 import { semesterWindow } from "@acadkit/core/calendar";
-import { relativeDay } from "@acadkit/core/dates";
+import { relativeDay, formatDate } from "@acadkit/core/dates";
 import { useAppStore, type ColorMode } from "@/store/app";
 import type { Subject } from "@acadkit/core/types";
 
@@ -164,7 +162,6 @@ function PortalGroup() {
   const { data: snapshots } = usePortalSnapshots();
   const [busy, setBusy] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const [howOpen, setHowOpen] = useState(false);
   const health = syncHealth(snapshots ?? []);
 
   async function refresh() {
@@ -208,24 +205,8 @@ function PortalGroup() {
       <button type="button" onClick={() => setPasteOpen(true)} className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-surface-2/50">
         <ClipboardPaste className="h-4 w-4 shrink-0 text-accent" />
         <span className="min-w-0 flex-1 text-sm font-bold">Paste a portal page</span>
-        <span className="text-xs text-muted">attendance, marks, timetable</span>
+        <span className="text-xs text-muted">attendance</span>
       </button>
-      <div>
-        <button
-          type="button"
-          onClick={() => setHowOpen((v) => !v)}
-          aria-expanded={howOpen}
-          className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-surface-2/50"
-        >
-          <span className="min-w-0 flex-1 text-sm font-bold">Copy every subject's marks at once</span>
-          <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted transition-transform", howOpen && "rotate-180")} />
-        </button>
-        {howOpen && (
-          <div className="px-5 pb-4">
-            <CopyAllMarks />
-          </div>
-        )}
-      </div>
       <PortalPasteSheet open={pasteOpen} onClose={() => setPasteOpen(false)} />
     </Group>
   );
@@ -267,41 +248,6 @@ function TargetSgpaRow() {
   );
 }
 
-function EndSemRow() {
-  const { data: settings } = useSettings();
-  const updateSettings = useUpdateSettings();
-  const stored = settings?.assumed_external_pct ?? null;
-  const shown = stored === null ? "" : String(stored);
-  const [value, setValue] = useState(shown);
-  useResetOn(shown, () => setValue(shown));
-
-  const blank = value.trim() === "";
-  const parsed = Number(value);
-  const invalid = !blank && (Number.isNaN(parsed) || parsed < 0 || parsed > 100);
-
-  function save() {
-    const next = blank ? null : parsed;
-    updateSettings.mutate({ assumed_external_pct: next });
-    toast.success(next === null ? "End-sem back in the spread" : `Assuming ${next}% in the end-sem`);
-  }
-
-  return (
-    <SaveField
-      label="Expected end-sem score (%)"
-      hint="Targets solve the internals against it; blank spreads them"
-      value={value}
-      onChange={setValue}
-      dirty={!invalid && (blank ? stored !== null : parsed !== stored)}
-      onSave={save}
-      type="number"
-      inputMode="numeric"
-      min={0}
-      max={100}
-      placeholder="—"
-    />
-  );
-}
-
 function SemesterDatesRow() {
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
@@ -311,6 +257,7 @@ function SemesterDatesRow() {
   const defaults = useMemo(() => semesterWindow({ sem_start: semStart, sem_end: semEnd }), [semStart, semEnd]);
   const [start, setStart] = useState(defaults.start);
   const [end, setEnd] = useState(defaults.end);
+  const [open, setOpen] = useState(false);
   useResetOn(`${defaults.start} ${defaults.end}`, () => {
     setStart(defaults.start);
     setEnd(defaults.end);
@@ -328,9 +275,25 @@ function SemesterDatesRow() {
     toast.success("Semester dates updated - day orders recalculated everywhere");
   }
 
+  // Set once a semester, so it stays folded: the row says the dates, and opens to change them.
   return (
-    <div className="space-y-3 px-5 py-3.5">
-      <p className="text-sm font-bold">Semester</p>
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-surface-2/50"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Semester</span>
+          <span className="block text-xs text-muted">
+            {formatDate(defaults.start)} to {formatDate(defaults.end)}
+          </span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+    <div className="space-y-3 px-5 pb-3.5">
       {/* iOS won't shrink a native date field below its own width, so two across overflow on a phone. */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Classes start">
@@ -344,6 +307,8 @@ function SemesterDatesRow() {
         <Button onClick={save} disabled={invalid} size="sm" className="w-full">
           Save semester dates
         </Button>
+      )}
+    </div>
       )}
     </div>
   );
@@ -377,35 +342,27 @@ function MedicalLeaveRow() {
   );
 }
 
-function AssumePresentRow() {
-  const { data: settings } = useSettings();
-  const update = useUpdateSettings();
+/** Unmarked past classes are always counted as attended (useAutoMark); this is what's waiting and the way back. */
+function AutoMarkedRow() {
   const pending = usePendingAutoMarks();
   const autoMark = useAutoMark();
   const clearAuto = useClearAutoMarks();
   const { data: attendance } = useAttendance();
-  const on = settings?.auto_mark_present === true;
   const autoCount = (attendance ?? []).filter((a) => a.auto_marked).length;
+  if (pending.length === 0 && autoCount === 0) return null;
 
   return (
-    <div>
-      <Row label="Assume present" hint="Unmarked past classes count as attended">
-        <Switch checked={on} onChange={(next) => update.mutate({ auto_mark_present: next })} label="Assume present for unmarked past classes" />
-      </Row>
-      {(pending.length > 0 || autoCount > 0) && (
-        <div className="-mt-1.5 flex flex-wrap items-center gap-2 px-5 pb-3.5">
-          <span className="min-w-0 flex-1 text-xs text-muted">{describePending(pending)}</span>
-          {pending.length > 0 && (
-            <Button variant="secondary" size="sm" disabled={autoMark.isPending} onClick={() => autoMark.mutate(pending)}>
-              {autoMark.isPending ? "Marking…" : "Catch up now"}
-            </Button>
-          )}
-          {autoCount > 0 && (
-            <Button variant="ghost" size="sm" disabled={clearAuto.isPending} onClick={() => clearAuto.mutate()}>
-              Undo {autoCount} auto-marked
-            </Button>
-          )}
-        </div>
+    <div className="flex flex-wrap items-center gap-2 px-5 py-3.5">
+      <span className="min-w-0 flex-1 text-xs text-muted">{describePending(pending)}</span>
+      {pending.length > 0 && (
+        <Button variant="secondary" size="sm" disabled={autoMark.isPending} onClick={() => autoMark.mutate(pending)}>
+          {autoMark.isPending ? "Marking…" : "Catch up now"}
+        </Button>
+      )}
+      {autoCount > 0 && (
+        <Button variant="ghost" size="sm" disabled={clearAuto.isPending} onClick={() => clearAuto.mutate()}>
+          Undo {autoCount} auto-marked
+        </Button>
       )}
     </div>
   );
@@ -467,18 +424,13 @@ function LookGroup() {
       <Row
         label="Theme"
         hint={
-          themeName === "oled"
-            ? "True black, no colour"
-            : themeName === "apple"
-              ? "Native iOS look, system font"
-              : "Lime, loud, oversized"
+          themeName === "oled" ? "True black, no colour" : "Lime, loud, oversized"
         }
       >
         <Segmented<ThemeName>
           layoutId="theme-name"
           options={[
             { value: "brutalist", label: "Brutalist" },
-            { value: "apple", label: "Apple" },
             { value: "oled", label: "OLED" },
           ]}
           value={themeName}
@@ -603,10 +555,9 @@ export default function Settings() {
         <SectionTitle>Academics</SectionTitle>
         <Group>
           <TargetSgpaRow />
-          <EndSemRow />
           <SemesterDatesRow />
           <MedicalLeaveRow />
-          <AssumePresentRow />
+          <AutoMarkedRow />
         </Group>
         <SubjectsCard />
       </div>
@@ -622,7 +573,6 @@ export default function Settings() {
           <RemindersRow />
           <TomorrowRow />
         </Group>
-        <IphoneCard />
       </div>
 
       <CollapsibleSection title="Data">

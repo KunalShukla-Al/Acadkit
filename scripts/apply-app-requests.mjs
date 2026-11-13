@@ -10,7 +10,6 @@ import { fileInbox } from "./lib/inbox.mjs";
 import { fileURLToPath } from "node:url";
 import { studyRoots } from "./lib/roots.mjs";
 import { applySemesterSwitch } from "./lib/semester.mjs";
-import { syncShortcuts } from "./lib/shortcuts.mjs";
 
 const HEARTBEAT_EVERY = 30 * 60_000;
 const STATE = path.join(homedir(), "Library", "Application Support", "AcadKit", "last-heartbeat");
@@ -48,8 +47,6 @@ for (const step of [
   // What reached Inbox, filed into its subject (scripts/lib/inbox.mjs).
   () => fileInbox({ supabase, pin, dir }),
   () => heartbeat({ supabase, pin }),
-  // The iPhone's Day Order Shortcuts, rebuilt when the feed token changes (scripts/lib/shortcuts.mjs).
-  () => syncShortcuts({ supabase, pin, supabaseUrl: url }),
   // Last: it moves STUDY_DIR, which the steps above read as `dir`.
   () =>
     applySemesterSwitch({

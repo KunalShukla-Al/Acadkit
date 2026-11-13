@@ -125,7 +125,7 @@ export default function Onboarding() {
       });
       // The attendance you pasted to get your subjects is worth keeping.
       if (source === "portal" && pasted) {
-        await importPortalData(pin, { attendance: pasted.attendance, marks: pasted.marks });
+        await importPortalData(pin, { attendance: pasted.attendance, marks: [] });
       }
       setPin(pin);
       toast.success(say(VOICE.onboardingDone, tone));

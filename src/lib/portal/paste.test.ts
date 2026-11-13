@@ -88,7 +88,6 @@ describe("parsePastedPortal", () => {
   it("is empty, not broken, on an empty paste", () => {
     const out = parsePastedPortal("");
     expect(out.attendance).toEqual([]);
-    expect(out.marks).toEqual([]);
     expect(out.tablesSeen).toBe(0);
   });
 });

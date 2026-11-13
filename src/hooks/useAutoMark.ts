@@ -42,14 +42,13 @@ export function useAutoMarkRunner(): void {
   const autoMark = useAutoMark();
   const ran = useRef(false);
 
-  const enabled = settingsQ.data?.auto_mark_present === true;
   const fresh = [settingsQ, timetableQ, attendanceQ].every(
     (q) => q.isFetchedAfterMount && !q.isError
   );
 
   useEffect(() => {
-    if (!enabled || !fresh || ran.current || !pending.length) return;
+    if (!fresh || ran.current || !pending.length) return;
     ran.current = true;
     autoMark.mutate(pending);
-  }, [enabled, fresh, pending, autoMark]);
+  }, [fresh, pending, autoMark]);
 }

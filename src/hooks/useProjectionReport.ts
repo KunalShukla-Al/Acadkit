@@ -54,7 +54,7 @@ export function useProjectionReport() {
         // by the target SGPA, so the two can never disagree.
         settings?.target_sgpa ?? 8.5,
         deadlines ?? [],
-        settings?.assumed_external_pct ?? null,
+        null,
         // The portal baseline, as on the Attendance page - without it
         // this counted hand-marked classes only.
         snapshots ?? []
@@ -67,7 +67,6 @@ export function useProjectionReport() {
       declared,
       semWindow,
       settings?.target_sgpa,
-      settings?.assumed_external_pct,
       deadlines,
       snapshots,
     ]

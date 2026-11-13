@@ -42,7 +42,7 @@ export function ExamCountdown() {
         {
           deadlines: (deadlines ?? []).filter((d) => d.subject_id === deadline.subject_id),
           targetSgpa: settings?.target_sgpa ?? 8.5,
-          assumedExternalPct: settings?.assumed_external_pct ?? null,
+          assumedExternalPct: null,
         }
       )
     : null;

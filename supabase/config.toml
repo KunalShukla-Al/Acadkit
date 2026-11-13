@@ -396,9 +396,6 @@ verify_jwt = false
 [functions.portal-ingest]
 verify_jwt = false
 
-[functions.feeds]
-verify_jwt = false
-
 [analytics]
 enabled = true
 port = 54327
