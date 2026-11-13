@@ -70,8 +70,7 @@ jobs:
       - name: Apply migrations
         run: supabase db push --project-ref "$PROJECT_REF"
 
-      # verify_jwt for each comes from supabase/config.toml; --use-api bundles server-side, which
-      # takes feeds' imports from packages/core.
+      # verify_jwt for each comes from supabase/config.toml; --use-api bundles server-side.
       - name: Deploy functions
         if: needs.plan.outputs.functions != ''
         run: |

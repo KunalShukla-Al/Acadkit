@@ -1,8 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, useLocation, useOutlet } from "react-router-dom";
 import { Sparkles } from "lucide-react";
-import { Corner } from "@/components/layout/corner";
-import { CalendarButton } from "@/components/layout/calendar-button";
+import { Corner, MoreButton } from "@/components/layout/corner";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { OfflineBanner } from "@/components/layout/offline-banner";
@@ -60,7 +59,7 @@ export function AppShell() {
       <Sidebar />
 
       <div className="flex min-w-0 flex-col">
-        {/* The phone's top bar: the name and the Run-up; the five tabs are below. */}
+        {/* The phone's top bar: the name, More and the Run-up; the five tabs are below, and the corner opens the calendar. */}
         <header className="glass sticky top-0 z-30 border-b pt-safe-t lg:hidden">
           <div className="flex items-center justify-between px-4 py-2">
               <Link to="/" className="flex items-center gap-2">
@@ -70,7 +69,7 @@ export function AppShell() {
                 <span className="text-[17px] font-extrabold tracking-tight">AcadKit</span>
               </Link>
             <div className="flex items-center gap-2">
-              <CalendarButton />
+              <MoreButton />
               <Suspense fallback={null}>
                 <RunupChip />
               </Suspense>

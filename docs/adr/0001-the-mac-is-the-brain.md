@@ -33,8 +33,7 @@ what it works out:
   study-files bucket, and writes rows with the service key.
 - The app on the phone and the Mac's browser reads those, and asks the Mac for work through rows
   (deletes, uploads, a semester switch) that the next tick carries out.
-- Edge functions do only what must answer while the Mac is asleep: the feeds the iPhone's
-  Shortcuts and Siri call, the reminders, the portal bookmarklet's ingest, and embedding a search
+- Edge functions do only what must answer while the Mac is asleep: the reminders, the portal bookmarklet's ingest, and embedding a search
   query (the passages were embedded on the Mac).
 
 ## Why not the alternatives

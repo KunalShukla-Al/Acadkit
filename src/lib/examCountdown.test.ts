@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countdownLabel, examUrgency, HORIZON_DAYS, nextExam } from "@/lib/examCountdown";
+import { countdownLabel, examUrgency, HORIZON_DAYS, nextExam, nextMarked } from "@/lib/examCountdown";
 import type { Deadline } from "@acadkit/core/types";
 
 const TODAY = "2026-09-07";
@@ -80,6 +80,24 @@ describe("nextExam", () => {
   it("tolerates a timestamp in due_date", () => {
     const c = nextExam([exam("2026-09-10T14:30:00")], NOW)!;
     expect(c.daysAway).toBe(3);
+  });
+});
+
+describe("nextMarked", () => {
+  it("takes the soonest deadline of any kind that carries marks", () => {
+    const c = nextMarked(
+      [
+        exam("2026-09-08", { type: "lab" }),
+        exam("2026-09-09", { type: "assignment", max_marks: 10 }),
+        exam("2026-09-12", { max_marks: 15 }),
+      ],
+      NOW
+    )!;
+    expect([c.deadline.due_date, c.deadline.type, c.daysAway]).toEqual(["2026-09-09", "assignment", 2]);
+  });
+
+  it("skips one done, one past, and one without marks", () => {
+    expect(nextMarked([exam("2026-09-09", { max_marks: 10, status: "done" }), exam("2026-09-06", { max_marks: 10 }), exam("2026-09-10", { max_marks: 0 })], NOW)).toBeNull();
   });
 });
 

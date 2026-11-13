@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Dot } from "@/components/ui/misc";
-import { countdownLabel, examUrgency, nextExam } from "@/lib/examCountdown";
+import { countdownLabel, examUrgency, nextMarked } from "@/lib/examCountdown";
 import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
 import { deadlineLabel } from "@/lib/deadlines";
 import { formatDate } from "@acadkit/core/dates";
@@ -12,7 +12,7 @@ import { useTone } from "@/hooks/useTone";
 import { useListedDeadlines, useMarks, useSettings, useSubjects } from "@/hooks/useData";
 import { cn } from "@/lib/utils";
 
-/** A countdown to the next exam, and the score that would move your grade. */
+/** A countdown to the next thing that carries marks, and the score that would move your grade. */
 export function ExamCountdown() {
   const tone = useTone();
   const { data: deadlines } = useListedDeadlines();
@@ -27,7 +27,7 @@ export function ExamCountdown() {
     return () => clearInterval(t);
   }, []);
 
-  const upcoming = nextExam(deadlines, now);
+  const upcoming = nextMarked(deadlines, now);
   if (!upcoming) return null;
 
   const { deadline, daysAway } = upcoming;
@@ -74,7 +74,7 @@ export function ExamCountdown() {
               day: "numeric",
               month: "long",
             })}
-            {deadline.max_marks ? ` · out of ${deadline.max_marks}` : ""}
+            {` · out of ${deadline.max_marks}`}
           </p>
         </div>
 
@@ -97,19 +97,8 @@ export function ExamCountdown() {
           <p className="text-sm font-bold">{say(VOICE.examToday, tone)}</p>
         ) : advice ? (
           <p className="text-sm font-bold text-accent">{advice}</p>
-        ) : !Number(deadline.max_marks) ? (
-          // No mark total: the fix is on the deadline itself.
-          <Link
-            to="/calendar"
-            className="flex items-center gap-1.5 text-sm font-semibold text-muted"
-          >
-            {say(VOICE.examNoMaxMarks, tone)}
-            <ArrowRight className="h-3.5 w-3.5 shrink-0" />
-          </Link>
         ) : (
-          // A mark total exists but the subject has no marks to set a pace
-          // from, so the fix is in Marks - sending you to the deadline
-          // would be sending you to fix something that isn't broken.
+          // The subject has no marks to set a pace from, so the fix is in Marks.
           <Link
             to="/marks"
             className="flex items-center gap-1.5 text-sm font-semibold text-muted"

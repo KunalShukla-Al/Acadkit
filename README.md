@@ -32,8 +32,9 @@ papers that are about the same thing.
   class, a past paper's question, another set of notes ([how a link is chosen](docs/connected.md)).
 
 The **Run-up**, a day-by-day plan to the end-sems, is a chip in the top bar that counts the day's
-targets. The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the rest:
-the calendar, the days I can skip, past semesters and settings.
+targets. The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the
+calendar in one tap; held, or from More in the top bar, it opens the days I can skip, past semesters
+and settings. Today leads with the next thing that carries marks.
 
 ## On the Mac
 
@@ -45,21 +46,12 @@ the calendar, the days I can skip, past semesters and settings.
 - **Continue**: the page I was reading on the phone is offered on the Mac, at that page; the
   other way, Finder → Quick Actions → Send to AcadKit phone.
 
-## On the iPhone
-
-Shortcuts my Mac builds for my account set an alarm before the first class, turn on Do Not
-Disturb through class hours, and send files from the share sheet to the study folder.
-Setup: [docs/shortcuts.md](docs/shortcuts.md) and [docs/campus.md](docs/campus.md).
-
 ## Themes
 
-Settings carries three looks, synced with the account:
+Settings carries two looks, synced with the account:
 
 - **Brutalist** (the default) — lime on near-black or near-white, oversized lowercase titles in
   Chakra Petch, bordered squircle cards.
-- **Apple** — the iOS/macOS look: the system font (real SF Pro on my iPhone and Mac), neutral
-  grouped-gray backgrounds, a system-blue accent and continuous-corner cards, with the tabs drawn
-  in the native idiom so AcadKit reads like a system app.
 - **OLED** — true black with no colour, for an always-on screen.
 
 Each is a set of light-and-dark design tokens, and a unit test holds every theme to WCAG AA
@@ -68,7 +60,7 @@ contrast.
 ## What stays private
 
 The one model, gte-small for search and links, runs on my Mac, and nothing in AcadKit holds a key
-to a model API. The iPhone reaches my data through one token I can revoke. The reasons are
+to a model API. The reasons are
 in [docs/adr](docs/adr/README.md), and what protects what is in [SECURITY.md](SECURITY.md).
 
 ## How well it works

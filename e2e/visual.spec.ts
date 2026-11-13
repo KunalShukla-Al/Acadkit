@@ -74,7 +74,7 @@ for (const { device, use } of SCREENS) {
     test("open, dark", async ({ signedIn: page }) => {
       await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
       await waitForLaunch(page);
-      await page.getByRole("button", { name: /More: calendar/ }).click();
+      await page.getByRole("button", { name: /^More: / }).click();
       await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(800);

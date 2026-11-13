@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { CalendarDays, CalendarX2, History, Settings, X, type LucideIcon } from "lucide-react";
+import { CalendarX2, History, Settings, X, type LucideIcon } from "lucide-react";
 import { CORNER, CornerMark } from "@/components/layout/corner-mark";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,6 @@ const TONES = {
 
 /** What the corner holds: the pages used now and then, as a cluster of stickers beside it. */
 const ITEMS: Item[] = [
-  { label: "Calendar", icon: CalendarDays, to: "/calendar", tone: "lime", at: [-106, -230, -8] },
   { label: "Skips", icon: CalendarX2, to: "/skips", tone: "coral", at: [-210, -160, 7] },
   { label: "History", icon: History, to: "/history", tone: "lime", at: [-238, -40, 9] },
   { label: "Settings", icon: Settings, to: "/settings", tone: "coral", at: [-134, 8, -6] },
@@ -68,7 +67,7 @@ function Burst({ onClose, onPick }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: 0.08 }}
     >
       {/* Tapping anywhere else closes it too; the keyboard has the close button and Escape. */}
       <button type="button" aria-hidden tabIndex={-1} className="absolute inset-0 bg-bg/95" onClick={onClose} />
@@ -83,8 +82,8 @@ function Burst({ onClose, onPick }: Props) {
             onClick={() => onPick(item.to)}
             initial={from}
             animate={{ left: anchor.x + dx - 48, top: anchor.y + dy - STICKER / 2, opacity: 1, scale: 1 }}
-            exit={{ ...from, transition: { duration: 0.18, delay: (ITEMS.length - 1 - i) * 0.02 } }}
-            transition={{ type: "spring", stiffness: 380, damping: 17, delay: 0.04 + i * 0.045 }}
+            exit={{ ...from, transition: { duration: 0.1 } }}
+            transition={{ type: "spring", stiffness: 900, damping: 40, delay: i * 0.015 }}
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}
             className="group absolute flex w-24 flex-col items-center gap-2.5 outline-none"
@@ -92,7 +91,7 @@ function Burst({ onClose, onPick }: Props) {
             <motion.span
               initial={{ rotate: 0 }}
               animate={{ rotate: tilt }}
-              transition={{ type: "spring", stiffness: 300, damping: 14, delay: 0.08 + i * 0.045 }}
+              transition={{ type: "spring", stiffness: 700, damping: 30, delay: i * 0.015 }}
               className={cn(
                 "relative flex items-center justify-center rounded-[22px] ring-accent/60 ring-offset-2 ring-offset-bg group-focus-visible:ring-4",
                 TONES[item.tone]
@@ -121,7 +120,7 @@ function Burst({ onClose, onPick }: Props) {
             initial={{ rotate: -90, scale: 0.4 }}
             animate={{ rotate: 0, scale: 1 }}
             exit={{ rotate: -90, scale: 0.4 }}
-            transition={{ type: "spring", stiffness: 380, damping: 22 }}
+            transition={{ type: "spring", stiffness: 900, damping: 40 }}
           >
             <X className="h-6 w-6" strokeWidth={2.8} />
           </motion.span>
