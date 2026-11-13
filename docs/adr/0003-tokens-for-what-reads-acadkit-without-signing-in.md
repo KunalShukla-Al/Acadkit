@@ -1,5 +1,7 @@
 # 0003. Feeds, Siri and Shortcuts behind revocable tokens
 
+> **13 November 2026:** Autopilot, the class recorder, Siri's questions and the flashcards were removed after a month unused. The decision below still holds for what remains: the sync, search and Everything connected.
+
 - Status: accepted with the feeds (October 2026); written down 16 Nov 2026
 - Covers: `supabase/functions/feeds`, migrations 047 (`feed_tokens`), 051 (`siri_marks`), 052 (`feed_use`)
 

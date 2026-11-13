@@ -5,16 +5,15 @@ import { useToday } from "@/hooks/useToday";
 import { CORNER, CornerMark } from "@/components/layout/corner-mark";
 import { cn, haptic } from "@/lib/utils";
 
-// The open menu and the deck load on their own; a finger on the corner starts the menu's download.
+// The open menu loads on its own; a finger on the corner starts the menu's download.
 const loadMenu = () => import("@/components/layout/corner-menu");
 const CornerMenu = lazy(loadMenu);
-const FlashcardDeck = lazy(() => import("@/components/flashcards/flashcard-deck").then((m) => ({ default: m.FlashcardDeck })));
 
 /**
  * The corner: a lime quarter-disc fixed in the bottom-right corner, above
  * the tab bar on a phone (`--nav-h`, which the bar keeps), carrying
  * today's Day Order (a star on a day without classes). Tapped, the pages
- * used now and then, Calendar, Skips, Flashcards, History and Settings,
+ * used now and then, Calendar, Skips, History and Settings,
  * burst out of it as tilted stickers (`corner-menu.tsx`), and it turns
  * into their close button.
  */
@@ -25,7 +24,6 @@ export function Corner() {
   const [open, setOpen] = useState(false);
   // Mounted from the first open on, so closing can play out.
   const [menu, setMenu] = useState(false);
-  const [deck, setDeck] = useState(false);
   const corner = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -44,7 +42,7 @@ export function Corner() {
       <button
         ref={corner}
         type="button"
-        aria-label={`${dayOrder ? `Day Order ${dayOrder}. ` : ""}More: calendar, skips, flashcards, history and settings`}
+        aria-label={`${dayOrder ? `Day Order ${dayOrder}. ` : ""}More: calendar, skips, history and settings`}
         aria-haspopup="dialog"
         aria-expanded={open}
         // While the menu is open its own close button sits exactly here.
@@ -82,23 +80,12 @@ export function Corner() {
             onPick={(to) => {
               haptic();
               setOpen(false);
-              if (to) navigate(to);
-              else setDeck(true);
+              navigate(to);
             }}
           />
         </Suspense>
       )}
 
-      {deck && (
-        <Suspense fallback={null}>
-          <FlashcardDeck
-            onClose={() => {
-              setDeck(false);
-              corner.current?.focus();
-            }}
-          />
-        </Suspense>
-      )}
     </>
   );
 }

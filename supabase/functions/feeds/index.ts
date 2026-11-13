@@ -2,11 +2,10 @@
 // deploys with --use-api; it checks its own token, so with --no-verify-jwt:
 //   supabase functions deploy feeds --use-api --no-verify-jwt --project-ref <ref>
 import { createClient } from "npm:@supabase/supabase-js@2";
-import type { AttendanceRecord, Deadline, Mark, PortalSnapshot, Settings, Subject, TimetableSlot } from "../../../packages/core/src/types.ts";
-import type { AbsentRow } from "../../../packages/core/src/absent.ts";
+import type { AttendanceRecord, Deadline, PortalSnapshot, Settings, Subject, TimetableSlot } from "../../../packages/core/src/types.ts";
 import { handle, type Account, type Shared } from "./handle.ts";
 
-/** Requests per token per minute: Siri, the share sheet, the calendar's hourly fetch and the morning Shortcuts fit well inside it. */
+/** Requests per token per minute: the share sheet, the calendar's hourly fetch and the morning Shortcuts fit well inside it. */
 const LIMIT_PER_MINUTE = 30;
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -31,16 +30,15 @@ async function rows<T>(table: string, query: Result<T>): Promise<T[]> {
 
 async function load(pin: string): Promise<Account> {
   const mine = (table: string) => sb.from(table).select("*").eq("device_id", pin);
-  const [settings, subjects, slots, attendance, snapshots, deadlines, marks] = await Promise.all([
+  const [settings, subjects, slots, attendance, snapshots, deadlines] = await Promise.all([
     rows<Settings>("settings", mine("settings")),
     rows<Subject>("subjects", mine("subjects")),
     rows<TimetableSlot>("timetable_slots", mine("timetable_slots")),
     rows<AttendanceRecord>("attendance", mine("attendance")),
     rows<PortalSnapshot>("portal_snapshots", mine("portal_snapshots")),
     rows<Deadline>("deadlines", mine("deadlines").eq("status", "pending")),
-    rows<Mark>("marks", mine("marks")),
   ]);
-  return { settings: settings[0] ?? null, subjects, slots, attendance, snapshots, deadlines, marks };
+  return { settings: settings[0] ?? null, subjects, slots, attendance, snapshots, deadlines };
 }
 
 /** The bytes into the inbox, then the row the Mac acts on; no row, no stray bytes. */
@@ -55,19 +53,8 @@ async function share(pin: string, f: Shared): Promise<void> {
   }
 }
 
-/** The classes marked absent, then the record the app's Undo reads; the record is what makes it undoable, so it goes second. */
-async function markAbsent(pin: string, said: string, rows: AbsentRow[]): Promise<void> {
-  const { error } = await sb.from("attendance").upsert(
-    rows.map((r) => ({ device_id: pin, subject_id: r.subject_id, date: r.date, start_time: r.start_time, end_time: r.end_time, status: "absent", auto_marked: false })),
-    { onConflict: "device_id,subject_id,date,start_time" }
-  );
-  if (error) throw new Error(`attendance: ${error.message}`);
-  const { error: e2 } = await sb.from("siri_marks").insert({ device_id: pin, said, rows });
-  if (e2) throw new Error(`siri_marks: ${e2.message}`);
-}
-
 Deno.serve((req) =>
-  handle(req, { use, load, share, markAbsent, now: () => new Date() }).catch((err) => {
+  handle(req, { use, load, share, now: () => new Date() }).catch((err) => {
     console.error(err);
     return new Response(JSON.stringify({ error: "something went wrong" }), { status: 500, headers: { "Content-Type": "application/json" } });
   })

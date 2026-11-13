@@ -7,7 +7,7 @@ const data = (jobs: MacJobsData["jobs"]): MacJobsData => ({ version: 1, jobs });
 
 describe("the Mac line", () => {
   it("says it's keeping up, with when it last synced", () => {
-    expect(macLine(data({ sync: { at: NOW - 4 * MIN, ok: true }, autopilot: { at: NOW - 70 * MIN, ok: true, note: "paused" } }), NOW)).toEqual({
+    expect(macLine(data({ sync: { at: NOW - 4 * MIN, ok: true }, night: { at: NOW - 70 * MIN, ok: true } }), NOW)).toEqual({
       text: "Your Mac is keeping up",
       value: "synced 4 min ago",
       tone: "ink",

@@ -4,8 +4,6 @@
  * { version: 1, jobs: { <job>: { at, ok, note? } } }.
  *
  *   sync       the study folder's sync (scripts/sync-study-folder.mjs)
- *   autopilot  reading what reached Inbox and the watched folders
- *   recorder   transcribing lectures, when RECORDER=on
  *   night      the night shift's job (scripts/night-shift.mjs)
  *
  * Each run merges what it ran into a copy kept on this Mac, and uploads it

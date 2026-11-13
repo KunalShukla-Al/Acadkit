@@ -7,6 +7,13 @@ existing data or installs, a minor version for new features, a patch version for
 
 ## [Unreleased]
 
+### Removed
+
+- Autopilot, the class recorder, flashcards, and Siri's questions with the Leave and Screenshot
+  Shortcuts. In a month of use they had read one notice, recorded no lecture, reviewed no card and
+  marked nothing absent. The share sheet, the alarm and Focus Shortcuts, search and Everything
+  connected stay. Their tables stay in the database, empty, until a later migration drops them.
+
 ### Added
 
 - A declared holiday can now either shift the day orders forward (as before) or cancel just its own
@@ -88,6 +95,10 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- The Mac's sync no longer hangs when the network drops mid-request: every request now has a time
+  limit, and the sync log shows each step as it runs.
+- The semester switch finds the next semester's folder beside the current one, wherever that is,
+  and may move an old folder in Downloads to the Trash as it does one in Documents.
 - A link in Run-up, Exam prep or This week now follows a file that was moved or renamed in the
   study folder instead of dropping. Each file is stored by its contents, so the sync matches the
   moved file to its old path by content and re-points the link; renaming a subject folder no

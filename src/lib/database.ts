@@ -1,4 +1,3 @@
-import type { AbsentRow } from "@acadkit/core/absent";
 import type {
   Assessment,
   AttendanceStatus,
@@ -14,8 +13,7 @@ import type {
   SubjectType,
 } from "@acadkit/core/types";
 import type { Database as Generated } from "@/lib/database.types";
-import type { DeadlineSuggestionPayload, PaperSuggestionPayload, PlanSuggestionPayload, SuggestionStatus } from "@/lib/suggestions";
-import type { PortalChanges } from "@/api/autopilot";
+import type { DeadlineSuggestionPayload, PlanSuggestionPayload, SuggestionStatus } from "@/lib/suggestions";
 
 type Table = { Row: object; Insert: object; Update: object };
 
@@ -45,12 +43,10 @@ type Narrowed = {
   portal_snapshot_history: Shaped<Tables["portal_snapshot_history"], { source: PortalSnapshotHistory["source"] }>;
   suggestions: Shaped<
     Tables["suggestions"],
-    { kind: "deadline" | "plan" | "paper"; status: SuggestionStatus; payload: DeadlineSuggestionPayload | PlanSuggestionPayload | PaperSuggestionPayload }
+    { kind: "deadline" | "plan"; status: SuggestionStatus; payload: DeadlineSuggestionPayload | PlanSuggestionPayload }
   >;
   study_file_deletions: Shaped<Tables["study_file_deletions"], { status: RequestStatus }>;
   study_uploads: Shaped<Tables["study_uploads"], { status: RequestStatus }>;
-  siri_marks: Shaped<Tables["siri_marks"], { rows: AbsentRow[] }>;
-  autopilot_actions: Shaped<Tables["autopilot_actions"], { kind: "notice" | "portal"; changes: PortalChanges | null }>;
   forecast_log: Shaped<Tables["forecast_log"], { distribution: Record<string, number> | null }>;
 };
 

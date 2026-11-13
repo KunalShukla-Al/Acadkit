@@ -3,13 +3,13 @@
  * <pin>/jobs.json), said plainly for Study's Mac line.
  */
 
-export type JobName = "sync" | "autopilot" | "recorder" | "night";
+export type JobName = "sync" | "night";
 
 export interface MacJob {
   /** When it last ran, epoch ms. */
   at: number;
   ok: boolean;
-  /** What it did ("412 files"), why it waited ("paused"), or its error. */
+  /** What it did ("412 files") or its error. */
   note?: string;
 }
 
@@ -21,8 +21,6 @@ export interface MacJobsData {
 /** In the order the sheet lists them. */
 export const JOBS: { name: JobName; label: string }[] = [
   { name: "sync", label: "Study folder sync" },
-  { name: "autopilot", label: "Autopilot" },
-  { name: "recorder", label: "Class recorder" },
   { name: "night", label: "Night shift" },
 ];
 

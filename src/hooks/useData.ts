@@ -11,7 +11,6 @@ import { type MutationEnvelope, type MutationName } from "@/api/mutations";
 import { broadcastInvalidate } from "@/lib/broadcast";
 import { useAppStore } from "@/store/app";
 import type { PendingMark } from "@/lib/autoMark";
-import type { CardReview } from "@/lib/flashcards";
 import type { Suggestion, SuggestionStatus } from "@/lib/suggestions";
 import type {
   AttendanceRecord,
@@ -26,7 +25,6 @@ import { fetchSettings } from "@/api/settings";
 import { fetchSubjects } from "@/api/subjects";
 import { fetchTimetable } from "@/api/timetable";
 import { deleteAutoMarks, fetchAttendance, insertAutoMarks } from "@/api/attendance";
-import { fetchCardReviews } from "@/api/cards";
 import { fetchDeadlines } from "@/api/deadlines";
 import { fetchArchives } from "@/api/history";
 import { fetchMarks } from "@/api/marks";
@@ -499,31 +497,5 @@ export function useSetPlanTick() {
       return v.done ? [...rest, { task_id: v.task_id, done_at: new Date().toISOString() }] : rest;
     },
     errorMessage: "Couldn't save that tick",
-  });
-}
-
-// ---------- flashcard reviews ----------
-
-export function useCardReviews() {
-  const pin = usePin();
-  return useQuery({
-    queryKey: ["card-reviews", pin],
-    queryFn: () => fetchCardReviews(pin),
-    staleTime: 60_000,
-  });
-}
-
-/**
- * Save where a card goes after a review. A named write, so cards reviewed
- * offline (on a train, in a queue) land when the network is back.
- */
-export function useSaveCardReview() {
-  const pin = usePin();
-  return useOptimistic<CardReview, CardReview[]>({
-    pin,
-    root: "card-reviews",
-    name: "cards.review",
-    updater: (old, v) => [...(old ?? []).filter((r) => r.card_id !== v.card_id), v],
-    errorMessage: "Couldn't save that card",
   });
 }

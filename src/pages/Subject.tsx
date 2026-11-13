@@ -11,7 +11,6 @@ import { AreaHistoryNote } from "@/components/study/area-history";
 import { UnitList } from "@/components/study/unit-list";
 import { fetchTicks, fetchUnits } from "@/api/units";
 import { SubjectSearch } from "@/components/study/subject-search";
-import { RecordedLectures } from "@/components/study/recorded-lectures";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
 import { Dot, EmptyState, Skeleton } from "@/components/ui/misc";
 import {
@@ -168,9 +167,8 @@ function SubjectInner() {
 
       <AreaHistoryNote code={code} />
 
-      {files.length > 0 && <SubjectSearch files={files} code={code} name={subject?.short_name?.trim() || subject?.name || syllabus?.title || code} />}
+      {files.length > 0 && <SubjectSearch files={files} name={subject?.short_name?.trim() || subject?.name || syllabus?.title || code} />}
 
-      <RecordedLectures code={code} />
 
       {syllabus && <NotesGaps course={syllabus} />}
 

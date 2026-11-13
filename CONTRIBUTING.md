@@ -26,19 +26,19 @@ edge functions and the Mac. The rules they share live in `packages/core`.
 | Folder | What's in it | Runs in |
 | --- | --- | --- |
 | `src/` | The app: `pages/` for screens, `components/`, `api/` for every read and write to Supabase, `lib/` for app logic, `design/` for the tokens | The browser |
-| `packages/core/` | The rules: dates, the Day Order calendar, attendance, grades and CGPA, the marks plan, Siri's grammar and answers. Plain TypeScript, imported as `@acadkit/core/<module>` | The app, the edge functions and the Mac |
+| `packages/core/` | The rules: dates, the Day Order calendar, attendance, grades and CGPA, the marks plan. Plain TypeScript, imported as `@acadkit/core/<module>` | The app, the edge functions and the Mac |
 | `supabase/migrations/` | The database, one numbered file per change | Postgres |
-| `supabase/functions/` | Edge functions: `feeds` (Shortcuts, Siri, the calendar), `send-reminders`, `study-search`, `portal-ingest` | Deno, on Supabase |
+| `supabase/functions/` | Edge functions: `feeds` (Shortcuts, the calendar), `send-reminders`, `study-search`, `portal-ingest` | Deno, on Supabase |
 | `supabase/tests/` | pgTAP tests of row-level security | A local Supabase |
-| `scripts/` | The Mac's side: the sync, Autopilot, the recorder, the night shift, the evals. Their shared parts are in `scripts/lib/`, the launch agents, menu bar and Quick Action in `scripts/mac/` | Node, on the Mac |
+| `scripts/` | The Mac's side: the sync, the night shift, the evals. Their shared parts are in `scripts/lib/`, the launch agents, menu bar and Quick Action in `scripts/mac/` | Node, on the Mac |
 | `scripts/embedder/` | The Mac's copy of the search model. A package of its own (`npm ci --prefix scripts/embedder`), so CI and Vercel never install its 290 MB | Node, on the Mac |
 | `scripts/dev-mock/` | The mock backend behind `dev:mock` and the e2e tests | Node |
 | `e2e/` | Playwright specs, their fixtures, a small study folder (`study-fixture/`) and the screen pictures | A browser, against the mock |
-| `docs/` | Setup for the Shortcuts, campus automations, Autopilot and the recorder, and the decision records in `docs/adr/` | |
+| `docs/` | Setup for the Shortcuts, campus automations, and the decision records in `docs/adr/` | |
 
 ## Where a change goes
 
-- **A calculation** (a number the app shows, a date rule, how Siri reads a phrase) goes in
+- **A calculation** (a number the app shows, a date rule) goes in
   `packages/core`, with its test beside it. Core can't use React, Supabase, the DOM or Node:
   Deno runs it as it is for the feeds function. Its modules import each other by relative path,
   with the `.ts` extension.

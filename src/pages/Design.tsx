@@ -246,7 +246,7 @@ export default function Design() {
 
       <Section title="Empty">
         <div className="card">
-          <Empty title="No tests this week" detail="Tests and deadlines you add, or Autopilot reads from a notice, show here." action={<Button variant="secondary" size="sm">Add one</Button>} />
+          <Empty title="No tests this week" detail="Tests and deadlines you add show here." action={<Button variant="secondary" size="sm">Add one</Button>} />
         </div>
       </Section>
 

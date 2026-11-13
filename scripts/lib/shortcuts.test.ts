@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { acadkitShortcut, alarmShortcut, feedLinks, focusShortcut, leaveShortcut, NAMES, screenshotShortcut, syncShortcuts } from "./shortcuts.mjs";
+import { acadkitShortcut, alarmShortcut, feedLinks, focusShortcut, NAMES, syncShortcuts } from "./shortcuts.mjs";
 
 type Params = Record<string, unknown>;
 const TOKEN = "f".repeat(48);
@@ -14,7 +14,7 @@ const params = (w: { WFWorkflowActions: { WFWorkflowActionParameters: Params }[]
 
 describe("the Shortcuts", () => {
   it("name every action in full, as iOS looks them up: Shortcuts' own under is.workflow.actions, an app's by its intent", () => {
-    for (const w of [alarmShortcut(URL), focusShortcut(URL), leaveShortcut(LINKS), acadkitShortcut(LINKS), screenshotShortcut(LINKS)])
+    for (const w of [alarmShortcut(URL), focusShortcut(URL), acadkitShortcut(LINKS)])
       for (const a of w.WFWorkflowActions) expect(a.WFWorkflowActionIdentifier).toMatch(/^(is\.workflow\.actions\.[a-z.]+|com\.apple\.[\w.-]+)$/);
     expect(focusShortcut(URL).WFWorkflowActions.map((a) => a.WFWorkflowActionIdentifier)).toContain("is.workflow.actions.dnd.set");
     expect(acadkitShortcut(LINKS).WFWorkflowActions.map((a) => a.WFWorkflowActionIdentifier)).toContain("is.workflow.actions.repeat.each");
@@ -53,8 +53,7 @@ describe("the Shortcuts", () => {
     expect(w.WFWorkflowInputContentItemClasses).toEqual(expect.arrayContaining(["WFImageContentItem", "WFPDFContentItem", "WFGenericFileContentItem"]));
     expect(w.WFWorkflowHasShortcutInputVariables).toBe(true);
     expect(ids(w)).toEqual([
-      "conditional", "repeat.each", "getitemname", "urlencode", "downloadurl", "repeat.each", "notification",
-      "conditional", "dictatetext", "urlencode", "downloadurl", "getvalueforkey", "speaktext", "conditional",
+      "conditional", "repeat.each", "getitemname", "urlencode", "downloadurl", "repeat.each", "notification", "conditional",
     ]);
     expect(params(w, 1).WFInput).toEqual({ Value: { Type: "ExtensionInput" }, WFSerializationType: "WFTextTokenAttachment" });
     expect(params(w, 5)).toMatchObject({ GroupingIdentifier: params(w, 1).GroupingIdentifier, WFControlFlowMode: 2 });
@@ -64,40 +63,6 @@ describe("the Shortcuts", () => {
     const url = (send.WFURL as { Value: { string: string; attachmentsByRange: Record<string, { OutputUUID: string }> } }).Value;
     expect(url.string).toBe(`${LINKS.share}&name=\uFFFC`);
     expect(url.attachmentsByRange[`{${LINKS.share.length + 6}, 1}`].OutputUUID).toBe(params(w, 3).UUID);
-  });
-
-  it("AcadKit with nothing shared: listens, asks, and speaks the answer", () => {
-    const w = acadkitShortcut(LINKS);
-    // If / Otherwise / End If, one group.
-    expect([params(w, 0), params(w, 7), params(w, 13)].map((p) => [p.GroupingIdentifier, p.WFControlFlowMode])).toEqual([
-      [params(w, 0).GroupingIdentifier, 0],
-      [params(w, 0).GroupingIdentifier, 1],
-      [params(w, 0).GroupingIdentifier, 2],
-    ]);
-    const url = (params(w, 10).WFURL as { Value: { string: string; attachmentsByRange: Record<string, { OutputUUID: string }> } }).Value;
-    expect(url.string).toBe(`${LINKS.ask}&q=\uFFFC`);
-    expect(Object.values(url.attachmentsByRange)[0].OutputUUID).toBe(params(w, 9).UUID);
-    expect(params(w, 11)).toMatchObject({ WFDictionaryKey: "say", WFInput: { Value: { OutputUUID: params(w, 10).UUID } } });
-    expect(params(w, 12).WFText).toMatchObject({ Value: { attachmentsByRange: { "{0, 1}": { OutputUUID: params(w, 11).UUID } } } });
-  });
-
-  it("Screenshot: sends the latest screenshot to the share feed under its own name", () => {
-    const w = screenshotShortcut(LINKS);
-    expect(ids(w)).toEqual(["getlastscreenshot", "getitemname", "urlencode", "downloadurl", "notification"]);
-    const shot = params(w, 0);
-    expect(shot.WFGetLatestPhotoCount).toBe(1);
-    expect(params(w, 1).WFInput).toMatchObject({ Value: { OutputUUID: shot.UUID, OutputName: "Latest Screenshots" } });
-    const send = params(w, 3);
-    expect(send).toMatchObject({ WFHTTPMethod: "POST", WFHTTPBodyType: "File", WFRequestVariable: { Value: { OutputUUID: shot.UUID } } });
-    expect(send.WFURL).toMatchObject({ Value: { string: `${LINKS.share}&name=￼` } });
-  });
-
-  it("Leave: asks first, and marks the rest absent only on OK", () => {
-    const w = leaveShortcut(LINKS);
-    expect(ids(w)).toEqual(["downloadurl", "getvalueforkey", "conditional", "alert", "downloadurl", "getvalueforkey", "notification", "conditional"]);
-    expect(params(w, 1).WFDictionaryKey).toBe("leave");
-    expect(params(w, 3)).toMatchObject({ WFAlertActionCancelButtonShown: true });
-    expect(params(w, 4)).toMatchObject({ WFURL: LINKS.leave, WFHTTPMethod: "POST" });
   });
 
   it("are the same file for the same token", () => {

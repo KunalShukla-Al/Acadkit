@@ -8,22 +8,15 @@
  *                                     webcal://…/feeds/calendar.ics?token=…
  *   POST /feeds/share?token=…&name=…  a file for the study folder (the share sheet): the
  *                                     body is its bytes; it lands in Inbox/ (or &folder=…)
- *   GET /feeds/ask?token=…&q=…        Siri: the question as said, answered in one sentence
- *                                     (packages/core/src/ask.ts, answer.ts)
- *   POST /feeds/leave?token=…         leaving campus early: the classes still to come today,
- *                                     marked absent (asked first, by the AcadKit Leave Shortcut)
  *
  * The token may also come as "Authorization: Bearer …".
  */
-import { absentRows, type AbsentRow } from "../../../packages/core/src/absent.ts";
-import { answer } from "../../../packages/core/src/answer.ts";
-import { parseAsk } from "../../../packages/core/src/ask.ts";
 import { buildEffectiveMap, semesterWindow } from "../../../packages/core/src/calendar.ts";
 import { addDays } from "../../../packages/core/src/dates.ts";
 import { buildIcs } from "../../../packages/core/src/ics.ts";
 import { today } from "../../../packages/core/src/today.ts";
 import { MAX_UPLOAD_BYTES, safeUploadName, withExtension } from "../../../packages/core/src/uploads.ts";
-import type { AttendanceRecord, Deadline, Mark, PortalSnapshot, Settings, Subject, TimetableSlot } from "../../../packages/core/src/types.ts";
+import type { AttendanceRecord, Deadline, PortalSnapshot, Settings, Subject, TimetableSlot } from "../../../packages/core/src/types.ts";
 
 export interface Account {
   settings: Settings | null;
@@ -32,7 +25,6 @@ export interface Account {
   attendance: AttendanceRecord[];
   snapshots: PortalSnapshot[];
   deadlines: Deadline[];
-  marks: Mark[];
 }
 
 /** A file on its way to the study folder: the bytes go to `key` in the inbox, and a study_uploads row says where they land (migration 033). */
@@ -48,17 +40,15 @@ export interface FeedDeps {
   use(token: string): Promise<{ pin: string; allowed: boolean } | null>;
   load(pin: string): Promise<Account>;
   share(pin: string, file: Shared): Promise<void>;
-  /** Mark the rows absent, and keep them with what was said for the app's Undo (migration 051). */
-  markAbsent(pin: string, said: string, rows: AbsentRow[]): Promise<void>;
   now(): Date;
   /** A fresh id for an inbox folder. */
   uuid?(): string;
 }
 
 const TOKEN = /^[0-9a-f]{48}$/;
-const ROUTES = new Set(["today", "calendar.ics", "share", "ask", "leave"]);
+const ROUTES = new Set(["today", "calendar.ics", "share"]);
 /** The routes that write, and so take POST. */
-const WRITES = new Set(["share", "leave"]);
+const WRITES = new Set(["share"]);
 /** Where shared files land unless the Shortcut names a folder. */
 const SHARE_FOLDER = "Inbox";
 /** The calendar's span: last week, for what just happened, to two months ahead. */
@@ -126,22 +116,6 @@ export async function handle(req: Request, deps: FeedDeps): Promise<Response> {
   const now = deps.now();
   const date = istDate(now);
   if (route === "today") return json(today({ date, time: istTime(now), ...account }));
-  if (route === "leave") {
-    const time = istTime(now);
-    const { rows, say } = absentRows({ kind: "absent", subject: null, day: 0, grade: null, session: null }, account, { date, time }, { after: time });
-    if (rows.length) await deps.markAbsent(pin, `Left SRM at ${time}`, rows);
-    return json({ say, marked: rows.length });
-  }
-  if (route === "ask") {
-    const q = url.searchParams.get("q") ?? "";
-    const asked = parseAsk(q, account.subjects);
-    const clock = { date, time: istTime(now) };
-    if (asked.kind !== "absent") return json({ kind: asked.kind, subject: asked.subject, say: answer(asked, account, clock) });
-    const { rows, say } = absentRows(asked, account, clock);
-    if (rows.length) await deps.markAbsent(pin, q.slice(0, 300), rows);
-    return json({ kind: asked.kind, subject: asked.subject, say, marked: rows.length });
-  }
-
   const effMap = buildEffectiveMap(account.settings?.declared_holidays ?? [], semesterWindow(account.settings));
   const ics = buildIcs({
     subjects: account.subjects,

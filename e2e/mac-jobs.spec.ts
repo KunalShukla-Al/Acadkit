@@ -11,21 +11,20 @@ const seed = (page: Page, jobs: Record<string, unknown>) => page.request.post(`$
 test("Study ends on how the Mac's jobs went, and opens when each last ran", async ({ signedIn: page }) => {
   await seed(page, {
     sync: { at: NOW - 4 * MIN, ok: true, note: "412 files" },
-    autopilot: { at: NOW - 70 * MIN, ok: true, note: "paused" },
-    night: { at: NOW - 5 * 60 * MIN, ok: true, note: "Filed 2 photos; transcribed 1 lecture." },
+    night: { at: NOW - 5 * 60 * MIN, ok: true, note: "12 files indexed, 96 MB saved by shrinking." },
   });
   await page.goto("/study");
   const line = page.getByRole("button", { name: /^Your Mac is keeping up\s*synced \d+ min ago$/ });
   await expect(line).toBeVisible();
   await line.click();
   const sheet = page.getByRole("dialog", { name: "Your Mac" });
-  await expect(sheet.getByRole("listitem")).toHaveText([/^Study folder sync412 files\d+ min ago$/, /^Autopilotpaused1 h ago$/, /^Class recordernot yet$/, /^Night shiftFiled 2 photos; transcribed 1 lecture\.5 h ago$/]);
+  await expect(sheet.getByRole("listitem")).toHaveText([/^Study folder sync412 files\d+ min ago$/, /^Night shift12 files indexed, 96 MB saved by shrinking\.5 h ago$/]);
 });
 
 test("a job that failed comes first, in red", async ({ signedIn: page }) => {
-  await seed(page, { sync: { at: NOW - 4 * MIN, ok: true }, recorder: { at: NOW - 20 * MIN, ok: false, note: "whisper-cli is missing" } });
+  await seed(page, { sync: { at: NOW - 4 * MIN, ok: true }, night: { at: NOW - 20 * MIN, ok: false, note: "the sync exited 1" } });
   await page.goto("/study");
-  await expect(page.getByRole("button", { name: /^Class recorder failed on your Mac\s*\d+ min ago$/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Night shift failed on your Mac\s*\d+ min ago$/ })).toBeVisible();
 });
 
 test("nothing until the Mac has said something", async ({ signedIn: page }) => {

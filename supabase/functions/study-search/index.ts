@@ -1,8 +1,7 @@
 // Supabase Edge Function: study-search
 //
 // Embeds a search query with gte-small and returns the nearest passages
-// (match_study_chunks, migration 030) and the nearest moments of recorded
-// lectures (match_lecture_moments, migration 061). Queries only: the Mac's sync embeds
+// (match_study_chunks, migration 030). Queries only: the Mac's sync embeds
 // passages itself (scripts/embedder), so this function's CPU budget goes to
 // searches.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -50,11 +49,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const vector = await embed(query);
-  const [passages, moments] = await Promise.all([
-    sb.rpc("match_study_chunks", { p_device: pin, query_embedding: vector, match_count: limit }),
-    sb.rpc("match_lecture_moments", { p_device: pin, query_embedding: vector, match_count: 6 }),
-  ]);
+  const passages = await sb.rpc("match_study_chunks", { p_device: pin, query_embedding: vector, match_count: limit });
   if (passages.error) return json({ error: passages.error.message }, 500);
-  // Before migration 061 there are no lectures to search: none, rather than an error.
-  return json({ results: passages.data ?? [], moments: moments.error ? [] : (moments.data ?? []) });
+  return json({ results: passages.data ?? [] });
 });

@@ -6,16 +6,9 @@
  */
 import { spawn } from "node:child_process";
 import { macClient } from "./lib/mac-client.mjs";
-import { addAccepted } from "./lib/paper-dataset.mjs";
-import { autopilotFolders, contentReader, filer, isPaused, readNew } from "./lib/autopilot.mjs";
-import { fileInbox } from "./lib/inbox.mjs";
-import { syncLectures } from "./lib/lecture-sync.mjs";
 import { nightReport, nightSteps, runSteps, sendReport, takeLock } from "./lib/night-job.mjs";
 import { isOn, lastNight, NIGHT, nightOf, onCharger, saveNight, untilJob } from "./lib/night-shift.mjs";
-import { modelReady } from "./lib/ollama.mjs";
 import { reportJobs } from "./lib/jobs.mjs";
-import { handler, recorder, recorderMissing } from "./lib/recorder.mjs";
-import { studyRoots } from "./lib/roots.mjs";
 
 const stamp = () => new Date().toLocaleString("sv-SE").slice(0, 19);
 const log = (line) => console.log(`${stamp()} Night shift: ${line}`);
@@ -63,8 +56,7 @@ async function job() {
   log("on the charger: starting the job");
   try {
     const supabase = macClient(url, key);
-    const libs = { recorder, handler, recorderMissing, syncLectures, isPaused, modelReady, readNew, autopilotFolders, fileInbox, contentReader, filer, addAccepted };
-    const steps = await runSteps(nightSteps({ supabase, pin, dir: studyRoots().dir, night, log: (l) => log(l.trim()), libs }), { log });
+    const steps = await runSteps(nightSteps({ night, log: (l) => log(l.trim()) }), { log });
     const record = { night, at, finished: new Date().toISOString(), steps };
     await saveNight(record);
     log(`done in ${Math.round((Date.now() - Date.parse(at)) / 60_000)} min`);

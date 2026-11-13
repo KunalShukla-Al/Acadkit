@@ -4,8 +4,6 @@ import { TodayCard } from "@/components/home/today-card";
 import { TodayApple } from "@/components/ios/today";
 import { DeadlinesCard } from "@/components/home/deadlines-card";
 import { SuggestionsCard } from "@/components/viz/suggestions-card";
-import { SiriLine } from "@/components/siri-line";
-import { AutopilotLine } from "@/components/autopilot-line";
 import { ContinueBanner } from "@/components/continue-banner";
 import { useAppStore } from "@/store/app";
 
@@ -22,8 +20,6 @@ export default function Today() {
       <Greeting />
       <SuggestionsCard />
       <ContinueBanner />
-      <SiriLine />
-      <AutopilotLine />
       <GettingStartedCard />
       <TodayCard />
       <DeadlinesCard preview />

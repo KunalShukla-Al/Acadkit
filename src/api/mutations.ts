@@ -3,7 +3,6 @@ import { updateSettings } from "@/api/settings";
 import { deleteSubject, insertSubject, updateSubject } from "@/api/subjects";
 import { deleteSlot, insertSlot, updateSlot } from "@/api/timetable";
 import { deleteAttendance, upsertAttendance } from "@/api/attendance";
-import { saveCardReview } from "@/api/cards";
 import { deleteDeadline, insertDeadline, updateDeadline } from "@/api/deadlines";
 import { deleteArchive } from "@/api/history";
 import { deleteMark, insertMark, updateMark } from "@/api/marks";
@@ -40,8 +39,6 @@ export const MUTATION_FNS = {
 
 
   "runup.tick": (pin: string, v: any) => setPlanTick(pin, v),
-
-  "cards.review": (pin: string, v: any) => saveCardReview(pin, v),
 
   "suggestions.status": (_pin: string, v: any) =>
     setSuggestionStatus(v.id, v.status, v.decided_at ?? null),

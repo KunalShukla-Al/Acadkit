@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Undo2, Upload, X } from "lucide-react";
 import { FileRow, SearchHitRow, SwipeToDelete } from "@/components/study/file-row";
-import { LectureHitRow } from "@/components/study/lecture-hit-row";
-import { lectureHits } from "@/lib/lectures";
 import { StorageMeter } from "@/components/study/storage-meter";
 import { ProjectsCard, ThisWeekCard } from "@/components/study/this-week";
 import { MacLine } from "@/components/mac-line";
@@ -234,7 +232,6 @@ function FilesInner() {
     () => (deepActive && hits.data ? groupHits(hits.data.hits, files) : []),
     [deepActive, hits.data, files]
   );
-  const said = useMemo(() => (deepActive && hits.data ? lectureHits(hits.data.moments) : []), [deepActive, hits.data]);
 
 
   if (manifest.isLoading) {
@@ -436,12 +433,9 @@ function FilesInner() {
           </p>
           {hits.isLoading && <p className="px-4 py-6 text-center text-sm font-medium text-muted">Searching…</p>}
           {hits.isError && <p className="px-4 py-6 text-center text-sm font-medium text-muted">{deepError(hits.error)}</p>}
-          {hits.data && grouped.length === 0 && said.length === 0 && (
+          {hits.data && grouped.length === 0 && (
             <p className="px-4 py-6 text-center text-sm font-medium text-muted">Nothing inside your files matches that.</p>
           )}
-          {said.map((m) => (
-            <LectureHitRow key={`${m.lecture_id}:${m.idx}`} hit={m} query={deep!} />
-          ))}
           {grouped.map((g) => (
             <SearchHitRow key={g.file.key} file={g.file} hits={g.hits} query={deep!} />
           ))}

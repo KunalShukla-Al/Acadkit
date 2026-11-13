@@ -177,18 +177,3 @@ describe("moved deadlines", () => {
     expect(new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Kolkata" })).toBe("06/10/2026, 09:00:00");
   });
 });
-
-describe("paper offers", () => {
-  it("names a doubtful past paper by its course, kind and month", async () => {
-    const { paperOffers } = await import("@/lib/suggestions");
-    const paper = (meta: { kind: "end" | "ct"; test: string; date: string | null }, status = "pending") => ({
-      id: meta.test, device_id: "1234", key: `paper:${meta.test}`, source: "OS/07_PYQs/x.pdf", evidence: null, status, kind: "paper" as const,
-      payload: { subject_code: "21CSC202J", subject: "OS", file: "OS/07_PYQs/x.pdf", meta, questions: [], doubts: ["no date on it"] },
-    });
-    const offers = paperOffers(
-      [paper({ kind: "end", test: "END", date: "2025-12" }), paper({ kind: "ct", test: "CT-1", date: null }), paper({ kind: "ct", test: "CT-2", date: "2026-09" }, "dismissed")] as never,
-      [{ id: "os", code: "21CSC202J", name: "Operating Systems" }] as never
-    );
-    expect(offers.map((o) => [o.title, o.subject?.id])).toEqual([["End-sem, Dec 2025", "os"], ["CT-1, undated", "os"]]);
-  });
-});

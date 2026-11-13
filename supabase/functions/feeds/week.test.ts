@@ -29,7 +29,6 @@ function account(declared: { date: string; name: string }[] = []): Account {
     attendance: [],
     snapshots: [],
     deadlines: [test],
-    marks: [],
   };
 }
 
@@ -38,7 +37,6 @@ async function at(iso: string, acct = account(), feed = "today") {
     use: async () => ({ pin: "1234", allowed: true }),
     load: async () => acct,
     share: async () => {},
-    markAbsent: async () => {},
     now: () => new Date(iso),
   });
   return feed === "today" ? res.json() : res.text();

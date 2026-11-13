@@ -117,7 +117,7 @@ describe("today", () => {
     expect(t.say).toMatch(/Lab record is today\.$/);
   });
 
-  it("includes the tests Autopilot added from a notice, saying which notice", () => {
+  it("includes the tests read from a notice, saying which notice", () => {
     const t = today(
       base("2026-10-07", {
         deadlines: [

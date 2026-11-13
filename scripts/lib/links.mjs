@@ -1,20 +1,11 @@
 /**
- * Links between the items of the embedding space (scripts/lib/connected.mjs).
- *
- * By meaning: each item points at the items of other kinds in its course
- * that are about the same thing, the nearest two of each kind, centered on
- * the course's mean as the recorder's slides are (lecture-align.mjs), and
- * only above a bar checked for that pair of kinds (BARS).
- *
- * By time: a lecture moment points at the slide on screen then (the
- * recorder's alignment), and a board photo at the moment of its class
- * nearest when it was taken, and that moment's slide. Its class is the
- * course's lecture that day whose timetable window, or recording, holds
- * the photo's time.
- *
- * Each link says why: "meaning" or "time".
+ * Links between the items of the embedding space (scripts/lib/connected.mjs):
+ * each item points at the items of other kinds in its course that are about
+ * the same thing, the nearest two of each kind, centered on the course's
+ * mean (scripts/lib/decks.mjs), and only above a bar checked for that pair
+ * of kinds (BARS).
  */
-import { centerOn } from "./lecture-align.mjs";
+import { centerOn } from "./decks.mjs";
 import { contentPart } from "./parts.mjs";
 
 /**
@@ -24,7 +15,7 @@ import { contentPart } from "./parts.mjs";
  * judged after, came out at 73%. Agreeing on the unit was a weaker
  * check (`npm run connected -- --check`): 80% of question links agree on
  * it from 0.23 for slides and 0.26 for pages, where most links were wrong.
- * Moments, photos and pairs without judged links take the same bar.
+ * Photos and pairs without judged links take the same bar.
  */
 export const BARS = {
   "page|question": 0.4,
@@ -115,72 +106,13 @@ export function unitPairs(items, means, kinds = ["page", "slide"]) {
   return pairs;
 }
 
-/** "2026-11-03T10:14", IST, in minutes. */
-const minutesAt = (at) => Date.parse(`${at}:00+05:30`) / 60_000;
-const toMinutes = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
-
-/** Links by time: id → [{ id, kind, why: "time" }]. */
-export function linkByTime(items) {
-  const links = {};
-  const add = (from, to) => {
-    const list = (links[from.id] ??= []);
-    if (!list.some((l) => l.id === to.id)) list.push({ id: to.id, kind: to.kind, why: "time" });
-  };
-  const slides = new Set(items.filter((i) => i.kind === "slide").map((i) => i.id));
-  const onScreen = (m) => (m.ref.deck && m.ref.page && slides.has(`slide:${m.ref.deck}#${m.ref.page}`) ? { id: `slide:${m.ref.deck}#${m.ref.page}`, kind: "slide" } : null);
-  const moments = items.filter((i) => i.kind === "moment" && i.at);
-
-  for (const m of moments) {
-    const slide = onScreen(m);
-    if (!slide) continue;
-    add(m, slide);
-    add(slide, m);
-  }
-
-  // Each lecture's window: its class on the timetable when it matched one, else the recording.
-  const lectures = new Map();
-  for (const m of moments) {
-    const l = lectures.get(m.ref.memo) ?? { course: m.course, date: m.at.slice(0, 10), moments: [], from: Infinity, to: -Infinity };
-    l.moments.push(m);
-    if (m.slot) [l.from, l.to] = [Math.min(l.from, toMinutes(m.slot.start)), Math.max(l.to, toMinutes(m.slot.end))];
-    const t = toMinutes(m.at.slice(11));
-    if (!m.slot) [l.from, l.to] = [Math.min(l.from, t), Math.max(l.to, t + 1)];
-    lectures.set(m.ref.memo, l);
-  }
-  for (const p of items.filter((i) => i.kind === "photo" && i.at)) {
-    const t = toMinutes(p.at.slice(11));
-    const lecture = [...lectures.values()].find((l) => l.course === p.course && l.date === p.at.slice(0, 10) && t >= l.from && t < l.to);
-    if (!lecture) continue;
-    const nearest = lecture.moments.reduce((a, b) => (Math.abs(minutesAt(b.at) - minutesAt(p.at)) < Math.abs(minutesAt(a.at) - minutesAt(p.at)) ? b : a));
-    add(p, nearest);
-    add(nearest, p);
-    const slide = onScreen(nearest);
-    if (slide) {
-      add(p, slide);
-      add(slide, p);
-    }
-  }
-  return links;
-}
-
-/** Links of both kinds together: by time first (they're sure), then by meaning, each item once. */
-export function mergeLinks(...sets) {
-  const out = {};
-  for (const set of sets)
-    for (const [id, list] of Object.entries(set)) {
-      const kept = (out[id] ??= []);
-      for (const l of list) if (!kept.some((k) => k.id === l.id)) kept.push(l);
-    }
-  return out;
-}
-
 /**
  * Links as the app loads them (<pin>/links.json, written by the sync): an
  * index, and a part per course named by its content (scripts/lib/parts.mjs),
  * so the app fetches only the course it shows and keeps every part it has.
  * Scores keep two places; vectors stay on the Mac. A part also says what
  * the app can't work out from an id: each question's paper file, label and
- * text, and each moment's time.
+ * text.
  */
 export function splitLinks(links, items, generatedAt = Date.now()) {
   const byId = new Map(items.map((i) => [i.id, i]));
@@ -194,13 +126,11 @@ export function splitLinks(links, items, generatedAt = Date.now()) {
   }
   const about = (part) => {
     const questions = {};
-    const moments = {};
     for (const id of new Set(Object.entries(part).flatMap(([from, list]) => [from, ...list.map((l) => l.id)]))) {
       const item = byId.get(id);
       if (item?.kind === "question") questions[id] = { path: item.ref.path, label: item.ref.label, text: item.ref.text };
-      if (item?.kind === "moment") moments[id] = { at: item.at };
     }
-    return { questions, moments };
+    return { questions };
   };
   const courses = [...by.keys()].sort();
   const parts = courses.map((course) => contentPart("links", course, { course, links: by.get(course), ...about(by.get(course)) }));

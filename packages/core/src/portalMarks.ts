@@ -4,8 +4,7 @@
  * ("FT-I" is "FT-1" is "CT-1"), the portal's own row first and then one
  * typed in by hand, whose value the portal's replaces; otherwise a new
  * row. One test, one row: keeping both counted it twice. Used by a pasted
- * portal page (src/api/portal.ts) and a portal screenshot read on the Mac
- * (scripts/lib/portal-shot.mjs).
+ * portal page (src/api/portal.ts).
  */
 import { labelMatchKey } from "./componentLabel.ts";
 import type { MarkComponentType } from "./types.ts";

@@ -39,7 +39,6 @@ const Subject = lazy(() => import("@/pages/Subject"));
 const Practice = lazy(() => import("@/pages/Practice"));
 const Electives = lazy(() => import("@/pages/Electives"));
 const Viewer = lazy(() => import("@/pages/Viewer"));
-const Lecture = lazy(() => import("@/pages/Lecture"));
 const Runup = lazy(() => import("@/pages/Runup"));
 const RunupEvent = lazy(() => import("@/pages/RunupEvent"));
 const Design = lazy(() => import("@/pages/Design"));
@@ -82,7 +81,7 @@ function AuthReset() {
   return null;
 }
 
-/** The routes, with the file viewer and a lecture's transcript able to open *over* a page. */
+/** The routes, with the file viewer able to open *over* a page. */
 function AppRoutes() {
   const location = useLocation();
   useIdleHome();
@@ -97,15 +96,6 @@ function AppRoutes() {
           element={
             <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
               <Viewer />
-            </Suspense>
-          }
-        />
-        {/* A recorded lecture's transcript, full screen like the viewer. */}
-        <Route
-          path="/lecture/:id"
-          element={
-            <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
-              <Lecture />
             </Suspense>
           }
         />
@@ -149,16 +139,6 @@ function AppRoutes() {
               <div className="overlay-in fixed inset-0 z-60 bg-bg">
                 <Suspense fallback={<div className="h-full bg-bg" />}>
                   <Viewer overlay />
-                </Suspense>
-              </div>
-            }
-          />
-          <Route
-            path="/lecture/:id"
-            element={
-              <div className="overlay-in fixed inset-0 z-60 bg-bg">
-                <Suspense fallback={<div className="h-full bg-bg" />}>
-                  <Lecture overlay />
                 </Suspense>
               </div>
             }

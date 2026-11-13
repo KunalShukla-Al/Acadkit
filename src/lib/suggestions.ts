@@ -35,22 +35,9 @@ export interface PlanSuggestionPayload {
   components: { label: string; type: MarkComponentType; max: number }[];
 }
 
-/** A past paper Autopilot read but isn't sure of (migration 060): the reading, and why it asks. */
-export interface PaperSuggestionPayload {
-  subject_code: string;
-  /** The dataset's name for the course, "OS". */
-  subject: string;
-  /** Where the paper is in the study folder. */
-  file: string;
-  meta: { kind: "end" | "ct"; test: string; date: string | null };
-  questions: { slot: string; marks: number; topic: string | null }[];
-  doubts: string[];
-}
-
 export type Suggestion =
   | (SuggestionBase & { kind: "deadline"; payload: DeadlineSuggestionPayload })
-  | (SuggestionBase & { kind: "plan"; payload: PlanSuggestionPayload })
-  | (SuggestionBase & { kind: "paper"; payload: PaperSuggestionPayload });
+  | (SuggestionBase & { kind: "plan"; payload: PlanSuggestionPayload });
 
 interface SuggestionBase {
   id: string;
@@ -66,27 +53,6 @@ interface SuggestionBase {
 
 export type DeadlineSuggestion = Extract<Suggestion, { kind: "deadline" }>;
 export type PlanSuggestion = Extract<Suggestion, { kind: "plan" }>;
-export type PaperSuggestion = Extract<Suggestion, { kind: "paper" }>;
-
-export interface PaperOffer {
-  suggestion: PaperSuggestion;
-  subject: Subject | null;
-  /** "End-sem, Dec 2025", "CT-1, Sep 2026". */
-  title: string;
-}
-
-/** The papers waiting for a yes before they join the past papers. */
-export function paperOffers(suggestions: Suggestion[] | undefined, subjects: Subject[] | undefined): PaperOffer[] {
-  const byCode = new Map((subjects ?? []).map((s) => [norm(s.code), s]));
-  return (suggestions ?? [])
-    .filter((s): s is PaperSuggestion => s.kind === "paper" && s.status === "pending")
-    .map((s) => {
-      const { kind, test, date } = s.payload.meta;
-      const month = date ? new Date(`${date}-01T12:00:00`).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : "undated";
-      return { suggestion: s, subject: byCode.get(norm(s.payload.subject_code)) ?? null, title: `${kind === "end" ? "End-sem" : test}, ${month}` };
-    });
-}
-
 export interface DeadlineOffer {
   suggestion: DeadlineSuggestion;
   subject: Subject | null;

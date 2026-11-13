@@ -44,7 +44,7 @@ export function TodayCard() {
   }, []);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  /** The next exam, said the way Siri says it: "TBVP End-sem is tomorrow". */
+  /** The next exam, said in a sentence: "TBVP End-sem is tomorrow". */
   const exam = useMemo(() => {
     const next = nextExam(deadlines, now);
     if (!next) return null;

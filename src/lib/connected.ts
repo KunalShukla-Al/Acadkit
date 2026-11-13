@@ -1,12 +1,12 @@
 /**
- * Everything connected: what each page, slide, past-paper question,
- * lecture moment and board photo links to (scripts/lib/links.mjs, sent
+ * Everything connected: what each page, slide, past-paper question and
+ * board photo links to (scripts/lib/links.mjs, sent
  * by the sync as <pin>/links.json and a part per course).
  */
 
 import { viewerHref } from "@/lib/viewer";
 
-export type ItemKind = "page" | "slide" | "question" | "moment" | "photo";
+export type ItemKind = "page" | "slide" | "question" | "photo";
 
 export interface Link {
   id: string;
@@ -29,16 +29,13 @@ export interface LinksPart {
   links: Record<string, Link[]>;
   /** What an id doesn't say: a question's paper file, label ("End-sem Dec 2025 · B21") and text. */
   questions?: Record<string, { path: string; label: string; text: string }>;
-  /** A moment's time, "2026-11-03T10:14". */
-  moments?: Record<string, { at: string }>;
 }
 
 /** What an item's id points at. */
 export type Item =
   | { kind: "page" | "slide"; path: string; page: number }
   | { kind: "photo"; path: string }
-  | { kind: "question"; paper: string; slot: string }
-  | { kind: "moment"; memo: string; idx: number };
+  | { kind: "question"; paper: string; slot: string };
 
 /** "slide:OS/02_Notes/x.pptx#24" → { kind, path, page }; null for an id this doesn't know. */
 export function itemOf(id: string): Item | null {
@@ -50,7 +47,6 @@ export function itemOf(id: string): Item | null {
   if ((kind === "page" || kind === "slide") && /^\d+$/.test(tail)) return { kind, path: head, page: Number(tail) };
   if (kind === "photo") return { kind, path: rest };
   if (kind === "question" && tail) return { kind, paper: head, slot: tail };
-  if (kind === "moment" && /^\d+$/.test(tail)) return { kind, memo: head, idx: Number(tail) };
   return null;
 }
 
@@ -58,7 +54,6 @@ export function itemOf(id: string): Item | null {
 export const pageIds = (path: string, page: number) => [`page:${path}#${page}`, `slide:${path}#${page}`];
 export const photoId = (path: string) => `photo:${path}`;
 export const questionId = (paper: string, slot: string) => `question:${paper}#${slot}`;
-export const momentId = (memo: string, idx: number) => `moment:${memo}#${idx}`;
 
 /** The course folder an item belongs to, from a study-folder path: its top folder. */
 export const courseOfPath = (path: string) => path.split("/")[0];
@@ -89,19 +84,15 @@ function fileStem(path: string, max = 26): string {
   return stem.length > max ? `${stem.slice(0, max - 1)}…` : stem;
 }
 
-/** What a link's chip says: "Slide 24 · CPU_Scheduling_Slides", "End-sem Dec 2025 · B21", "Lecture 3 Nov, 10:14". */
+/** What a link's chip says: "Slide 24 · CPU_Scheduling_Slides", "End-sem Dec 2025 · B21", "Board photo, 3 Nov". */
 export function chipLabel(link: Link, part: LinksPart): string {
   const item = itemOf(link.id);
   if (!item) return link.id;
   if (item.kind === "slide") return `Slide ${item.page} · ${fileStem(item.path)}`;
   if (item.kind === "page") return `p. ${item.page} · ${fileStem(item.path)}`;
   if (item.kind === "question") return part.questions?.[link.id]?.label ?? `${item.paper} · ${item.slot}`;
-  if (item.kind === "photo") {
-    const date = /Class_Photos\/(\d{4}-\d{2}-\d{2})\//.exec(item.path)?.[1];
-    return date ? `Board photo, ${shortDate(date)}` : "Board photo";
-  }
-  const at = part.moments?.[link.id]?.at;
-  return at ? `Lecture ${shortDate(at)}, ${at.slice(11, 16)}` : "Lecture";
+  const date = /Class_Photos\/(\d{4}-\d{2}-\d{2})\//.exec(item.path)?.[1];
+  return date ? `Board photo, ${shortDate(date)}` : "Board photo";
 }
 
 const words = (s: string) => new Set(s.toLowerCase().match(/[a-z0-9]{3,}/g) ?? []);
@@ -135,20 +126,13 @@ export function courseOfCode(files: { path: string; subject_code?: string | null
 
 /**
  * Where a link's chip opens: a page or slide in the viewer at that page, a
- * photo in the viewer, a question's paper, a moment in its transcript.
- * Null when the app can't (a lecture not synced yet). `lectures` maps a
- * recording's memo to its lecture's id.
+ * photo in the viewer, a question's paper. Null when the app can't.
  */
-export function hrefOf(link: Link, part: LinksPart, lectures: Map<string, string>): string | null {
+export function hrefOf(link: Link, part: LinksPart): string | null {
   const item = itemOf(link.id);
   if (!item) return null;
   if (item.kind === "page" || item.kind === "slide") return viewerHref(item.path, item.page);
   if (item.kind === "photo") return viewerHref(item.path);
-  if (item.kind === "question") {
-    const paper = part.questions?.[link.id]?.path;
-    return paper ? viewerHref(paper) : null;
-  }
-  if (item.kind !== "moment") return null;
-  const id = lectures.get(item.memo);
-  return id ? `/lecture/${id}?m=${item.idx}` : null;
+  const paper = part.questions?.[link.id]?.path;
+  return paper ? viewerHref(paper) : null;
 }

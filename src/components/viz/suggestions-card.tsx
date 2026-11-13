@@ -20,7 +20,6 @@ import { labelledFrom, scoreSuggestion, trainSuggestionModel, type SuggestionSco
 import {
   deadlineOffers,
   movedDueDate,
-  paperOffers,
   planOffers,
   type DeadlineOffer,
   type DeadlineSuggestion,
@@ -75,7 +74,6 @@ export function SuggestionsCard() {
     [suggestions, deadlines, subjects, now, settings?.sem_end]
   );
   const plans = useMemo(() => planOffers(suggestions, subjects), [suggestions, subjects]);
-  const papers = useMemo(() => paperOffers(suggestions, subjects), [suggestions, subjects]);
 
   // What your past Adds and Dismisses say about these (src/lib/suggestionModel.ts).
   // Null until it has enough of both and beats guessing - then nothing changes here.
@@ -96,7 +94,7 @@ export function SuggestionsCard() {
     };
   }, [offers, model]);
 
-  if (offers.length === 0 && plans.length === 0 && papers.length === 0) return null;
+  if (offers.length === 0 && plans.length === 0) return null;
 
   const visible = [
     ...(showAll ? likely : likely.slice(0, SHOWN)),
@@ -135,7 +133,7 @@ export function SuggestionsCard() {
       <div className="mb-3 flex items-center gap-2">
         <FileSearch className="h-4 w-4 text-accent" />
         <p className="text-xs font-bold uppercase tracking-widest text-muted">
-          Found in your files · {offers.length + plans.length + papers.length}
+          Found in your files · {offers.length + plans.length}
         </p>
         {model && (
           <span
@@ -168,48 +166,6 @@ export function SuggestionsCard() {
               <div className="mt-2.5 flex gap-2">
                 <Button size="sm" onClick={() => apply(o)}>
                   <Check className="h-4 w-4" /> Apply
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    haptic();
-                    decide.mutate({ id: o.suggestion.id, status: "dismissed" });
-                  }}
-                >
-                  <X className="h-4 w-4" /> Dismiss
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {papers.length > 0 && (
-        <div className="mb-2 space-y-2">
-          {papers.map((o) => (
-            <div key={o.suggestion.id} className="rounded-2xl border bg-surface-2/40 p-3">
-              <p className="flex items-start gap-1.5 text-sm font-bold">
-                {o.subject && <Dot color={o.subject.color_hex} className="mt-[7px] h-1.5 w-1.5 shrink-0" />}
-                <span className="line-clamp-2">
-                  Past paper · {o.suggestion.payload.subject} {o.title} · {o.suggestion.payload.questions.length} question
-                  {o.suggestion.payload.questions.length === 1 ? "" : "s"}
-                </span>
-              </p>
-              <p className="mt-1 text-xs font-medium text-muted">
-                <span className="font-semibold text-warn-deep">Autopilot isn't sure: {o.suggestion.payload.doubts.join("; ")}. </span>
-                {sourceName(o.suggestion.source)}
-              </p>
-              <div className="mt-2.5 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    haptic([10, 40, 14]);
-                    decide.mutate({ id: o.suggestion.id, status: "accepted" });
-                    toast.success("Your Mac adds it to the past papers at its next sync");
-                  }}
-                >
-                  <Plus className="h-4 w-4" /> Add to past papers
                 </Button>
                 <Button
                   size="sm"

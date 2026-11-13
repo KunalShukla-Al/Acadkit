@@ -41,7 +41,7 @@ export const STATE_DIR = path.join(homedir(), "Library", "Application Support", 
 export const AUTO_SYNC = path.join(STATE_DIR, "auto-sync.sh");
 export const CACHE_DIR = path.join(homedir(), "Library", "Caches", "AcadKit");
 
-/** ~/Documents/SRM_Sem<n>. */
+/** SRM_Sem<n> in `base`: the folder the study folder is in, so the next semester sits beside this one. */
 export function semesterDir(n, base = path.join(homedir(), "Documents")) {
   return path.join(base, `SRM_Sem${n}`);
 }
@@ -88,12 +88,12 @@ export function autoSyncReadsEnv(script) {
 
 /**
  * Whether `dir` is a semester folder this may move to the Trash: an
- * SRM_Sem<n> directly in Documents, and nothing else - never home, never a
- * folder somebody pointed STUDY_DIR at by hand.
+ * SRM_Sem<n> directly in Documents or Downloads, and nothing else - never
+ * home, never a folder somebody pointed STUDY_DIR at by hand.
  */
 export function isSemesterFolder(dir, home = homedir()) {
   const abs = path.resolve(dir);
-  return path.dirname(abs) === path.join(home, "Documents") && /^SRM_Sem\d{1,2}$/.test(path.basename(abs));
+  return ["Documents", "Downloads"].some((d) => path.dirname(abs) === path.join(home, d)) && /^SRM_Sem\d{1,2}$/.test(path.basename(abs));
 }
 
 /** The content hashes a manifest's files are stored under ("<pin>/blobs/<sha>.<ext>"): what the caches are keyed by. */
@@ -209,9 +209,8 @@ async function clearRowsNotIn(supabase, table, pin, column, keep) {
  * Everything the old folder left in Supabase once the new one is synced:
  * its search index, file requests (and their inbox copies), suggestions,
  * syllabus ticks for courses that are gone, the portal and forecast
- * history (History's archive keeps the attendance pattern), and the
- * recorded lectures (their transcripts stay on the Mac). Returns what it
- * removed, by table.
+ * history (History's archive keeps the attendance pattern). Returns what
+ * it removed, by table.
  */
 export async function clearOldSupabase(supabase, pin) {
   const removed = {};
@@ -237,8 +236,6 @@ export async function clearOldSupabase(supabase, pin) {
   removed.syllabus_progress = await clearRowsNotIn(supabase, "syllabus_progress", pin, "course_code", courses);
   removed.portal_snapshot_history = await clearRows(supabase, "portal_snapshot_history", pin);
   removed.forecast_log = await clearRows(supabase, "forecast_log", pin);
-  // A lecture's moments go with it (on delete cascade).
-  removed.lectures = await clearRows(supabase, "lectures", pin);
   return removed;
 }
 
@@ -368,7 +365,7 @@ export async function switchSemester({
       log(`Then: a full sync of ${toName} (its files replace ${fromName}'s in AcadKit), and a check that the app shows it.`);
       if (removeOld) {
         log(`Then: ${fromName}'s search index, file requests, suggestions, syllabus progress, portal and forecast history go from Supabase, and its caches from this Mac.`);
-        log(trashable ? `Then: ${from} goes to the Trash.` : `${from} stays where it is (only an SRM_Sem<n> in Documents is moved to the Trash).`);
+        log(trashable ? `Then: ${from} goes to the Trash.` : `${from} stays where it is (only an SRM_Sem<n> in Documents or Downloads is moved to the Trash).`);
       }
       return { dryRun: true };
     }
@@ -447,7 +444,7 @@ export async function applySemesterSwitch({ supabase, pin, dir, repo, envFile, d
     await writeSwitchStatus(supabase, pin, { state: "failed", message: "The request didn't say which semester." });
     return null;
   }
-  const to = semesterDir(n, documents);
+  const to = semesterDir(n, documents ?? path.dirname(path.resolve(dir)));
   if (path.resolve(to) === path.resolve(dir)) {
     await writeSwitchStatus(supabase, pin, { state: "done", from: path.basename(dir), to: path.basename(to), message: `Already on ${path.basename(to)}.` });
     return null;

@@ -1,8 +1,7 @@
 # The iPhone's Shortcuts
 
-Five Shortcuts connect my iPhone to AcadKit outside the app: an alarm before the first class, Do
-Not Disturb through class hours, marking the rest of the day absent when I leave, sending files and
-screenshots to the study folder, and Siri. My Mac builds and signs them for my account
+Three Shortcuts connect my iPhone to AcadKit outside the app: an alarm before the first class, Do
+Not Disturb through class hours, and sending files to the study folder. My Mac builds and signs them for my account
 (`scripts/lib/shortcuts.mjs`), and Settings offers them to install.
 
 ## Before any of them
@@ -10,14 +9,14 @@ screenshots to the study folder, and Siri. My Mac builds and signs them for my a
 1. In the app, tap the corner, then Settings → iPhone and calendar, and tap **Turn on**. This makes a private
    link to my timetable, attendance and tests (a token, migration 047). Anyone with it can read
    those, so it stays on my devices. **Revoke** there ends it, and the Mac takes the Shortcuts down.
-2. Keep the Mac on for a few minutes. It builds the five Shortcuts for the new link, signs them, and
+2. Keep the Mac on for a few minutes. It builds the Shortcuts for the new link, signs them, and
    Settings shows a button for each.
 3. On the iPhone, tap each button, then **Add Shortcut**.
 4. Run each one once from the Shortcuts app, and tap **Always Allow** at every question: to connect
-   to the feed, to set an alarm, to turn on Do Not Disturb, to use the microphone. An automation
+   to the feed, to set an alarm, to turn on Do Not Disturb. An automation
    can't answer a question, so on a new phone it stops at the first one.
-5. Allow notifications for Shortcuts (Settings → Notifications → Shortcuts). Focus and Leave say
-   what they did in one.
+5. Allow notifications for Shortcuts (Settings → Notifications → Shortcuts). Focus says
+   what it did in one.
 
 If I revoke the link and turn it on again, the token changes: the Mac rebuilds the Shortcuts, and I
 install them again from Settings. A change to the code that builds a Shortcut rebuilds it the same
@@ -44,34 +43,13 @@ Clock app's list until I delete them.
 | Asks for | Connecting to the feed; Do Not Disturb; notifications. |
 | Reads | `GET /feeds/today` (`focusUntil`, `arrive`). |
 
-## AcadKit Leave
-
-| | |
-| --- | --- |
-| Does | With classes still to come today, asks "Mark the rest absent?" and, on OK, marks them. Today can undo it. Cancel stops it there. |
-| Run from | An automation on leaving SRM ([campus automations](campus.md)). |
-| Asks for | Connecting to the feed; notifications. |
-| Reads, writes | `GET /feeds/today` (`leave`), then `POST /feeds/leave`. |
-
 ## AcadKit
 
 | | |
 | --- | --- |
-| Does | In the share sheet: sends what I share (photos, PDFs, any file) to the study folder's Inbox, where the Mac files it at its next sync. Run with nothing shared ("Hey Siri, AcadKit"), it listens, answers and speaks. |
-| Run from | The share sheet, or Siri. |
-| Asks for | Connecting to the feed; for Siri, the microphone and speech recognition. |
-| Reads, writes | `POST /feeds/share`; `GET /feeds/ask`. |
-
-Siri understands: "can I skip OS", "what do I need in DSA", "what do I need for an A in OS", "when
-is my next test", "I'm absent in OS". The answers use the app's own words (`packages/core/src/answer.ts`).
-
-## AcadKit Screenshot
-
-| | |
-| --- | --- |
-| Does | Sends the latest screenshot the same way. A portal attendance or marks page is read into the app at the Mac's next sync ([portal screenshots](campus.md#portal-screenshots)). |
-| Run from | Back Tap ([setup](campus.md#back-tap)). |
-| Asks for | Connecting to the feed; Photos. |
+| Does | In the share sheet: sends what I share (photos, PDFs, any file) to the study folder's Inbox, where the Mac files it at its next sync. |
+| Run from | The share sheet. |
+| Asks for | Connecting to the feed. |
 | Writes | `POST /feeds/share`. |
 
 ## When one doesn't work
@@ -103,13 +81,8 @@ these.
   name is "AcadKit · first class".
 - **Do Not Disturb didn't turn on.** Focus turns it on only while a class is still ahead. Stopping
   the alarm after the last class, or on a day without classes, does nothing, as it should.
-- **Leave didn't ask.** It asks only with classes still to come today. Location automations also
-  need Location Services on for Shortcuts.
 - **A shared file isn't in the study folder yet.** It waits in the app's Inbox until the Mac's next
   sync, which can be hours if the Mac is asleep. Nothing is lost meanwhile.
-- **Siri answers "I can tell you if you can skip a class…"** It didn't recognise the question. It
-  understands "can I skip OS", "what do I need in DSA", "what do I need for an A in OS", "when is
-  my next test" and "I'm absent in OS", and the names I use for subjects.
 
 ### Checking the link itself
 

@@ -9,30 +9,29 @@ AcadKit runs in three places, and the Mac does the heavy work:
 ```
  the app (phone, Mac browser)        Supabase                          the Mac
  ----------------------------        --------                          -------
- five tabs, themeable look  ---->    Postgres, RLS by PIN    <----     sync tick, Autopilot,
- offline cache, file cache  <----    Broadcast on pin:<pin>            recorder, night shift
+ five tabs, themeable look  ---->    Postgres, RLS by PIN    <----     sync tick, night shift
+ offline cache, file cache  <----    Broadcast on pin:<pin>
                                      study-files bucket      <----     files, links, jobs.json
- Shortcuts, Siri, Calendar  ---->    feeds edge function               menu bar, Quick Action
+ Shortcuts, Calendar        ---->    feeds edge function               menu bar, Quick Action
 ```
 
 - The app reads and writes its own rows and listens for changes on its PIN's Broadcast topic. It
   keeps working offline: queries persist to IndexedDB, writes queue and replay, and opened files
   stay in a file cache.
 - The Mac holds the study folder and the models. It uploads files and what it works out from them
-  (links, topics, transcripts, prep), reads what you share into Inbox, and says when each job ran.
-  Nothing it reads with a model leaves it except the result.
-- The iPhone outside the app (Shortcuts, Siri, the calendar subscription) reaches the data only
+  (links, topics, prep), files what you share into Inbox, and says when each job ran.
+- The iPhone outside the app (Shortcuts, the calendar subscription) reaches the data only
   through the feeds function, with a token you can revoke.
 - `packages/core` holds the rules all three use, so a number means the same on every surface.
 
 Where each part is described:
 
 - Foundations: Core, Accounts and data, Data flow.
-- The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Run-up, Flashcards,
+- The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Run-up,
   File viewer, Show your work, Continue, PWA and iOS.
-- The Mac: Study files (the sync, the menu bar), Autopilot, Class recorder, Night shift,
+- The Mac: Study files (the sync, the menu bar), Night shift,
   Everything connected; the Quick Action is under Continue.
-- Outside the app: Feeds (Shortcuts, Siri, the calendar), Portal sync.
+- Outside the app: Feeds (Shortcuts, the calendar), Portal sync.
 
 The sections below follow that order.
 
@@ -93,8 +92,8 @@ Supabase <- src/api/<table>.ts <- src/hooks/useData.ts (React Query) <- pages
 ```
 
 - `src/api` has one module per table or area (`settings`, `subjects`, `timetable`, `attendance`,
-  `marks`, `deadlines`, `portal`, `history`, `suggestions`, `runup`, `cards`, `push`, `account`,
-  and `studyFiles`, `feeds`, `siri`, `autopilot`), and `db.ts` for what they share.
+  `marks`, `deadlines`, `portal`, `history`, `suggestions`, `runup`, `push`, `account`,
+  and `studyFiles`, `feeds`), and `db.ts` for what they share.
 
 - The Supabase client is typed by `src/lib/database.ts`: the types `npm run db:types` generates
   from the migrations (`database.types.ts`, which CI checks are current), with each jsonb column
@@ -131,24 +130,24 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   today's classes, the one on now and the next, or the next day with classes once today's are
   over. Under it, the next three deadlines each open the Deadlines page (`/deadlines`, under the
   next exam's countdown). Above the day is only what needs you: a suggestion, a page to continue,
-  Siri's and Autopilot's lines with Undo, each empty when there's nothing. Today's cards live in
+  each empty when there's nothing. Today's cards live in
   `src/components/home`.
 - The Run-up chip (`src/components/layout/runup-chip.tsx`) rings the day's targets ticked and
   opens `/runup`; another day is `/runup/<date>`.
 - The corner (`src/components/layout/corner.tsx`) is a lime quarter-disc fixed in the
   bottom-right corner, above the tab bar (`--nav-h`, which the bar keeps), carrying today's Day
   Order, a star on a day without classes. Tapped, it turns into a close button, and Calendar,
-  Skips, Flashcards (with the count waiting), History and Settings burst out of it as tilted
+  Skips, History and Settings burst out of it as tilted
   stickers, kept clear of the bars. Escape or a tap elsewhere closes it.
 - Attendance (`/attendance`) and Marks (`/marks`) each lead with their number, the overall gauge
   and the predicted SGPA (tap it for its explainer), then Now and Forecast, Marks and Targets.
-- Study (`/study`) is the study folder: its folders, search inside files and lectures, and the
-  viewer and transcripts that open over it with their Connected line. Opened from a link with
-  nothing behind them, the viewer and a transcript close onto Study (`studyPath`). Under the
+- Study (`/study`) is the study folder: its folders, search inside files, and the
+  viewer that opens over it with its Connected line. Opened from a link with
+  nothing behind it, the viewer closes onto Study (`studyPath`). Under the
   folders sit the projects, the week's notices and new files, and the Mac's line.
 - The Mac's line (`MacLine`, `src/lib/macJobs.ts`) closes Study: a job that failed, else a Mac
   that hasn't synced in a day, else "Your Mac is keeping up · synced 4 min ago". Tapped, it lists
-  when the study sync, Autopilot, the class recorder and the night shift last ran, with what each
+  when the study sync and the night shift last ran, with what each
   said. The Mac stamps them into `<pin>/jobs.json` (`scripts/lib/jobs.mjs`), uploading at most
   every 10 minutes, or at once when a job starts or stops failing; stamping never fails a job.
 - Tomorrow offline (`src/lib/tomorrow.ts`, `src/lib/tomorrowOffline.ts`): from 18:00, while the
@@ -195,7 +194,7 @@ on the theme and reusing the same hooks and core maths as the default screens, w
 `src/lib/voice.ts` holds the app's copy in the theme's register (`useTone`). Brutalist talks back,
 lowercase and blunt ("currently trapped", "30 min of your life left"); OLED talks quietly, short
 statements with the number first. Each line is written plain, and a theme's own line replaces it
-where it has one. Notifications and Siri keep the plain line.
+where it has one. Notifications keep the plain line.
 
 - The pages are built from the primitives in `src/components/primitives`: `Figure` (a number, its
   unit and what it counts), `Line` (one sentence with a mark and a value), `Row` and `Rows` (a
@@ -279,19 +278,6 @@ expectation counts in the plan without ever being saved as a mark.
   stay, so ticks survive. A link may also name the study folder itself, which keeps the
   generators' `SRM_Sem4/…` links working after the switch.
 
-## Flashcards
-
-- The deck opens from the corner's Flashcards, which counts the cards waiting
-  (`components/flashcards/waiting-badge.tsx`) once the sync has sent `<pin>/cards.json`. The
-  count and the deck are lazy chunks, loaded only when the corner opens.
-- The sync writes `cards.json` from the study folder's `_src/acadkit_cards.json` after
-  `scripts/lib/cards.mjs` has checked it: a bad card is dropped with a warning, and a repeated id
-  is refused so one review can never count for two cards. The file's order is the order new
-  cards are shown in.
-- Reviews live in `card_reviews` (migration 045): one row per card with its Leitner box and due
-  day, keyed by card id, so the deck can be rebuilt without losing them. Saving one is a named
-  write (`cards.review`). The schedule and the queue are pure functions in `src/lib/flashcards.ts`.
-
 ## File viewer
 
 `/view` opens a file in the app: PDF (pdf.js legacy build), Word, PowerPoint, spreadsheets,
@@ -307,7 +293,7 @@ code and images.
   canvas; a zoom re-draw goes straight to sharp over the stretched page.
 - While a file downloads or a page draws, the viewer shows skeletons
   (`src/components/viewer/skeleton.tsx`): paper-shaped pages for a PDF, lines of text for
-  Word, sheets and code. The viewer and transcript overlays rise in (`.overlay-in`), and
+  Word, sheets and code. The viewer's overlay rises in (`.overlay-in`), and
   Reduce Motion turns every one of these animations off.
 - Find in file uses the CSS Highlight API; PDFs get a pdf.js text layer.
 - Files opened once are cached on the device (`src/lib/fileCache.ts`, 400 MB), and rows
@@ -442,7 +428,7 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
   (migrations 032, 033).
 - Files shared from the iPhone land in `Inbox/`, and the tick files them (`scripts/lib/inbox.mjs`):
   a name with a subject's code or short name goes to its `02_Notes` (in `Unit_<n>` when the name
-  says one); then what Autopilot is sure a file shows decides (below); then anything that arrived
+  says one); then anything that arrived
   during a class goes to that subject's `02_Notes/Class_Photos/<date>`, by the Day Order calendar
   and timetable from core. The rest stays.
 - The Mac side lives in `scripts/mac` and is installed with `npm run mac:install`: a launch agent
@@ -467,11 +453,9 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
 - The menu bar is a SwiftBar plugin (`scripts/mac/swiftbar/acadkit.1m.sh`, put in SwiftBar's
   plugin folder by `mac:install`) that runs `menubar.mjs` every minute: the day and the next class
   in the bar ("DO 3 · OS 10:00 AM", "↻" while syncing), and in the menu the day's sentence (the
-  one Siri says), the classes (grey once over), and the Mac's line with each job in its
-  submenu (from the copy of `jobs.json` the Mac keeps), then Open Today, Sync now and Pause (or
-  Resume) Autopilot. Only a failure is coloured. An action runs the plugin again with its name:
-  `sync` starts the tick, which holds its own lock, and `pause` leaves `autopilot/paused` in the
-  state folder until `resume`. The day's rows are read from Supabase at most every 30 minutes; the
+  morning notification's), the classes (grey once over), and the Mac's line with each job in its
+  submenu (from the copy of `jobs.json` the Mac keeps), then Open Today and Sync now. Only a failure is coloured. An action runs the plugin again with its name:
+  `sync` starts the tick, which holds its own lock. The day's rows are read from Supabase at most every 30 minutes; the
   sync's live state comes from the tick's lock, its last-sync stamp and the log's last verdict.
 - Tags (`scripts/lib/tags.mjs`): subject from the top folder's code or course title (curriculum,
   then syllabi, so an elective's folder is found too), unit from the path (none inside a subfolder
@@ -490,121 +474,7 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
   `npm ci --prefix scripts/embedder` once), and the `study-search` edge function embeds only
   search queries, with the same model and the same vectors. Units and topics find their nearest
   passages in batches of 50 (`match_study_chunks_many`, migration 046;
-  `scripts/study-index/search.mjs`). The function also returns the nearest moments of recorded
-  lectures (`match_lecture_moments`, migration 061; see Class recorder).
-
-## Autopilot
-
-The Mac's own model reads what reaches the study folder (`scripts/lib/autopilot.mjs`, run by the
-tick through `sync:app`): Qwen3-VL 8B through Ollama, on the Mac, with nothing sent anywhere.
-
-- Each photo or PDF in Inbox, and each one saved to a folder in `AUTOPILOT_FOLDERS` after
-  Autopilot first saw that folder, is read once, by content hash, three a tick, before Inbox is
-  filed. A photo goes as one JPEG (`sips`, HEIC included), a PDF as its
-  first page and the text of its first two (Ghostscript). The model says what it is (notice,
-  notes, board, slides, question paper, assignment, other), its course, one line, and how sure it is.
-- Answers are JSON held to a schema twice: by Ollama as it writes, and by `checkSchema`
-  (`scripts/lib/ollama.mjs`). One that still doesn't fit is asked for once more, then refused.
-- A sure read (at least 0.7) files an Inbox file by what it shows, in the course it shows or, for
-  notes and a board, the class on then: notes and slides to `02_Notes`, a board to
-  `02_Notes/Class_Photos/<date>`, a question paper to `07_PYQs`, an assignment to
-  `03_Assignments_Tutorials`. A notice or anything else stays in Inbox, even in class hours, and
-  a photo or PDF waits there until it is read. Unread three ticks running, it is left to the
-  other rules.
-- A watched folder's study material is copied into Inbox with its own times, so Inbox's
-  class-time rule sees when it arrived. The original stays where it is.
-- A notice is read again for its tests and deadlines (`scripts/lib/autopilot-notice.mjs`). The
-  new ones (not past, and no deadline for that course on that day already) are added with the
-  file as `source`, under one `autopilot_actions` row (migration 053). Today turns it into "Added
-  OS FT-II (Thu, 29 Oct) · from notice.jpg" with Undo for three days, and Undo removes the ones
-  still pending. A test without a time takes that day's class (`packages/core/src/dueTime.ts`, as
-  the deadline sheet suggests).
-- A screenshot of the student portal (sent by Back Tap through the AcadKit Screenshot Shortcut)
-  is its own kind. Its attendance table is read into `portal_snapshots` and their history with
-  source `screenshot` (`scripts/lib/portal-shot.mjs`, migration 058), and its marks table into
-  `marks` the way a pasted page's are (`packages/core/src/portalMarks.ts`: onto the test's row,
-  the portal's own first). Each row is checked first: a course on the account, no more absences
-  than classes, a percentage within 1.5 points of the two, and no mark over what it's out of.
-  The screenshot then goes to `_portal/<date>`, which the sync never uploads. Each import leaves
-  an `autopilot_actions` row of kind `portal` (migration 059) that says what changed ("OS 75.0%
-  (was 73.8%)", "FJ-II 9/15 (new)") and keeps every row as it was; Today shows it with Undo, which
-  restores each snapshot and mark and deletes what the import added, its screenshot history too
-  (the one history an owner may delete).
-- The past-paper reader (`scripts/lib/paper-reader.mjs`) turns a question paper into the fields
-  the labelled dataset has: each question's part, number, marks, unit and topic, the topic
-  chosen from the course's list in `_src/pyq_dataset/topics.tsv`. It reads a page at a time, as
-  text when the PDF has a text layer and as a picture when not, and tells each page the number
-  the last one ended on, nothing more: told what that question was worth, or not to count on,
-  the model starts climbing the next questions' marks. Told only the number, it sometimes counts
-  on past the page instead (A30 to A100 on a page that starts a new set), so the code stops that:
-  a page's answer lists 40 questions at most, and a number past 32, which no SRM paper uses, is
-  dropped. Slots are tidied in code ("B 21 (a)" is B21a); one read twice keeps its first
-  reading, and one that isn't a question number is dropped. A Word paper is read from the PDF the
-  sync made of it, and a paper inside a file of several only on its own pages (`only`).
-- A question paper Autopilot is sure of is read with that reader, plus its kind, test and month
-  off page 1, and joins my dataset when it is filed into `07_PYQs` (`scripts/lib/paper-dataset.mjs`):
-  `papers.tsv` and `questions.tsv` get it as I label papers. A reading with doubts (under 10
-  questions, a fifth or more without a topic, a gap in the numbers, no date) asks first: a
-  suggestion of kind `paper` (migration 060) on Today's "Found in your files", holding the
-  reading, which the Mac adds at its next tick once accepted.
-- What was read is kept in `~/Library/Application Support/AcadKit/autopilot/seen.json`, and every
-  decision (read, copied or left, a notice's deadlines added or not, filed, failed) is a JSON line
-  with the model's confidence in `~/Library/Logs/AcadKit/autopilot.jsonl`, moved aside past 2 MB.
-  `AUTOPILOT=off` pauses it; without Ollama or the model it waits.
-
-## Class recorder
-
-Lectures I record with Voice Memos on the iPhone reach the Mac through iCloud, and the tick picks
-each new one up (`scripts/lib/recorder.mjs`, through `sync:app`). The audio never leaves the Mac.
-Setup and privacy are in [docs/recorder.md](docs/recorder.md).
-
-- Off until `RECORDER=on` in `.env.local`: recording a class needs the teacher's say-so.
-- Voice Memos keeps its files in `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/
-  Recordings`, which macOS guards: the tick's `/bin/bash` needs Full Disk Access, and the step
-  says so, once every six hours, when it can't read the folder.
-- A memo's start comes from its name (`20261103 101533-….m4a`, the Mac's local time) and its
-  length from `afinfo`. One iCloud wrote in the last minute waits; each is handled once, kept in
-  `~/Library/Application Support/AcadKit/recorder/seen.json` by name and size.
-- Each is matched to its class: the day's classes from core's `today()` (the Day Order calendar
-  and the timetable), and the one the recording overlaps most, as long as it covers half the class
-  or the class covers half of it (`classOf`). Out of class hours it is no class.
-- Then it is transcribed on the Mac (`scripts/lib/whisper.mjs`): `afconvert` makes it 16 kHz mono
-  WAV, and whisper.cpp (`brew install whisper-cpp`) runs large-v3-turbo on the GPU through Metal,
-  the model at `~/Library/Application Support/AcadKit/whisper/ggml-large-v3-turbo.bin`. The
-  language is English unless `RECORDER_LANG` says otherwise (`auto` for a class that mixes in
-  Hindi). The timed segments go to `recorder/transcripts/<memo>.json`.
-- The transcript is lined up with the class's slides (`scripts/lib/lecture-align.mjs`). It is cut
-  into moments of about a minute, embedded with gte-small (the vectors study search uses), and
-  matched against each deck under the course's `02_Notes`: every `.pptx` and `.ppt`, and PDFs
-  named as slides. The lecture follows the deck its moments match best, and the moments take
-  slides in order, never going back (a dynamic program over moments and slides). Moments and
-  slides are compared centered: the mean of the course's slides is taken off both, since
-  gte-small scores any minute of classroom talk 0.8 or more against any slide. A moment under
-  0.2, centered, is talk off the slides and gets none. Slide numbers are the viewer's pages: an
-  Office deck is read from its PDF rendition when the sync has made one. Slide vectors are cached
-  by the deck's content in `~/Library/Caches/AcadKit/slides`.
-- `npm run recorder:eval` measures the alignment on three stand-in lectures, spoken by `say` from
-  explanations of real decks, and writes [EVAL.md](EVAL.md): the right deck for all three, 43% of
-  moments on the right slide (31% without centering), 51% within a page, 2 of 5 aside moments
-  kept off. Neighbouring slides on one topic are what it confuses most.
-- Each transcript then goes to the app (`scripts/lib/lecture-sync.mjs`, migration 061): a
-  `lectures` row (its class, deck and length) and its `lecture_moments`, each with its text,
-  slide and gte-small vector. Whisper's segments and the audio stay on the Mac. A transcript
-  is sent again whole when it changes, and a send that fails is tried at the next tick without
-  transcribing again. A semester switch clears the lectures with the rest of the old folder.
-- `/lecture/:id` is a lecture's transcript (`src/pages/Lecture.tsx`), full screen and able to open
-  over the page it came from, like the viewer. Its moments come in runs on one slide, and each
-  run's "Slide n" opens the deck in the viewer at that page; `?m=` scrolls to a moment from a
-  search. A subject's page lists its recorded lectures (`recorded-lectures.tsx`).
-- Study search shows moments a query is at least 0.82 like, above the files (`src/lib/lectures.ts`):
-  in a probe, short queries scored 0.82–0.94 on the moments that answered them and at most 0.81
-  on the rest. A subject's search shows only its own lectures.
-- One memo a tick, since a lecture takes whisper a few minutes; one that fails is tried again at
-  the next tick. Without whisper or the model, the step says what's missing and waits.
-- `scripts/lib/__fixtures__/lecture-sample.m4a` is an 18-second lecture made with `say`, with
-  whisper's JSON for it beside it. `npm test` replays that JSON through the whole step;
-  `npm run test:recorder` runs the real afinfo, afconvert and whisper.cpp on this Mac and
-  wants under 5% of words wrong.
+  `scripts/study-index/search.mjs`)..
 
 ## Night shift
 
@@ -620,68 +490,56 @@ The Mac's heavy work waits for the night (`scripts/night-shift.mjs`, `scripts/li
   `~/Library/Application Support/AcadKit/night-shift.json`. `NIGHT_SHIFT=off` in `.env.local`
   turns it off.
 - The job (`scripts/lib/night-job.mjs`) holds the tick's `sync.lock`, waiting up to 15 minutes for
-  a tick to finish, and touches it every five minutes so a long night never looks stale. In order:
-  1. Transcribe: every recording waiting, not the tick's one, then the transcripts to the app.
-  2. Read: every file waiting for Autopilot, not the tick's three; Inbox filed; accepted past
-     papers into the dataset. With Autopilot paused it does nothing; with Ollama away it fails.
-  3. Sync: the study folder with PDFs over 2 MB shrunk (`--shrink-over=2`; the day's sync shrinks
-     those over 8 MB). A shrunk copy smaller than the bucket's replaces it, and the day's sync
-     leaves it, so the space stays freed. On Saturday nights it adds `--reindex`.
+  a tick to finish, and touches it every five minutes so a long night never looks stale. It syncs
+  the study folder with PDFs over 2 MB shrunk (`--shrink-over=2`; the day's sync shrinks those
+  over 8 MB). A shrunk copy smaller than the bucket's replaces it, and the day's sync leaves it,
+  so the space stays freed. On Saturday nights it adds `--reindex`.
 - A step that fails is recorded and the rest still run. What each did goes into
   `night-shift.json` and the sync log.
 - The night's report goes to `<pin>/night-shift.json` in the bucket: a sentence of what it did
-  ("2 lectures transcribed; 12 files indexed, 96 MB saved by shrinking.") and the steps that
+  ("12 files indexed, 96 MB saved by shrinking.") and the steps that
   failed. `send-reminders` pushes it at 07:00, once a night; a night it skipped, or one with
   nothing to do, sends nothing.
 
 ## Everything connected
 
-What I study from and what was said in class share one embedding space (`scripts/lib/connected.mjs`,
+What I study from shares one embedding space (`scripts/lib/connected.mjs`,
 `npm run connected`), with the gte-small vectors study search uses, so an item can point at the
 others about the same thing.
 
 | Kind | What it is | From |
 | --- | --- | --- |
 | page | a page of notes | a course's PDFs and documents that aren't decks |
-| slide | a slide | a course's decks (`isDeck`, as the recorder's) |
+| slide | a slide | a course's decks (`isDeck`, `scripts/lib/decks.mjs`) |
 | question | a past-paper question | `_src/pyq_dataset/questions.tsv`, in its paper's course |
-| moment | a minute of a recorded lecture | the recorder's transcripts |
 | photo | a board photo's writing, by OCR | `02_Notes/Class_Photos` |
 
 - Courses are the top folders the sync tags with a course code; past papers' own PDFs (`07_PYQs`)
   are left out, since their questions stand for them.
-- Every item has its course, its unit where its folder or its question's topic says, and a time
-  for a moment or a photo. Vectors are cached by content (`~/Library/Caches/AcadKit/slides` and
+- Every item has its course, its unit where its folder or its question's topic says, and a photo the time
+  it was taken. Vectors are cached by content (`~/Library/Caches/AcadKit/slides` and
   `connected/`): the first build of my Sem 3 folder took 19 minutes, and one from cache a second.
   It holds 9,612 items: 3,705 pages, 3,473 slides and 2,434 questions.
 - Links by meaning (`scripts/lib/links.mjs`): each item points at the nearest two items of each
-  other kind in its course, compared centered on the course's mean as the recorder's slides are,
-  and only at 0.40 or more (`BARS`). That bar comes from 100 links judged by reading both ends
+  other kind in its course, compared centered on the course's mean (gte-small scores any two pages of one course 0.8 or
+  more), and only at 0.40 or more (`BARS`). That bar comes from 100 links judged by reading both ends
   (`npm run connected:judge`, in [EVAL.md](EVAL.md)): 82% of those at 0.40 or more were right,
   10 of 33 below it. A fresh 100 of the links the app shows, judged after the bar was set
   (`-- --fresh`), came out at 73%. Agreeing on the unit (`npm run connected -- --check`) is a weaker check: 80%
   of question links agree on it from 0.23, where most were wrong. My Sem 3 folder gets 21,045
   links on 6,891 items, in 18 seconds.
-- Links by time (`linkByTime`): a moment points at the slide on screen then (the recorder's
-  alignment), and a board photo at its class's moment nearest when it was taken, and at that
-  moment's slide; each of those points back. A photo's class is its course's lecture that day
-  whose window holds the photo's time: the class on the timetable when the recording matched
-  one, else the recording itself. Time links come first (`mergeLinks`), and every link says why
-  it is there, `"time"` or `"meaning"`.
-- The sync builds the links with units and topics, when their inputs change (the study files,
-  the lecture transcripts, or the code that builds them), and sends them as `<pin>/links.json`
+- The sync builds the links with units and topics, when their inputs change (the study files or
+  the code that builds them), and sends them as `<pin>/links.json`
   and a part per course named by its content (`splitLinks`, as topics are split). The app loads
   only the course it shows (`useLinks`). Sem 3's biggest part, DSA's, is 1.5 MB (80 KB gzipped).
 - One "Connected" line (`src/components/connected-line.tsx`) shows what links to an item, a chip
-  each, time links first: under the PDF page you're on in the viewer (a deck's pages are its PDF's,
-  as the Mac numbers them), under each past-paper question on Practice, and under each moment of
-  a transcript (without the slide its run already names). Practice lists questions mined from the
+  each: under the PDF page you're on in the viewer (a deck's pages are its PDF's, as the Mac
+  numbers them) and under each past-paper question on Practice. Practice lists questions mined from the
   papers, worded a little differently from the labelled ones the links know, so a question is
   matched by its paper's file and at least half its words (`questionFor`). Each part carries what
-  an id can't say: a question's paper file, label and text, and a moment's time.
+  an id can't say: a question's paper file, label and text.
 - Each chip opens its item over the page it came from (`hrefOf`): a page or slide in the viewer at
-  that page, a board photo in the viewer, a question's paper, a moment in its transcript (found
-  by the recording's memo among the synced lectures; a lecture not synced yet is a plain chip).
+  that page, a board photo in the viewer, a question's paper.
 
 ## Reminders
 
@@ -707,7 +565,7 @@ requests a minute; over that the feeds answer 429. Deleting everything in Settin
 - `supabase/functions/feeds` serves them. `GET /feeds/today?token=…` is the day at a glance from
   core (`packages/core/src/today.ts`): the Day Order or the holiday, the classes with their
   attendance and how many can be skipped, an alarm time, the week's tests (each with its type, and
-  `from`, the notice's file name when Autopilot added it), and one sentence. Dates
+  `from`, the file it was read from when it has one), and one sentence. Dates
   are IST: the edge runtime runs on UTC. `GET /feeds/calendar.ics?token=…` is the same account as
   a calendar to subscribe to (`webcal://`): every class from a week back to two months ahead, and
   each pending test and deadline at its due time (`packages/core/src/ics.ts`, which also writes
@@ -715,23 +573,12 @@ requests a minute; over that the feeds answer 429. Deleting everything in Settin
   sheet: they go to the PIN's inbox with a `study_uploads` row for `Inbox/<name>` (or `&folder=…`),
   exactly as the app's Upload does, and the Mac saves them at its next tick. Names follow
   `packages/core/src/uploads.ts`, and the 50 MB cap holds.
-- `GET /feeds/ask?token=…&q=…` is Siri's: the question as said, parsed by core's plain-word grammar
-  (`packages/core/src/ask.ts`: can I skip, what do I need, next test, I'm absent; loose subject
-  names; a little Hinglish) and answered in one sentence from the same rules as the app
-  (`answer.ts`). "I'm absent in OS" is the one write: `absent.ts` works out the day's classes (the
-  lab's alone when said) and what each was marked before; the feeds mark them absent and keep a
-  `siri_marks` row (migration 051) that Today turns into "Siri marked you absent in OS" with Undo.
-  Undo puts back only classes still as Siri left them.
 - The iPhone's Shortcuts are built on the Mac for the account's token (`scripts/lib/shortcuts.mjs`,
   run by the tick through `sync:app`): AcadKit Alarm sets an alarm an hour before the first class,
   AcadKit Focus (run when that alarm stops, and on arriving at SRM) turns Do Not Disturb on until
   the last class ends, only while one is still ahead (`focusUntil`), and shows the class on now or
-  next (`arrive`), AcadKit Leave (run on leaving SRM) asks "Mark the rest absent?" when classes
-  are still to come (`leave`) and, on OK, posts to `/feeds/leave`, which marks them like Siri
-  does, Undo and all, and AcadKit, in the share sheet,
-  posts each shared item to the share feed by name (a photo without an extension gets one from its
-  type). Run with nothing shared ("Hey Siri, AcadKit"), the same Shortcut listens, sends what it
-  heard to the ask feed, and speaks the sentence back. Each is a plist of actions
+  next (`arrive`), and AcadKit, in the share sheet, posts each shared item to the share feed by
+  name (a photo without an extension gets one from its type). Each is a plist of actions
   in the format Cherri writes, signed with `shortcuts sign` and uploaded to
   `<pin>/shortcuts/<name>.shortcut`. They are rebuilt when the token changes and taken down when
   it is revoked.
