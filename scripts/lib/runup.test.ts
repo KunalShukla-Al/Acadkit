@@ -139,6 +139,53 @@ describe("checkRunup", () => {
     expect(warnings[0]).toMatch(/used twice/);
   });
 
+  it("keeps a task's videos, the page of a file, and its past questions, each with its own key", () => {
+    const paper = "Operating_Systems/07_PYQs/FT-II/2025_FJ2.pdf";
+    const notes = "Operating_Systems/02_Notes/Unit_2/threads.pdf";
+    const { body, warnings } = checkRunup(
+      base({
+        days: [
+          {
+            date: "2026-10-12",
+            tasks: [
+              {
+                id: "a",
+                text: "Threads",
+                files: [{ path: notes, page: 4 }, notes, { path: paper, page: 0 }],
+                videos: [
+                  { title: "Thread models", url: "https://www.youtube.com/watch?v=abc", minutes: 12, by: "Neso Academy" },
+                  { title: "Not YouTube", url: "https://example.com/v" },
+                  { title: "", url: "https://youtu.be/abc" },
+                  { title: "Plain http", url: "http://youtu.be/abc" },
+                ],
+                pyqs: [
+                  { source: "Jul 2025", number: "B22a", marks: 8, text: "Compare the thread models", file: paper, page: 2 },
+                  { source: "Jul 2025", number: "B22a", text: "The same question again" },
+                  { text: "No paper and no number" },
+                  { source: "Nov 2024", number: "B22b", text: "Its scan left the folder", file: "gone.pdf" },
+                ],
+              },
+              { id: "b", text: "Nothing extra" },
+            ],
+          },
+        ],
+      }),
+      known
+    );
+    const [a, b] = body!.days[0].tasks;
+    expect(a.files).toEqual([notes, paper]);
+    expect(a.pages).toEqual({ [notes]: 4 });
+    expect(a.videos).toEqual([{ title: "Thread models", url: "https://www.youtube.com/watch?v=abc", minutes: 12, by: "Neso Academy" }]);
+    expect(a.pyqs).toEqual([
+      { key: "jul-2025-b22a", source: "Jul 2025", number: "B22a", marks: 8, text: "Compare the thread models", file: paper, page: 2 },
+      { key: "nov-2024-b22b", source: "Nov 2024", number: "B22b", marks: null, text: "Its scan left the folder", file: null, page: null },
+    ]);
+    // A task without them is the file it always was.
+    expect(Object.keys(b)).toEqual(["id", "text", "subject_code", "event", "minutes", "files"]);
+    expect(warnings.filter((w: string) => w.includes("video"))).toHaveLength(3);
+    expect(warnings.filter((w: string) => w.includes("its own paper and number"))).toHaveLength(2);
+  });
+
   it("drops a broken event and a broken target but keeps the rest", () => {
     const { body, warnings } = checkRunup(
       base({

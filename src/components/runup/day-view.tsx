@@ -165,7 +165,7 @@ export function DayView({
         {planned.length > 0 ? (
           <ul className="divide-y">
             {planned.map((item) => (
-              <TaskRow key={item.task.id} item={item} plan={plan} onToggle={onToggle} />
+              <TaskRow key={item.task.id} item={item} plan={plan} ticked={done} onToggle={onToggle} />
             ))}
           </ul>
         ) : (
@@ -180,7 +180,7 @@ export function DayView({
             </p>
             <ul className="divide-y">
               {carried.map((item) => (
-                <TaskRow key={item.task.id} item={item} plan={plan} onToggle={onToggle} showFrom />
+                <TaskRow key={item.task.id} item={item} plan={plan} ticked={done} onToggle={onToggle} showFrom />
               ))}
             </ul>
           </>

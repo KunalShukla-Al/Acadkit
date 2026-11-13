@@ -16,6 +16,9 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Added
 
+- Run-up tasks can carry what to study them from: videos with their length and channel, and the past
+  exam questions to write afterwards, each with its paper, marks, text and a link that opens the
+  paper. Each question has its own tick. A task's file can open at a set page.
 - A declared holiday can now either shift the day orders forward (as before) or cancel just its own
   day order, leaving the rest of the week on its usual rotation - the college does both, depending on
   the holiday. Calendar offers both when you declare one, and names the day order each choice affects;

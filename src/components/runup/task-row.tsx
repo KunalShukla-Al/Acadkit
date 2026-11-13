@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Check, Clock3 } from "lucide-react";
 import { StudyRefs } from "@/components/study/study-refs";
+import { TaskResources } from "@/components/runup/task-resources";
 import { SubjectTag } from "@/components/runup/shared";
 import { useSubjectByCode } from "@/components/runup/lookup";
 import { formatDate } from "@acadkit/core/dates";
@@ -8,18 +9,23 @@ import { eventById, formatMinutes, type DayItem, type RunupData } from "@/lib/ru
 import { cn, haptic } from "@/lib/utils";
 
 /**
- * A task with its tick. The tick is a real button (aria-pressed), so it
- * works from the keyboard on the Mac and with VoiceOver on the phone.
+ * A task with its tick, then what it comes with: its files, its videos and
+ * the past questions to write (task-resources.tsx). The tick is a real
+ * button (aria-pressed), so it works from the keyboard on the Mac and with
+ * VoiceOver on the phone.
  */
 export function TaskRow({
   item,
   plan,
+  ticked,
   onToggle,
   showFrom,
   showEvent = true,
 }: {
   item: DayItem;
   plan: RunupData;
+  /** Everything ticked: the task's questions keep their ticks beside its own. */
+  ticked: ReadonlySet<string>;
   onToggle: (taskId: string, done: boolean) => void;
   /** Say which day it was planned for: carried work and an event's list. */
   showFrom?: boolean;
@@ -64,7 +70,8 @@ export function TaskRow({
             </Link>
           )}
         </div>
-        {task.files.length > 0 && <StudyRefs refs={task.files.map((path) => ({ path }))} className="mt-2" />}
+        {task.files.length > 0 && <StudyRefs refs={task.files.map((path) => ({ path, page: task.pages?.[path] }))} className="mt-2" />}
+        <TaskResources task={task} ticked={ticked} onToggle={onToggle} />
       </div>
     </li>
   );

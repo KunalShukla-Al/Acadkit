@@ -13,6 +13,8 @@ import {
   parseDay,
   phase,
   planMonths,
+  pyqProgress,
+  pyqTickId,
   pyqGroups,
   pyqUnits,
   relativeDay,
@@ -273,5 +275,30 @@ describe("calendar", () => {
       [2026, 11],
       [2027, 0],
     ]);
+  });
+});
+
+describe("a task's past questions", () => {
+  const task: RunupTask = {
+    id: "2026-11-14#e2",
+    text: "Inverse Z",
+    subject_code: null,
+    event: null,
+    minutes: 150,
+    files: [],
+    pyqs: [
+      { key: "jul-2025-b25a", source: "Jul 2025", number: "B25a", marks: 8, text: "Long division", file: null, page: null },
+      { key: "may-2025-b25a", source: "May 2025", number: "B25a", marks: 8, text: "Residues", file: null, page: null },
+    ],
+  };
+
+  it("keep their ticks beside the task's, under an id no task can have", () => {
+    expect(pyqTickId(task.id, "jul-2025-b25a")).toBe("2026-11-14#e2>jul-2025-b25a");
+  });
+
+  it("count as written one by one, apart from the task's own tick", () => {
+    expect(pyqProgress(task, new Set([task.id]))).toEqual({ done: 0, total: 2 });
+    expect(pyqProgress(task, new Set(["2026-11-14#e2>may-2025-b25a"]))).toEqual({ done: 1, total: 2 });
+    expect(pyqProgress({ ...task, pyqs: undefined }, new Set())).toEqual({ done: 0, total: 0 });
   });
 });
