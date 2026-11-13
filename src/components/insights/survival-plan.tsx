@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BadgeCheck, CalendarClock, Share2 } from "lucide-react";
-import { Explain } from "@/components/explainer/explain";
 import { Badge, EmptyState } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
 import { useTone } from "@/hooks/useTone";
@@ -143,13 +142,9 @@ export function SurvivalPlan({
               ))}
             </div>
 
-            <Explain
-              what={{ kind: "day", plan, date: day.date }}
-              title={formatDate(day.date)}
-              className={cn("shrink-0 text-[11px] font-bold", day.free ? "text-good-deep" : "text-bad-deep")}
-            >
+            <span className={cn("shrink-0 text-[11px] font-bold", day.free ? "text-good-deep" : "text-bad-deep")}>
               {day.free ? say(VOICE.dayFree, tone) : say(VOICE.dayRequired, tone, day.requiredCount)}
-            </Explain>
+            </span>
           </section>
         ))}
       </div>

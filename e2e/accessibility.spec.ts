@@ -87,7 +87,7 @@ for (const scheme of ["light", "dark"] as const) {
       expect(await audit(page)).toEqual([]);
     });
 
-    test("the lines that come and go, and an explainer: Continue, Tomorrow offline, how a number is worked out", async ({ signedIn: page, isMobile }) => {
+    test("the lines that come and go: Continue, Tomorrow offline", async ({ signedIn: page, isMobile }) => {
       await page.request.post(`${MOCK_API}/reading_now`, {
         data: { device_id: "1234", path: "Operating_Systems/Unit 2 scheduling notes.pdf", page: 3, kind: isMobile ? "computer" : "phone", updated_at: "2026-10-07T01:55:00Z" },
       });
@@ -98,12 +98,6 @@ for (const scheme of ["light", "dark"] as const) {
 
       await page.goto("/settings");
       await expect(page.getByText(/^Today's files are on this device/)).toBeVisible();
-      expect(await audit(page)).toEqual([]);
-
-      await page.goto("/marks");
-      await page.getByRole("button", { name: "Predicted SGPA: how it's worked out" }).click();
-      await expect(page.getByRole("dialog").getByRole("figure")).toBeVisible();
-      await page.waitForTimeout(800);
       expect(await audit(page)).toEqual([]);
     });
   });

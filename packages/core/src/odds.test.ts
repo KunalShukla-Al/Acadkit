@@ -7,7 +7,6 @@ import {
   mulberry32,
   posterior,
 } from "./odds.ts";
-import { oddsWorking } from "./explain.ts";
 import { buildProjection } from "./projections.ts";
 import type { Assessment, Mark, Subject } from "./types.ts";
 
@@ -243,26 +242,5 @@ describe("kind shifts (v3)", () => {
     expect(run(new Map([["CT", 0.6]])).subjects[0].median).toBeGreaterThan(plain.subjects[0].median);
     // A shift for a kind this subject has none of changes nothing but the end-sem's share.
     expect(run(new Map([["Assignment:quick", 2]])).subjects[0].median).toBe(plain.subjects[0].median);
-  });
-});
-
-describe("the odds' working", () => {
-  it("says what the odds start from, how they're played out, and how many reach the target", () => {
-    const s = subject("os", { internal: 60, components: FOUR });
-    const o = odds([s], [mark("os", "FT-1", 12, 15), mark("os", "FT-2", 9, 15)]).subjects[0];
-    const w = oddsWorking(o, { name: "OS", banked: 21, draws: 2000 });
-    expect(w.value).toBe(o.pTarget);
-    expect(w.steps).toHaveLength(4);
-    expect(w.steps[0].say).toMatch(/^Weighing your 2 graded tests in OS with how you do across all your subjects, you're expected to take about \d+\.\d% of a test's marks\.$/);
-    expect(w.steps[1].say).toBe("With 21 banked, the app plays out what's left 2,000 times, each test and the end-sem drawn around that.");
-    expect(w.steps[2].say).toBe(`In the middle 80% of those, you finish between ${w.figures.p10} and ${w.figures.p90}, and half the time above ${w.figures.median}.`);
-    expect(w.steps[3].say).toMatch(/^(<1%|>99%|\d+%) of them end at [A-Z+]+ or better\.$/);
-  });
-
-  it("starts from your other subjects when nothing is graded", () => {
-    const a = subject("a", { internal: 60, components: FOUR });
-    const b = subject("b", { internal: 60, components: FOUR });
-    const o = odds([a, b], [mark("a", "FT-1", 12, 15)]).subjects[1];
-    expect(oddsWorking(o, { name: "TBVP", banked: 0 }).steps[0].say).toMatch(/^Nothing is graded in TBVP yet, so it starts from how you do across all your subjects/);
   });
 });

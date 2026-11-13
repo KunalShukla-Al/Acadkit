@@ -6,7 +6,6 @@ import {
   isAttended,
   isCounted,
 } from "./attendance.ts";
-import { attendanceWorking, skipsWorking } from "./explain.ts";
 import type { AttendanceRecord, PortalSnapshot, Subject } from "./types.ts";
 
 const subj = (id: string): Subject => ({
@@ -305,49 +304,5 @@ describe("semesterOnMedicalLeave", async () => {
     expect(semesterOnMedicalLeave([{ medical_leave: true }, { medical_leave: true }])).toBe(true);
     expect(semesterOnMedicalLeave([{ medical_leave: true }, { medical_leave: null }])).toBe(false);
     expect(semesterOnMedicalLeave([])).toBe(false);
-  });
-});
-
-describe("attendance's working", () => {
-  it("counts what you marked, and says how far from the bar it is", () => {
-    const w = attendanceWorking({ ...subj("a"), name: "OS" }, many("a", 7, 1));
-    expect(w.value).toEqual(computeSubjectAttendance({ ...subj("a"), name: "OS" }, many("a", 7, 1)));
-    expect(w.steps.map((s) => s.say)).toEqual([
-      "You've marked 8 classes of OS and attended 7.",
-      "That's 7 of 8, or 87.5%.",
-      "The bar is 75%; you're 12.5 points above it.",
-    ]);
-    expect(w.steps[1].sum).toBe("7 ÷ 8 × 100 = 87.5%");
-  });
-
-  it("starts from the portal and adds what you marked since", () => {
-    const snap: PortalSnapshot = { id: "s", device_id: "p", subject_code: "a", conducted: 40, absent: 12, percentage: 70, as_of: "2026-08-02", synced_at: "" };
-    const w = attendanceWorking({ ...subj("a"), name: "OS", medical_leave: true }, many("a", 3, 1), snap);
-    expect(w.steps.map((s) => s.say)).toEqual([
-      "On 2 Aug the portal had you at 28 of 40 classes in OS.",
-      "Since then you've marked 2 classes and attended 1.",
-      "That's 29 of 42, or 69.0%.",
-      "The bar is 65%, the bar on medical leave; you're 4.0 points above it.",
-    ]);
-    expect(w.steps[0].sum).toBe("40 − 12 absent = 28");
-  });
-});
-
-describe("skips' working", () => {
-  it("solves for the classes you can skip, rounding down", () => {
-    const w = skipsWorking(42, 50, 75);
-    expect(w.value).toEqual({ canBunk: 6, needToAttend: 0 });
-    expect(w.steps.map((s) => s.sum ?? s.say)).toEqual([
-      "100 × 42 ≥ 75 × (50 + b)",
-      "b ≤ (100 × 42 − 75 × 50) ÷ 75 = 6",
-      "A part of a class can't be skipped, so you can skip 6 classes.",
-    ]);
-  });
-
-  it("solves for the classes you must attend in a row, rounding up", () => {
-    const w = skipsWorking(30, 45, 75);
-    expect(w.value).toEqual({ canBunk: 0, needToAttend: 15 });
-    expect(w.steps[1].sum).toBe("n ≥ (75 × 45 − 100 × 30) ÷ (100 − 75) = 15");
-    expect(skipsWorking(29, 40, 75).steps[2].say).toBe("A part of a class doesn't count, so you need 4 classes in a row.");
   });
 });

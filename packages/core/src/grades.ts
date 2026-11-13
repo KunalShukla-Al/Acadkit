@@ -62,7 +62,7 @@ export const GRADE_COLORS: Record<Grade, string> = {
  * @see subjectOutlook, computeSgpa in plan.ts
  */
 
-/** Group marks by subject id (Marks, Grades' SGPA and the explainers share it). */
+/** Group marks by subject id (Marks and Grades' SGPA share it). */
 export function groupMarksBySubject(marks: Mark[]): Map<string, Mark[]> {
   const map = new Map<string, Mark[]>();
   for (const m of marks) {

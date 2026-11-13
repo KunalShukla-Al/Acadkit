@@ -30,7 +30,7 @@ export function Sheet({ open, onOpenChange, title, description, children, classN
             aria-hidden
             className="mx-auto mb-1 mt-3 h-1.5 w-12 shrink-0 rounded-full bg-ink/25 transition-colors"
           />
-          {/* Focusable, so a keyboard can scroll it even when nothing in it takes focus (an explainer's stills). */}
+          {/* Focusable, so a keyboard can scroll it even when nothing in it takes focus. */}
           <div
             tabIndex={0}
             className="flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50"

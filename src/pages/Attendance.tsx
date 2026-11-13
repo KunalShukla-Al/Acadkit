@@ -1,7 +1,5 @@
-import type { AttendanceRecord, PortalSnapshot } from "@acadkit/core/types";
 import { useAppStore } from "@/store/app";
 import { AttendanceApple } from "@/components/ios/attendance";
-import { Explain } from "@/components/explainer/explain";
 import { AttendanceHabitsCard } from "@/components/insights/habits-card";
 import { reconcile, type Reconciliation } from "@/lib/reconcile";
 import { useMemo, useState } from "react";
@@ -55,13 +53,10 @@ import { useProjectionReport } from "@/hooks/useProjectionReport";
 function SubjectRow({
   stats,
   recon,
-  explain,
   jumpedAt,
 }: {
   stats: SubjectAttendance;
   recon: Reconciliation | null;
-  /** What the percentage is worked out from, for its explainer. */
-  explain: { records: AttendanceRecord[]; snapshot?: PortalSnapshot };
   /** Set when a subject chip at the top jumped here: the row opens to show its detail. */
   jumpedAt?: number;
 }) {
@@ -120,13 +115,9 @@ function SubjectRow({
             <div className="flex items-center gap-3 p-4">
               <ShieldCheck className="h-5 w-5 shrink-0 text-good-deep" />
               <div>
-                <Explain
-                  what={{ kind: "skips", attended: stats.attended, total: stats.total, min: stats.min }}
-                  title={`Classes you can skip in ${stats.subject.short_name?.trim() || stats.subject.name}`}
-                  className="text-lg font-extrabold tabular"
-                >
+                <span className="text-lg font-extrabold tabular">
                   {stats.canBunk}
-                </Explain>
+                </span>
                 <p className="text-[11px] font-semibold text-muted">
                   {say(VOICE.skipBudget, tone, stats.canBunk)}
                 </p>
@@ -140,29 +131,14 @@ function SubjectRow({
                 )}
               />
               <div>
-                <Explain
-                  what={{ kind: "skips", attended: stats.attended, total: stats.total, min: stats.min }}
-                  title={`Classes you need in ${stats.subject.short_name?.trim() || stats.subject.name}`}
-                  className="text-lg font-extrabold tabular"
-                >
+                <span className="text-lg font-extrabold tabular">
                   {stats.needToAttend}
-                </Explain>
+                </span>
                 <p className="text-[11px] font-semibold text-muted">needed to reach {stats.min}%</p>
               </div>
             </div>
           </div>
 
-          {pct !== null && (
-            <div className="border-t px-4 py-2.5 text-xs font-semibold">
-              <Explain
-                what={{ kind: "attendance", subject: stats.subject, ...explain }}
-                title={`Attendance in ${stats.subject.short_name?.trim() || stats.subject.name}`}
-                className="text-muted"
-              >
-                How {pct.toFixed(1)}% is worked out
-              </Explain>
-            </div>
-          )}
 
           {/* The app's number is the portal's brought up to date, which means it is deliberately not the portal's. */}
           {recon && (
@@ -272,7 +248,6 @@ function AttendanceInner() {
    * Computed here rather than in the row because this is where the raw
    * records and snapshots are; the row only ever sees totals.
    */
-  const snapshotOf = useMemo(() => snapshotsByCode(snapshots ?? []), [snapshots]);
   const reconciliations = useMemo(() => {
     const byCode = snapshotsByCode(snapshots ?? []);
     const out = new Map<string, Reconciliation>();
@@ -548,10 +523,6 @@ function AttendanceInner() {
             key={s.subject.id}
             stats={s}
             recon={reconciliations.get(s.subject.id) ?? null}
-            explain={{
-              records: (attendance ?? []).filter((r) => r.subject_id === s.subject.id),
-              snapshot: snapshotOf.get(s.subject.code.trim().toUpperCase()),
-            }}
             jumpedAt={jumped?.id === s.subject.id ? jumped.at : undefined}
           />
         ))}

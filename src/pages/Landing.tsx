@@ -93,7 +93,7 @@ export default function Landing({ onAuth }: { onAuth: (mode: AuthMode) => void }
                 height={844}
                 // The page's largest element on a phone: fetch it first (index.html preloads it for signed-out visitors).
                 fetchPriority="high"
-                alt="AcadKit on a phone: Today's sentence and classes, Grades and how its predicted SGPA is worked out, marking a class from Plan's calendar, the days you can skip, and Study."
+                alt="AcadKit on a phone: Today's sentence and classes, Grades, marking a class from Plan's calendar, the days you can skip, and Study."
                 className="block h-auto w-full"
               />
             </div>

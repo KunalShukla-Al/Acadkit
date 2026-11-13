@@ -9,6 +9,8 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Removed
 
+- The animated explainers: tapping a number no longer plays how it was worked out, and the captions,
+  the voice and "Make a video" go with it. The numbers themselves are unchanged.
 - Autopilot, the class recorder, flashcards, and Siri's questions with the Leave and Screenshot
   Shortcuts. In a month of use they had read one notice, recorded no lecture, reviewed no card and
   marked nothing absent. The share sheet, the alarm and Focus Shortcuts, search and Everything

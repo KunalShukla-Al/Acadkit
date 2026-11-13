@@ -8,7 +8,6 @@ import { motion } from "motion/react";
 import { Pencil, Plus, Share2, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Dot, Skeleton } from "@/components/ui/misc";
-import { Explain } from "@/components/explainer/explain";
 import { SgpaDial } from "@/components/viz/sgpa-dial";
 import { GradeBadge } from "@/components/viz/grade-badge";
 import { AnimatedNumber } from "@/components/viz/animated-number";
@@ -314,9 +313,9 @@ function MarksInner() {
                 {result.countedSubjects === 0 ? (
                   "Add internal marks to see your predicted SGPA"
                 ) : (
-                  <Explain what={{ kind: "sgpa", result }} title="Predicted SGPA">
+                  <span>
                     Predicted from {result.countedSubjects} subject{result.countedSubjects > 1 ? "s" : ""} · {result.totalCredits} credits
-                  </Explain>
+                  </span>
                 )}
               </p>
             </section>

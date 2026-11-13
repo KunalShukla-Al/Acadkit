@@ -3,7 +3,7 @@
  *
  * Starts the mock backend (sample data only - nobody's real marks, and the
  * committed fixture as the study folder), signs in, walks the app in a
- * phone-sized browser (Today, Attendance, Marks and an explainer, the
+ * phone-sized browser (Today, Attendance, Marks, the
  * corner opening onto the calendar and marking a class, the days you can
  * skip, Study), and stitches the screenshots into public/demo.webp, an
  * animated WebP (plays everywhere, a fraction of a GIF's size). Needs
@@ -102,13 +102,8 @@ try {
   await page.goto(`${APP}/attendance`);
   await shot(2200);
 
-  // Marks, and how its predicted SGPA was worked out (stills, with reduced motion).
   await page.goto(`${APP}/marks`);
   await shot(2000);
-  await page.getByRole("button", { name: "Predicted SGPA: how it's worked out" }).first().click();
-  await page.getByRole("dialog").getByRole("figure").waitFor();
-  await shot(2600);
-  await page.keyboard.press("Escape");
 
   // The corner, and marking a class from its calendar.
   await page.goto(`${APP}/`);
