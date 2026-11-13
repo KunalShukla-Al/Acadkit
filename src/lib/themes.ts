@@ -1,7 +1,7 @@
 /** Theme identity, kept free of side effects. */
 import tokens from "@/design/tokens.json";
 
-export type ThemeName = "brutalist" | "apple" | "oled";
+export type ThemeName = "brutalist" | "oled";
 
 /** Themes that actually exist in the stylesheet: the ones tokens.json defines. */
 export const THEME_NAMES = Object.keys(tokens.themes) as ThemeName[];

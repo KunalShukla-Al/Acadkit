@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAppStore } from "@/store/app";
-import { SubjectApple } from "@/components/ios/subject";
 import { warmViewer } from "@/components/viewer/loaders";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
@@ -47,8 +45,6 @@ const norm = (code: string) => code.replace(/\s/g, "").toUpperCase();
 
 /** Everything the app knows about one subject, on one page: attendance, marks and what's next, the syllabus units, every file of the subject by kind and unit (tags from scripts/lib/tags.mjs), and, folded below them, the topics past papers keep asking with where to read them. */
 export default function Subject() {
-  const themeName = useAppStore((s) => s.themeName);
-  if (themeName === "apple") return <SubjectApple />;
   return <SubjectInner />;
 }
 

@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAppStore } from "@/store/app";
-import { TimetableApple } from "@/components/ios/timetable";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarPlus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,8 +26,6 @@ function useDaySlideDirection(day: number) {
 }
 
 export default function Timetable() {
-  const themeName = useAppStore((s) => s.themeName);
-  if (themeName === "apple") return <TimetableApple />;
   return <TimetableInner />;
 }
 

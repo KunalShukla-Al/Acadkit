@@ -1,11 +1,9 @@
 import { GettingStartedCard } from "@/components/getting-started";
 import { Greeting } from "@/components/home/greeting";
 import { TodayCard } from "@/components/home/today-card";
-import { TodayApple } from "@/components/ios/today";
 import { DeadlinesCard } from "@/components/home/deadlines-card";
 import { SuggestionsCard } from "@/components/viz/suggestions-card";
 import { ContinueBanner } from "@/components/continue-banner";
-import { useAppStore } from "@/store/app";
 
 /**
  * The first tab: a greeting, the day's classes, then what's due. Above
@@ -13,8 +11,6 @@ import { useAppStore } from "@/store/app";
  * continue, an undo), each saying nothing when there's nothing.
  */
 export default function Today() {
-  const themeName = useAppStore((s) => s.themeName);
-  if (themeName === "apple") return <TodayApple />;
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Greeting />
