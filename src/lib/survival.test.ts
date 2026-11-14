@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { buildSurvivalPlan, classesNeeded, survivalPlanFrom, type SubjectState } from "@/lib/survival";
-import { dayWorking } from "@/lib/dayWorking";
 import type { Subject, TimetableSlot } from "@acadkit/core/types";
 
 function subject(id: string, code = id.toUpperCase()): Subject {
@@ -301,38 +300,5 @@ describe("classes already marked", () => {
     ];
     const plan = survivalPlanFrom([a], records, [], [slot("a", 1)], EFF_MAP, "2026-09-01");
     expect(plan.subjects[0]).toMatchObject({ attended: 1, held: 1, remaining: 1 });
-  });
-});
-
-describe("a day's working", () => {
-  // DSA on day orders 1 and 2, OS on day order 1: 9/10 and 6/8 held.
-  const plan = () =>
-    buildSurvivalPlan([state("dsa", 9, 10), state("os", 6, 8)], [slot("dsa", 1), slot("dsa", 2, "10:00:00"), slot("os", 1, "11:00:00")], EFF_MAP, "2026-09-01");
-
-  it("says, class by class, why a day is or isn't free", () => {
-    const w = dayWorking(plan(), "2026-09-01")!;
-    expect(w.value).toEqual({ free: false });
-    expect(w.steps.map((s) => s.say)).toEqual([
-      "You need 2 of the 4 classes of DSA left, so you can miss the first 2. The one at 09:00 is the 1st, one of those.",
-      "You need 2 of the 2 classes of OS left, so you can't miss any. The one at 11:00 is the 1st, so it's needed.",
-      "1 class that day is needed, so it isn't free.",
-    ]);
-    expect(w.steps[1].sum).toBe("1 > 0");
-    expect(w.figures).toEqual({ classes: 2, required: 1, class0: 0, class1: 1 });
-  });
-
-  it("counts a subject's classes across the days before", () => {
-    const w = dayWorking(plan(), "2026-09-02")!;
-    expect(w.value).toEqual({ free: true });
-    expect(w.steps[0].say).toBe("You need 2 of the 4 classes of DSA left, so you can miss the first 2. The one at 10:00 is the 2nd, one of those.");
-    expect(w.steps[w.steps.length - 1].say).toBe("No class that day is needed, so the day is free.");
-    expect(dayWorking(plan(), "2026-12-25")).toBeNull();
-  });
-});
-
-describe("a day's working, with a subject safe already", () => {
-  it("says none of its classes is needed", () => {
-    const plan = buildSurvivalPlan([state("dsa", 9, 10)], [slot("dsa", 1)], EFF_MAP, "2026-09-01");
-    expect(dayWorking(plan, "2026-09-01")!.steps[0].say).toBe("You don't need any of the 2 classes of DSA left, so you can miss them all. The one at 09:00 is the 1st, one of those.");
   });
 });

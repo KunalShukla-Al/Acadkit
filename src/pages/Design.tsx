@@ -1,20 +1,6 @@
 import { useMemo, useState } from "react";
 import { BookOpen, Clock, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { attendanceWorking, oddsWorking, planWorking, sgpaWorking, skipsWorking } from "@acadkit/core/explain";
-import { gradeOdds } from "@acadkit/core/odds";
-import { computeSgpa, solveSubjectPlan } from "@acadkit/core/plan";
-import { buildProjection } from "@acadkit/core/projections";
-import type { AttendanceRecord, Subject } from "@acadkit/core/types";
-import { ExplainerPlayer } from "@/components/explainer/player";
-import { AttendanceScene } from "@/components/explainer/scenes/attendance";
-import { DayScene } from "@/components/explainer/scenes/day";
-import { MarksScene } from "@/components/explainer/scenes/marks";
-import { OddsScene } from "@/components/explainer/scenes/odds";
-import { SgpaScene } from "@/components/explainer/scenes/sgpa";
-import { SkipsScene } from "@/components/explainer/scenes/skips";
-import { dayWorking } from "@/lib/dayWorking";
-import { buildSurvivalPlan } from "@/lib/survival";
 import { Empty } from "@/components/primitives/empty";
 import { Figure } from "@/components/primitives/figure";
 import { Line } from "@/components/primitives/line";
@@ -129,72 +115,6 @@ function GeneratedTheme() {
  * the theme the app is in: what the screens are built from, and what the
  * screenshot tests photograph.
  */
-/** A sample subject for the explainers: OS, 42 of 50 classes attended. */
-const OS: Subject = { id: "os", device_id: "", code: "21CSC202J", name: "Operating Systems", short_name: "OS", credits: 4, type: "theory", faculty: null, color_hex: "#000" };
-const OS_CLASSES: AttendanceRecord[] = Array.from({ length: 50 }, (_, i) => ({
-  id: `os-${i}`,
-  device_id: "",
-  subject_id: "os",
-  date: `2026-08-${String((i % 28) + 1).padStart(2, "0")}`,
-  start_time: "08:00",
-  end_time: "08:50",
-  status: i < 42 ? "present" : "absent",
-}));
-
-/** A day for the days-off explainer: DSA at 9 with classes to spare, OS at 11 with none. */
-const DSA: Subject = { ...OS, id: "dsa", code: "21CSC201J", name: "Data Structures and Algorithms", short_name: "DSA" };
-const slot = (subject_id: string, start_time: string) => ({ id: subject_id, device_id: "", subject_id, day_order: 1, start_time, end_time: start_time, room: null });
-const DAY_PLAN = buildSurvivalPlan(
-  [
-    { subject: DSA, attended: 9, held: 10 },
-    { subject: OS, attended: 6, held: 8 },
-  ],
-  [slot("dsa", "09:00:00"), slot("os", "11:00:00")],
-  { "2026-11-09": 1, "2026-11-16": 1 },
-  "2026-11-09"
-);
-
-/** A plan for the marks explainer: DSA, 60/40, 7 banked after a 2 of 15 in CT-1, aiming for an A. */
-const DSA_PLAN = solveSubjectPlan(
-  {
-    ...DSA,
-    assessment: {
-      internal: 60,
-      complete: false,
-      components: [
-        { key: "Assignment", label: "Assignment", type: "Assignment", max: 5 },
-        { key: "CT-1", label: "CT-1", type: "CT", max: 15 },
-        { key: "CT-2", label: "CT-2", type: "CT", max: 15 },
-        { key: "Lab", label: "Lab", type: "Lab", max: 10 },
-        { key: "Model", label: "Model", type: "CT", max: 15 },
-      ],
-    },
-  },
-  [
-    { id: "m1", device_id: "", subject_id: "dsa", component_type: "Assignment", label: "Assignment", marks_obtained: 5, max_marks: 5, is_external: false },
-    { id: "m2", device_id: "", subject_id: "dsa", component_type: "CT", label: "CT-1", marks_obtained: 2, max_marks: 15, is_external: false },
-  ],
-  "A"
-);
-
-/** The SGPA and odds explainers' semester: DSA at 5 of 5 and 12 of 15, OS at 12 and 9 of 15 in two FTs. */
-const SEM_SUBJECTS: Subject[] = [
-  DSA_PLAN.subject,
-  { ...OS, assessment: { internal: 60, complete: false, components: ["FT-1", "FT-2", "FT-3", "FT-4"].map((l) => ({ key: l, label: l, type: "CT" as const, max: 15 })) } },
-];
-const SEM_MARKS = [
-  { id: "m1", device_id: "", subject_id: "dsa", component_type: "Assignment" as const, label: "Assignment", marks_obtained: 5, max_marks: 5, is_external: false },
-  { id: "m2", device_id: "", subject_id: "dsa", component_type: "CT" as const, label: "CT-1", marks_obtained: 12, max_marks: 15, is_external: false },
-  { id: "m3", device_id: "", subject_id: "os", component_type: "CT" as const, label: "FT-1", marks_obtained: 12, max_marks: 15, is_external: false },
-  { id: "m4", device_id: "", subject_id: "os", component_type: "CT" as const, label: "FT-2", marks_obtained: 9, max_marks: 15, is_external: false },
-];
-const SEM_SGPA = computeSgpa(
-  SEM_SUBJECTS,
-  new Map(SEM_SUBJECTS.map((s) => [s.id, SEM_MARKS.filter((m) => m.subject_id === s.id)]))
-);
-const OS_PROJECTION = buildProjection(SEM_SUBJECTS, [], [], SEM_MARKS, [], "2026-09-26", { start: "2026-07-21", end: "2026-11-18" }, 8.5).gradeProjections.find((p) => p.subject.id === "os")!;
-const OS_ODDS = gradeOdds([OS_PROJECTION], 8.5).subjects[0];
-
 export default function Design() {
   const [sheet, setSheet] = useState(false);
   const [on, setOn] = useState(true);
@@ -267,34 +187,6 @@ export default function Design() {
         >
           <p className="text-sm text-muted">A sheet holds one decision, with its actions at the foot.</p>
         </Sheet>
-      </Section>
-
-      <Section title="Explainers">
-        <div className="card p-5">
-          {/* At rest on its last step, so the catalog's pictures don't catch it moving. */}
-          <ExplainerPlayer title="Attendance in OS" working={attendanceWorking(OS, OS_CLASSES)} scene={AttendanceScene} autoPlay={false} initialStep={2} />
-        </div>
-        <div className="card p-5">
-          <ExplainerPlayer title="Classes you can skip in OS" working={skipsWorking(42, 50, 75)} scene={SkipsScene} autoPlay={false} initialStep={2} />
-        </div>
-        <div className="card p-5">
-          <ExplainerPlayer title="Monday 9 November" working={dayWorking(DAY_PLAN, "2026-11-09")!} scene={DayScene} autoPlay={false} initialStep={2} />
-        </div>
-        <div className="card p-5">
-          <ExplainerPlayer title="Marks needed for an A in DSA" working={planWorking(DSA_PLAN)} scene={MarksScene} autoPlay={false} initialStep={3} />
-        </div>
-        <div className="card p-5">
-          <ExplainerPlayer title="Predicted SGPA" working={sgpaWorking(SEM_SGPA)} scene={SgpaScene} autoPlay={false} initialStep={2} />
-        </div>
-        <div className="card p-5">
-          <ExplainerPlayer
-            title="The odds in OS"
-            working={oddsWorking(OS_ODDS, { name: "OS", banked: OS_PROJECTION.plan.banked })}
-            scene={OddsScene}
-            autoPlay={false}
-            initialStep={3}
-          />
-        </div>
       </Section>
 
       <Section title="Theme generator">

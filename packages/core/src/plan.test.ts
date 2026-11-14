@@ -10,7 +10,6 @@ import {
   inferType,
   solveSubjectPlan,
 } from "./plan.ts";
-import { planWorking, sgpaWorking } from "./explain.ts";
 import type { Assessment, Deadline, Grade, Mark, PlannedComponent, Subject } from "./types.ts";
 
 const plan = (rows: Array<[string, number]>): PlannedComponent[] =>
@@ -883,66 +882,5 @@ describe("a deadline that names a component you already planned", () => {
     const p = solveSubjectPlan(full, [], "A", { deadlines: [dl("LLJ-1", "2026-10-06", 2)] });
     expect(p.components.find((c) => c.label === "LLJ-1")!.max).toBe(10);
     expect(p.pool).toBe(100);
-  });
-});
-
-describe("the plan's working", () => {
-  const s = subject({ internal: 60, components: FULL });
-
-  it("walks from what's banked to the share of everything left the target needs", () => {
-    const p = solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 2, 15)], "A");
-    const w = planWorking(p);
-    expect(w.value).toEqual({ needed: 64, requiredRate: p.requiredRate, status: "push" });
-    expect(w.steps.map((x) => x.say)).toEqual([
-      "You've banked 7 of the 20 marks played so far in Data Structures.",
-      "A starts at 71, so you need 64 more.",
-      "80 marks are still to play for: 40 in tests and 40 in the end-sem.",
-      "That's 80.0% of everything left.",
-    ]);
-    expect(w.steps.map((x) => x.sum)).toEqual([undefined, "71 − 7 = 64", "40 + 40 = 80", "64 ÷ 80 × 100 = 80.0%"]);
-  });
-
-  it("with the end-sem assumed, counts it at that and asks the share of the tests left", () => {
-    const p = solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 2, 15)], "A", { assumedExternalPct: 80 });
-    const w = planWorking(p);
-    expect(w.steps.map((x) => x.say)).toEqual([
-      "You've banked 7 of the 20 marks played so far in Data Structures.",
-      "A starts at 71, so you need 64 more.",
-      "You expect 32 of the end-sem's 40, which leaves 32 for the tests.",
-      "40 marks are left in the tests.",
-      "That's 80.0% of the tests left.",
-    ]);
-    expect(w.steps.map((x) => x.sum)).toEqual([undefined, "71 − 7 = 64", "64 − 32 = 32", undefined, "32 ÷ 40 × 100 = 80.0%"]);
-    expect(w.figures).toMatchObject({ banked: 7, needed: 32, pool: 40, assumed: 32 });
-    const covered = planWorking(solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 15, 15)], "C", { assumedExternalPct: 80 }));
-    expect(covered.steps[2].say).toBe("You expect 32 of the end-sem's 40, which covers it: C holds even at zero in the tests left.");
-  });
-
-  it("says when the target is banked already, or out of reach", () => {
-    const banked = planWorking(solveSubjectPlan(s, [mark("Assignment", 5, 5), mark("CT-1", 15, 15), mark("CT-2", 15, 15), mark("Lab", 10, 10), mark("Model", 15, 15)], "C"));
-    expect(banked.steps[1].say).toBe("C starts at 50, and you've banked that already: it holds even at zero from here.");
-    const gone = planWorking(solveSubjectPlan(s, [mark("Assignment", 0, 5), mark("CT-1", 0, 15), mark("CT-2", 0, 15), mark("Lab", 0, 10), mark("Model", 0, 15)], "O"));
-    expect(gone.steps[gone.steps.length - 1].say).toBe("Even full marks on all of it come to 40, short of 91.");
-  });
-});
-
-describe("the SGPA's working", () => {
-  it("adds each subject's points times credits and divides by the credits", () => {
-    const a = subject({ internal: 60, components: FULL }, { id: "a", name: "DSA", credits: 4 });
-    const b = subject({ internal: 60, components: FULL }, { id: "b", name: "OS", credits: 3 });
-    const c = subject({ internal: 60, components: FULL }, { id: "c", name: "TBVP", credits: 4 });
-    const marks = new Map([
-      ["a", [{ ...mark("CT-1", 15, 15), subject_id: "a" }]],
-      ["b", [{ ...mark("CT-1", 9, 15), subject_id: "b" }]],
-    ]);
-    const result = computeSgpa([a, b, c], marks);
-    const w = sgpaWorking(result);
-    expect(w.value).toBe(result.sgpa);
-    expect(w.steps.map((x) => x.sum ?? x.say)).toEqual([
-      "10 × 4 = 40",
-      "6 × 3 = 18",
-      `58 ÷ 7 = ${result.sgpa!.toFixed(2)}`,
-      "1 subject without marks yet, or without credits, doesn't count.",
-    ]);
   });
 });

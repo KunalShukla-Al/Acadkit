@@ -28,7 +28,7 @@ Where each part is described:
 
 - Foundations: Core, Accounts and data, Data flow.
 - The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Run-up,
-  File viewer, Show your work, Continue, PWA and iOS.
+  File viewer, Continue, PWA and iOS.
 - The Mac: Study files (the sync, the menu bar), Night shift,
   Everything connected; the Quick Action is under Continue.
 - Outside the app: Feeds (Shortcuts, the calendar), Portal sync.
@@ -122,8 +122,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   Run-up chip; the Mac's sidebar holds the day order and the same chip above the five.
 - Things move only on change: no page slides or fades in, no card fades up, no ring draws from
   zero and no list staggers in on arrival (each starts with `initial={false}`). What moves is
-  what changed: a number that updates, a tab's pill, a row you open, a sheet, the corner, the
-  explainers.
+  what changed: a number that updates, a tab's pill, a row you open, a sheet, the corner.
 - Today (`src/pages/Today.tsx`, at `/`) is the day and what's due. Its title is a greeting by the
   hour (`Greeting`, "you're awake, kunal"), under a struck-out "welcome back, scholar" in the
   brutalist voice. Its card (`TodayCard`) shows
@@ -140,7 +139,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   Skips, History and Settings burst out of it as tilted
   stickers, kept clear of the bars. Escape or a tap elsewhere closes it.
 - Attendance (`/attendance`) and Marks (`/marks`) each lead with their number, the overall gauge
-  and the predicted SGPA (tap it for its explainer), then Now and Forecast, Marks and Targets.
+  and the predicted SGPA, then Now and Forecast, Marks and Targets.
 - Study (`/study`) is the study folder: its folders, search inside files, and the
   viewer that opens over it with its Connected line. Opened from a link with
   nothing behind it, the viewer closes onto Study (`studyPath`). Under the
@@ -168,7 +167,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   that day's sizes.
 - `e2e/accessibility.spec.ts` runs axe (WCAG 2.1 A and AA; serious and critical fail) on every
   tab and every page the corner and the top bar open, light and dark, with the corner open, with
-  Continue and Tomorrow offline's hint showing, with an explainer's sheet open, and at midday,
+  Continue and Tomorrow offline's hint showing, and at midday,
   when some of the day's classes are over. A sheet's body takes focus, so a keyboard can scroll it even when
   nothing in it does.
 - Old links (notifications, bookmarks, the Shortcuts) can still name the old screens, Grades,
@@ -306,79 +305,6 @@ code and images.
   prefetch on touch.
 - Office files open as the Mac's conversion, made at sync (`scripts/lib/renditions.mjs`). Until
   it exists, a .docx uses the browser's reader and the rest offer the download.
-
-## Show your work
-
-Every number the app works out can show how (`packages/core/src/working.ts`). A function keeps
-its signature, and its `…Working` twin (`packages/core/src/explain.ts`, and `src/lib/dayWorking.ts`
-for Skips' days) returns the same value with its working; they live apart from the modules
-they explain so only the explainers load them, not the screens. A working is steps, each a
-sentence that reads on its own (the explainer's caption) and its sum when it has one, plus the
-figures the steps used, by name, for an explainer to draw. `gradeWorking` is the first: where a
-total falls in the grade table, and the points that grade is worth.
-
-- `attendanceWorking`: where the count comes from (the portal up to its date and what you marked
-  since, or what you marked), the percentage, and how far it is from the subject's bar.
-- `skipsWorking`: the inequality that keeps you at the bar, solved for the classes you can skip
-  (rounded down) or must attend in a row (rounded up).
-- `dayWorking` (`src/lib/survival.ts`): why a day is free or not, class by class: how many of that
-  subject's classes left you need, how many you can miss (the earliest), and where this one falls.
-- `planWorking`: marks needed: what's banked, where the target grade starts, what's still to play
-  for (tests and the end-sem), the share of it the target needs, and what that asks of the next test.
-- `sgpaWorking`: each subject's grade points times its credits, added up and divided by the credits.
-- `oddsWorking`: the ability the odds start from (your graded tests, weighed with your other
-  subjects), the simulation of what's left, where the totals land, and how many reach the target.
-
-Explainers play a working as a short animated scene (`src/components/explainer`, `src/lib/explainer.ts`).
-The player draws a scene's SVG on a 16:9 stage (320 × 180 units) with the step's sentence and sum
-under it, and steps through on its own: each step stays up 2.5 to 9 seconds, long enough to read,
-a step with a sum a beat longer. Back, Play or Pause, Next and a dot per step take over. A scene
-is a component of the working's figures and the step, and moves its shapes with Motion's spring
-(`SCENE_TRANSITION`, with a short fade for opacity), the same in every scene. Scenes start without an entrance (`initial={false}`),
-so a player at rest shows its step as it ends; `/design` has each scene that way.
-
-- Captions sit in a strip of their own under the scene, so they never cover it, and bring the
-  step's sentence out a word at a time while it plays, at the pace the step's time allows (45 ms a
-  character after a beat; `captionAt`); paused, the whole sentence. They keep their own time in a
-  component of their own, so their ticks don't redraw the scene. CC turns them off, remembered on
-  the device (`acadkit:captions`); the sentence under the stage stays for screen readers.
-- The voice (`src/lib/speech.ts`) is off unless turned on, and remembered (`acadkit:voice`). It is
-  the browser's speech synthesis with a voice that runs on the device where there is one (Indian
-  English first, then British, then American), so nothing is sent anywhere to be spoken. With it,
-  a step moves on a beat after its sentence is said, and captions follow the spoken words; a
-  browser that never says it's done moves on anyway at twice the step's reading time.
-- "Make a video" (where `MediaRecorder` can record a canvas: MP4 where it can, else WebM) plays
-  the explainer from the start at reading pace, with the controls held, and draws each frame onto
-  a 1280 × 900 canvas (`src/lib/explainerVideo.ts`): the scene, copied with its computed colours
-  and fonts written on and Motion's inline styles kept, and the step's sentence under it. The
-  video is silent, so the sentence is always drawn in. "Save video" then saves it, a second tap,
-  since iOS opens the share sheet only from one. An SVG drawn as an image can't use the page's
-  web fonts, so its text falls back to the system's.
-- Tap a number to see its working (`Explain` in `src/components/explainer/explain.tsx`): it's
-  underlined, dotted, and opens a sheet with its explainer. The working and the scenes load only
-  then (`explainer-for.tsx`), so the pages don't carry them. On Marks, the predicted SGPA;
-  under Attendance, a subject's classes to spare and to make up (skips) and "How 84.0% is worked
-  out" (attendance); under Skips, each day's free or needed label (a day); under Marks, the
-  Targets view's marks a grade needs (marks needed). Grade odds have an explainer but no number
-  on screen yet.
-- Where the device asks for reduced motion, the player is stills instead (`ExplainerStills`):
-  every step as a still of its scene, with its sentence and sum under it, to read at your own
-  pace. Nothing moves and nothing plays on its own.
-
-- Attendance (`scenes/attendance.tsx`): the classes as squares, attended ones filled (two rows of
-  30 at most; past 60 classes a square is several); then a bar filling to the percentage; then the
-  subject's bar marked on it, the fill turning good or bad.
-- Skips (`scenes/skips.tsx`): the inequality, then its answer, then the classes it comes to as
-  squares, outlined for ones you can skip, filled for ones you must attend (15 drawn at most).
-- A day (`scenes/day.tsx`): the day's classes as blocks, each coloured in as its step comes,
-  needed or one you can miss; the last step says whether it's a day off. `dayWorking` gives each
-  class's flag as a figure (`class0`, `class1`, …).
-- Marks needed (`scenes/marks.tsx`): on a 0–100 scale, what's banked; the target's line and the
-  gap to it; what's still to play for, dashed; and the part of it the target needs, filled.
-- SGPA (`scenes/sgpa.tsx`): each subject a bar as wide as its credits and as tall as its grade
-  points, in as its step comes; then the SGPA, their credit-weighted level, as a line across them.
-- Odds (`scenes/odds.tsx`): the share of a test's marks you're expected to take; what's banked;
-  the middle 80% of where the runs finish and their median; the target's line and the share past it.
 
 ## Continue
 

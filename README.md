@@ -8,7 +8,7 @@ study files, on my phone and my Mac. It's a PWA that syncs across devices, and m
 heavy work: it mirrors my study folder, indexes it for search, and links notes, slides and past
 papers that are about the same thing.
 
-<p align="center"><img src="public/demo.webp" width="300" alt="AcadKit on a phone: Today's classes and deadlines, Attendance, Marks and how its predicted SGPA is worked out, the corner opening onto the calendar and marking a class, the days you can skip, and Study" /></p>
+<p align="center"><img src="public/demo.webp" width="300" alt="AcadKit on a phone: Today's classes and deadlines, Attendance, Marks, the corner opening onto the calendar and marking a class, the days you can skip, and Study" /></p>
 
 ## Five tabs
 
@@ -34,10 +34,6 @@ papers that are about the same thing.
 The **Run-up**, a day-by-day plan to the end-sems, is a chip in the top bar that counts the day's
 targets. The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the rest:
 the calendar, the days I can skip, past semesters and settings.
-
-Tap a number (classes to spare, marks needed, the predicted SGPA) and it plays how it was worked
-out, step by step, with captions and an optional voice; it saves as a video
-([how](docs/show-your-work.md)).
 
 ## On the Mac
 

@@ -1,4 +1,3 @@
-import { Explain } from "@/components/explainer/explain";
 import { motion } from "motion/react";
 import { CalendarClock, Check, Hourglass, Lock, Plus, TriangleAlert, UserX } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -350,9 +349,9 @@ function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
   // How much of the ask the results you're waiting on already cover.
   const covered = o.pending > 0 ? o.actual.needed - plan.needed : 0;
   const needed = (
-    <Explain what={{ kind: "plan", plan }} title={`Marks needed for ${grade} in ${p.subject.short_name?.trim() || p.subject.name}`} className="font-bold tabular">
+    <span className="font-bold tabular">
       {need(plan.needed)}
-    </Explain>
+    </span>
   );
   return (
     <>
