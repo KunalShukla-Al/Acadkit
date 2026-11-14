@@ -16,8 +16,6 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": [
-    "scripts/portal-sync/portal-sync.js",
-    "scripts/portal-sync/globals.d.ts",
     "scripts/study-index/*.mjs"
   ]
 }

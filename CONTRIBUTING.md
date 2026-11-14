@@ -28,9 +28,9 @@ edge functions and the Mac. The rules they share live in `packages/core`.
 | `src/` | The app: `pages/` for screens, `components/`, `api/` for every read and write to Supabase, `lib/` for app logic, `design/` for the tokens | The browser |
 | `packages/core/` | The rules: dates, the Day Order calendar, attendance, grades and CGPA, the marks plan. Plain TypeScript, imported as `@acadkit/core/<module>` | The app, the edge functions and the Mac |
 | `supabase/migrations/` | The database, one numbered file per change | Postgres |
-| `supabase/functions/` | Edge functions: `send-reminders`, `study-search`, `portal-ingest` | Deno, on Supabase |
+| `supabase/functions/` | Edge functions: `send-reminders`, `study-search` | Deno, on Supabase |
 | `supabase/tests/` | pgTAP tests of row-level security | A local Supabase |
-| `scripts/` | The Mac's side: the sync, the night shift, the evals. Their shared parts are in `scripts/lib/`, the launch agents, menu bar and Quick Action in `scripts/mac/` | Node, on the Mac |
+| `scripts/` | The Mac's side: the sync, the night shift, the evals. Their shared parts are in `scripts/lib/`, the launch agents and Quick Action in `scripts/mac/` | Node, on the Mac |
 | `scripts/embedder/` | The Mac's copy of the search model. A package of its own (`npm ci --prefix scripts/embedder`), so CI and Vercel never install its 290 MB | Node, on the Mac |
 | `scripts/dev-mock/` | The mock backend behind `dev:mock` and the e2e tests | Node |
 | `e2e/` | Playwright specs, their fixtures, a small study folder (`study-fixture/`) and the screen pictures | A browser, against the mock |
@@ -45,7 +45,7 @@ edge functions and the Mac. The rules they share live in `packages/core`.
 - **A read or write** goes in `src/api/`, in the file for its area. Pages and components never
   import the Supabase client; only the hooks for signing in and live updates do.
 - **A Mac job** is a script in `scripts/` with its logic in `scripts/lib/`, where the tests
-  are. It reports how it went through `scripts/lib/jobs.mjs`, so Study and the menu bar can say.
+  are. It reports how it went through `scripts/lib/jobs.mjs`, so Study can say.
 - **An edge function** that imports core deploys with `--use-api`, because core sits outside
   `supabase/`.
 

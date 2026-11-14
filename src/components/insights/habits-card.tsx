@@ -13,8 +13,7 @@ const pct = (x: number) => `${Math.round(x)}%`;
 
 /**
  * Which kinds of assessment you score higher or lower on than your usual in
- * the same subject - what the grade odds now take into account for the
- * tests still to come (habits.ts, odds.ts v3).
+ * the same subject (habits.ts).
  */
 export function MarkHabitsCard() {
   const { data: archives } = useArchives();

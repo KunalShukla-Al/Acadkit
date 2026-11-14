@@ -386,14 +386,11 @@ deno_version = 2
 
 # Who may call each function. The deploy Action (.github/workflows/deploy.yml) reads these.
 # study-search takes a signed-in user's JWT; the rest check their own credential: the cron
-# secret, the bookmarklet's HMAC, the feed token.
+# secret.
 [functions.study-search]
 verify_jwt = true
 
 [functions.send-reminders]
-verify_jwt = false
-
-[functions.portal-ingest]
 verify_jwt = false
 
 [analytics]

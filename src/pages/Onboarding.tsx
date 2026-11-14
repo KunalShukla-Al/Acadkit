@@ -15,7 +15,7 @@ import { looksLikeHtml, parsePastedPortal, pasteHint, type PastedPortal } from "
 import { cn, haptic } from "@/lib/utils";
 import { useAppStore } from "@/store/app";
 import { setupAccount } from "@/api/settings";
-import { importPortalData } from "@/api/portal";
+import { importPortalAttendance } from "@/api/portal";
 
 type Step = "about" | "subjects";
 type Source = "portal" | "preset" | "empty";
@@ -125,7 +125,7 @@ export default function Onboarding() {
       });
       // The attendance you pasted to get your subjects is worth keeping.
       if (source === "portal" && pasted) {
-        await importPortalData(pin, { attendance: pasted.attendance, marks: [] });
+        await importPortalAttendance(pin, pasted.attendance);
       }
       setPin(pin);
       toast.success(say(VOICE.onboardingDone, tone));

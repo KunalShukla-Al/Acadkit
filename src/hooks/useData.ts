@@ -311,7 +311,7 @@ export function useMarks() {
 }
 
 /**
- * Portal attendance snapshots written by the sync bookmarklet.
+ * Portal attendance snapshots, from a pasted attendance page.
  * Empty until migration 012 runs, which just falls back to manual counts.
  */
 export function usePortalSnapshots() {

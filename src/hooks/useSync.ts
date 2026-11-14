@@ -12,7 +12,7 @@ const TABLE_TO_KEY: Record<string, string> = {
   attendance: "attendance",
   marks: "marks",
   deadlines: "deadlines",
-  // the sync bookmarklet writes here; a change pushes it straight into the UI
+  // a pasted attendance page writes here; a change pushes it straight into the UI
   portal_snapshots: "portal_snapshots",
   portal_snapshot_history: "snapshot_history",
   // the study-folder sync writes here (migration 026)

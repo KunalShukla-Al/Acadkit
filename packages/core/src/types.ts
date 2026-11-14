@@ -114,7 +114,7 @@ export interface Mark {
   marks_obtained: number;
   max_marks: number;
   is_external: boolean;
-  /** "portal" rows are owned by the bookmarklet sync (migration 012). */
+  /** "portal" rows came from the portal (migration 012). */
   source?: MarkSource;
   added_at?: string;
 }

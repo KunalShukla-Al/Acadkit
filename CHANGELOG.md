@@ -9,6 +9,12 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Removed
 
+- The portal bookmarklet and the `portal-ingest` function behind it: every attendance update came
+  from a pasted page. Pasting stays.
+- The SwiftBar menu-bar plugin, which needed an app this Mac doesn't have.
+- The weekly forecast log and the grade-odds simulation that only it used. Past entries stay in
+  the data export.
+- The theme generator on the Design page.
 - The iPhone's Shortcuts (alarm, Focus, share sheet), the calendar subscription and the feeds behind
   them; the iPhone card leaves Settings.
 - The Apple theme. Brutalist and OLED remain; a stored Apple theme opens as Brutalist.

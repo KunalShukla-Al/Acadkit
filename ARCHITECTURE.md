@@ -12,7 +12,7 @@ AcadKit runs in three places, and the Mac does the heavy work:
  five tabs, themeable look  ---->    Postgres, RLS by PIN    <----     sync tick, night shift
  offline cache, file cache  <----    Broadcast on pin:<pin>
                                      study-files bucket      <----     files, links, jobs.json
-                                                                       menu bar, Quick Action
+                                                                       Quick Action
 ```
 
 - The app reads and writes its own rows and listens for changes on its PIN's Broadcast topic. It
@@ -27,7 +27,7 @@ Where each part is described:
 - Foundations: Core, Accounts and data, Data flow.
 - The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Run-up,
   File viewer, Continue, PWA and iOS.
-- The Mac: Study files (the sync, the menu bar), Night shift,
+- The Mac: Study files (the sync), Night shift,
   Everything connected; the Quick Action is under Continue.
 - Outside the app: Portal sync.
 
@@ -50,7 +50,7 @@ npm run test:mac       # the same suite on WebKit as a Mac, 1440 × 900, this Ma
 npm run size           # the bundle against bundle-budget.json, after a build
 npm run perf:screens   # Lighthouse on the five tabs, signed in to the mock
 npm run db:test        # pgTAP row-level security tests on a local Supabase (db:start first)
-npm run mac:install    # the Mac's launch agents, menu bar and Quick Action
+npm run mac:install    # the Mac's launch agents and Quick Action
 ```
 
 `@/` maps to `src/`.
@@ -76,8 +76,7 @@ they are.
 - Sign-in is email and password. Every row is scoped by a 4-digit `device_id` (the PIN), and
   row-level security checks it with `private.owns_device()` (migrations 015, 049). The PIN is not the security
   boundary; the database is.
-- Policies are `to authenticated`, so anything using the anon key gets 42501. That's why the
-  portal bookmarklet posts to the `portal-ingest` edge function.
+- Policies are `to authenticated`, so anything using the anon key gets 42501.
 - New PINs are claimed first (`claimFreshPin`), then seeded (`seedAccount`, which only fills in
   what's missing).
 - Signing out clears the persisted query cache and the on-device file cache
@@ -234,8 +233,6 @@ class day instead: a weekend or holiday that follows that Day Order without movi
   dates an existing one.
 - Rounding: marks you need round up, marks you hold round down, totals floor.
 - Attendance below the minimum bars the end-sem, and that outranks everything on a card.
-- Grade odds (`packages/core/src/odds.ts`): empirical-Bayes prior over your subjects, 3,000 seeded
-  simulations, SGPA read off the same draws.
 
 **Marks page:** two tabs, Marks (entry) and Targets. Targets reads the expected solve
 (`packages/core/src/expected.ts`): a test you've sat but haven't got back asks what you expect, and an
@@ -311,7 +308,6 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
 - Today on the other kind of device offers it (`ContinueBanner`): "Continue Unit3_CPU_Scheduling_Slides
   at p. 24 · from your phone", opening the viewer at that page. A page from half an hour ago, from
   the same kind of device, or already open, isn't offered.
-- On the Mac the menu bar offers the phone's page too, as a link to the app's viewer at it.
 - From the Mac to the phone: "Send to AcadKit phone" in the Finder's Quick Actions (an Automator
   workflow, `scripts/mac/send-to-phone.workflow`, put in `~/Library/Services` by `mac:install`) runs
   `scripts/mac/send-to-phone.mjs` with the files picked. One already in the study folder is on the
@@ -377,13 +373,6 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
   tick tries again. The tick writes what it does to the log as it goes, so one the watcher does
   stop after 20 minutes shows the step it stopped on. The sync's full output, every warning
   included, is `last-sync.out` in the state folder.
-- The menu bar is a SwiftBar plugin (`scripts/mac/swiftbar/acadkit.1m.sh`, put in SwiftBar's
-  plugin folder by `mac:install`) that runs `menubar.mjs` every minute: the day and the next class
-  in the bar ("DO 3 · OS 10:00 AM", "↻" while syncing), and in the menu the day's sentence (the
-  morning notification's), the classes (grey once over), and the Mac's line with each job in its
-  submenu (from the copy of `jobs.json` the Mac keeps), then Open Today and Sync now. Only a failure is coloured. An action runs the plugin again with its name:
-  `sync` starts the tick, which holds its own lock. The day's rows are read from Supabase at most every 30 minutes; the
-  sync's live state comes from the tick's lock, its last-sync stamp and the log's last verdict.
 - Tags (`scripts/lib/tags.mjs`): subject from the top folder's code or course title (curriculum,
   then syllabi, so an elective's folder is found too), unit from the path (none inside a subfolder
   named by another course's code), kind from folder and file name.
@@ -481,15 +470,8 @@ others about the same thing.
     backoff, and records it sent only once a browser has it.
 - The steps, secrets and rollback are in `supabase/functions/send-reminders/DEPLOY.md`.
 
-## Portal sync
+## Portal paste
 
-A bookmarklet (`scripts/portal-sync/`) scrapes the SRM portal and posts to `portal-ingest`,
-signed with `HMAC-SHA256(INGEST_SECRET, pin)`. The parser (`src/lib/portal/parse.ts`) matches
-header text, never DOM paths. Settings takes a pasted attendance page the same way
-(`src/lib/portal/paste.ts`); marks and the timetable are typed in, since they change a row at a time.
-
-```bash
-supabase secrets set INGEST_SECRET="<long random string>"
-supabase functions deploy portal-ingest --no-verify-jwt
-node scripts/portal-sync/build.mjs --pin <PIN> --secret "<INGEST_SECRET>"
-```
+Settings takes the portal's attendance page, pasted (`src/lib/portal/paste.ts`, `parse.ts`). The parser matches
+header text, never DOM paths; a page it can't read says what it found instead. Marks and the
+timetable are typed in, since they change a row at a time.

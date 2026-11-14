@@ -46,13 +46,4 @@ plutil -lint "$SERVICE/Contents/document.wflow" >/dev/null
 /System/Library/CoreServices/pbs -update 2>/dev/null || true
 echo "Finder: right-click files → Quick Actions → Send to AcadKit phone."
 
-# The menu bar: the plugin goes into SwiftBar's plugin folder (brew install --cask swiftbar, then pick one).
-PLUGINS="$(defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null || true)"
-if [ -n "$PLUGINS" ] && [ -d "$PLUGINS" ]; then
-  sed "s|__REPO__|$REPO|g" "$REPO/scripts/mac/swiftbar/acadkit.1m.sh" > "$PLUGINS/acadkit.1m.sh"
-  chmod 755 "$PLUGINS/acadkit.1m.sh"
-  echo "Menu bar: in $PLUGINS."
-else
-  echo "Menu bar: install SwiftBar (brew install --cask swiftbar), pick its plugin folder, then run this again."
-fi
 echo "Log: ~/Library/Logs/AcadKit/study-sync.log"

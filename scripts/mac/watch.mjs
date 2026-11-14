@@ -153,7 +153,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const tick = path.join(state, "auto-sync.sh");
 
   // A timestamp written each time a tick finishes, so a stalled watcher is visible from
-  // outside (the menu bar, a check) instead of going quiet for hours as it did on 28 Oct.
+  // outside (the watchdog) instead of going quiet for hours as it did on 28 Oct.
   const heartbeatFile = path.join(state, "watch-heartbeat");
   const beat = () => {
     try {
