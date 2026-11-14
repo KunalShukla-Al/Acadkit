@@ -124,6 +124,6 @@ test.describe("on a Mac", () => {
 
     await page.goto("/");
     await expect(page.getByRole("main").getByText(/Day Order \d/)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^Day Order 3\. More:/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Day Order 3\. Calendar/ })).toBeVisible();
   });
 });

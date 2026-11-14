@@ -7,6 +7,7 @@ import { countdownLabel, examUrgency, nextMarked } from "@/lib/examCountdown";
 import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
 import { deadlineLabel } from "@/lib/deadlines";
 import { formatDate } from "@acadkit/core/dates";
+import { testTitle } from "@acadkit/core/subjectShort";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { useListedDeadlines, useMarks, useSettings, useSubjects } from "@/hooks/useData";
@@ -33,6 +34,9 @@ export function ExamCountdown() {
   const { deadline, daysAway } = upcoming;
   const subject = subjects?.find((s) => s.id === deadline.subject_id);
   const urgency = examUrgency(daysAway);
+  // Which test it is, with its subject: "DSA FT-III". A title that is only a course code says nothing, so the type stands in.
+  const named = deadline.title.replace(/^\s*\d{2}[A-Z]{3}\d{3}[A-Z]\b\s*/, "").trim();
+  const title = testTitle(named || deadlineLabel(deadline, null), subject);
 
   const need = subject
     ? deadlineNeed(
@@ -66,7 +70,7 @@ export function ExamCountdown() {
           </p>
           <p className="mt-1 flex items-start gap-2 text-lg font-extrabold">
             {subject && <Dot color={subject.color_hex} className="mt-2 shrink-0" />}
-            <span className="line-clamp-2">{deadlineLabel(deadline, subject)}</span>
+            <span className="line-clamp-2">{title}</span>
           </p>
           <p className="mt-0.5 text-xs font-medium text-muted">
             {formatDate(deadline.due_date.slice(0, 10), {
