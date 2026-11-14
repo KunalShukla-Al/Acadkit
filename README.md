@@ -38,8 +38,8 @@ and settings. Today leads with the next thing that carries marks.
 
 ## On the Mac
 
-- **The sync** mirrors my study folder within seconds of a change, and the menu bar shows the day
-  and how each job went. A delete or share on the phone reaches the Mac in a second
+- **The sync** mirrors my study folder within seconds of a change, and Study says how each Mac
+  job went. A delete or share on the phone reaches the Mac in a second
   ([the instant link](docs/instant-link.md)). Setup: `npm run mac:install`.
 - **The night shift** shrinks big PDFs and re-indexes at 02:00 on the charger, and the morning
   notification says what it did. Setup: [docs/night-shift.md](docs/night-shift.md).
@@ -105,7 +105,7 @@ bundled into the app, where anyone can read it.
 | `npm run test:e2e` | Browser tests on the mock (Playwright); `test:visual` for the screen pictures |
 | `npm run size` | The built bundle against its budget |
 | `npm run perf:screens` | Lighthouse on the five tabs, signed in to the mock |
-| `npm run mac:install` | The Mac's launch agents, menu bar and Quick Action |
+| `npm run mac:install` | The Mac's launch agents and Quick Action |
 | `npm run sync:files` | Mirror the Mac's study folder to the app |
 | `npm run send:phone -- <files>` | What the Finder's Send to AcadKit phone runs |
 | `npm run demo:record` | Re-record `public/demo.webp` from the mock |

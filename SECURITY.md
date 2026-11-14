@@ -21,7 +21,6 @@ Only the latest release on `main` gets fixes.
 | Every row | Row-level security on every table, `to authenticated`, checking that the account owns the row's PIN (`private.owns_device`, migrations 015 and 049). The 4-digit PIN names the rows; it is not the lock. pgTAP tests (`supabase/tests`) check every table's policies, and run in CI. |
 | Study files | A private bucket (`study-files`), readable only by the PIN's owner; the viewer reads through the client, and a download is a signed link that lasts an hour. |
 | The Mac's access | The service-role key, in the repo's `.env.local` on the Mac and in the edge functions' secrets, never in the app. Anything prefixed `VITE_` is bundled into the app, so the service key never gets that prefix. |
-| The portal bookmarklet | Reads only the page it's run on and posts the numbers to `portal-ingest`. It holds no password or PIN. |
 | Models | All local ([ADR 0002](docs/adr/0002-ai-stays-local.md)): no photo, note or recording goes to a model API, and nothing holds a key to one. |
 | Deploys | Migrations and functions deploy from CI only after a required reviewer approves the run in the `production` environment. |
 

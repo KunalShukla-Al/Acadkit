@@ -36,7 +36,7 @@ nothing.
 
 ## Checking on it
 
-- **The menu bar** shows when the night shift last ran. **Study** says so when it failed.
+- **Study** shows when the night shift last ran, and says so when it failed.
 - **The sync log**, `~/Library/Logs/AcadKit/study-sync.log`, has a line for each step.
 - **The last night** is in `~/Library/Application Support/AcadKit/night-shift.json`: what it did,
   or why it skipped (`on battery`, `asleep`, `sync running`, `not set up`).

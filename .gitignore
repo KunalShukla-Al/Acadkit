@@ -31,8 +31,6 @@ lighthouse-report/
 *.sln
 *.sw?
 
-# built bookmarklet — embeds the anon key + PIN
-scripts/portal-sync/dist/
 
 # Supabase CLI working files (project ref, pooler host) — local cache, not source
 supabase/.temp/

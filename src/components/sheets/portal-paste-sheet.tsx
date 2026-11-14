@@ -8,7 +8,7 @@ import { usePin } from "@/hooks/useData";
 import { looksLikeHtml, parsePastedPortal, pasteHint, type PastedPortal } from "@/lib/portal/paste";
 import { broadcastInvalidate } from "@/lib/broadcast";
 import { haptic } from "@/lib/utils";
-import { importPortalData } from "@/api/portal";
+import { importPortalAttendance } from "@/api/portal";
 
 /** Refreshing attendance from the portal on a phone: the one page that changes for every subject at once. */
 export function PortalPasteSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -47,16 +47,10 @@ export function PortalPasteSheet({ open, onClose }: { open: boolean; onClose: ()
     if (!parsed) return;
     setBusy(true);
     try {
-      const out = await importPortalData(pin, { attendance: parsed.attendance, marks: [] });
+      const saved = await importPortalAttendance(pin, parsed.attendance);
       await qc.invalidateQueries();
       broadcastInvalidate(["attendance", "portal_snapshots", "snapshot_history"]);
-      toast.success(out.snapshots ? `${out.snapshots} subject${out.snapshots > 1 ? "s" : ""} updated` : "Nothing new to save");
-      const unmatched = out.unmatchedCodes;
-      if (unmatched.length) {
-        toast.message("Some codes didn't match a subject", {
-          description: `${unmatched.join(", ")} - add them in Settings → Subjects.`,
-        });
-      }
+      toast.success(saved ? `${saved} subject${saved > 1 ? "s" : ""} updated` : "Nothing new to save");
       reset();
       onClose();
     } catch (err) {
@@ -80,7 +74,7 @@ export function PortalPasteSheet({ open, onClose }: { open: boolean; onClose: ()
         }
       }}
       title="Paste from the portal"
-      description="Works on your phone - no bookmarklet needed"
+      description="Your attendance page, copied from the portal"
     >
       <div className="space-y-3">
         <ol className="space-y-1.5 text-xs text-muted">

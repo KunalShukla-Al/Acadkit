@@ -3,8 +3,7 @@
  * archived one (archivePattern.ts):
  *
  *   - which kinds of assessment you score higher or lower on than your usual
- *     in the same subject (a 5-mark assignment vs a CT vs a lab record), as a
- *     shift the grade odds apply to what's still to come (odds.ts);
+ *     in the same subject (a 5-mark assignment vs a CT vs a lab record);
  *   - which classes you miss more than your usual: labs or theory, first
  *     period or afternoon, which weekday or day order.
  *

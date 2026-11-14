@@ -11,7 +11,6 @@ import { useAutoMarkRunner } from "@/hooks/useAutoMark";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { useScrollReset } from "@/hooks/useScrollReset";
 import { useFreeDayWatch } from "@/hooks/useFreeDayWatch";
-import { useForecastLog } from "@/hooks/useForecastLog";
 import { useActiveDay } from "@/hooks/useActiveDay";
 import { usePushKeyMove } from "@/hooks/usePush";
 import { useTomorrowOffline } from "@/hooks/useTomorrowOffline";
@@ -43,7 +42,6 @@ export function AppShell() {
   useThemeSync();
   useScrollReset();
   useFreeDayWatch();
-  useForecastLog();
   useActiveDay();
   usePushKeyMove();
   useTomorrowOffline();
