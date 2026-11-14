@@ -152,24 +152,6 @@
 
   /* OLED x-factor: there isn't one, deliberately: zero saturation everywhere
      and true #000 in dark mode. The restraint itself is the theme. */
-
-  /* Apple: iOS chrome. The tab bar is plain — no pill behind the active
-     tab, a hairline on top, the selected tab in system blue — and the
-     bars keep the page background so a large title blends into them. */
-  [data-theme="apple"] nav[aria-label="Primary"].glass {
-    border-top: 0.5px solid hsl(var(--line) / var(--line-alpha));
-  }
-  [data-theme="apple"] nav[aria-label="Primary"] [data-nav-pill] {
-    display: none;
-  }
-  [data-theme="apple"] nav[aria-label="Primary"] a[aria-current="page"] svg,
-  [data-theme="apple"] nav[aria-label="Primary"] a[aria-current="page"] span {
-    color: hsl(var(--accent));
-  }
-  [data-theme="apple"] nav[aria-label="Primary"] a span {
-    font-weight: 500;
-    letter-spacing: 0;
-  }
 }
 
 @layer base {

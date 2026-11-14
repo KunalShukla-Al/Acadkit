@@ -1,9 +1,10 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { expect, MOCK_API, test, waitForLaunch } from "./fixtures";
 
 // The five tabs (src/lib/screens.ts), the Run-up in the top bar and the corner (src/components/layout).
 const bar = (page: Page) => page.getByRole("navigation", { name: "Primary" }).last();
-const corner = (page: Page) => page.getByRole("button", { name: /More: calendar/ });
+const corner = (page: Page) => page.getByRole("button", { name: /Calendar\. Hold for/ });
+const more = (page: Page) => page.getByRole("button", { name: /^More: / });
 
 test("the bar is the five tabs, each lit for its pages, and the corner's and the Run-up's light none", async ({ signedIn: page }) => {
   await expect(bar(page).getByRole("link")).toHaveText(["Today", "Timetable", "Attendance", "Marks", "Study"]);
@@ -34,6 +35,23 @@ test("Today is the day's classes and what's due, and nothing else unless it need
   await expect(page).toHaveURL("/deadlines");
   await expect(page.getByRole("heading", { level: 1, name: "Deadlines" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Upcoming deadlines/ })).toBeVisible();
+});
+
+test("Today puts the next thing that carries marks on top, and only one", async ({ signedIn: page }) => {
+  // The seeded lab record and unit test carry no marks, so nothing shows yet.
+  await expect(page.getByText(/· out of \d+/)).toHaveCount(0);
+  for (const [id, title, due, max] of [["a1", "Assignment 3", "2026-10-09", 10], ["f3", "FT-III", "2026-10-12", 15]] as const) {
+    await page.request.post(`${MOCK_API}/deadlines`, {
+      data: { id: `00000000-0000-4000-8000-0000000000${id}`, device_id: "1234", subject_id: null, title, type: id === "a1" ? "assignment" : "exam", due_date: `${due}T09:00:00+05:30`, status: "pending", priority: "high", max_marks: max },
+    });
+  }
+  await page.reload();
+  await waitForLaunch(page);
+  const card = page.getByRole("main").locator("section", { hasText: "· out of" });
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText("Assignment 3");
+  await expect(card).toContainText("· out of 10");
+  await expect(card).toContainText("2 days");
 });
 
 test("Attendance and Marks are tabs of their own, each with its number", async ({ signedIn: page }) => {
@@ -78,24 +96,34 @@ test("the Run-up is one tap away from any page, with the day's count", async ({ 
   await expect(runup).toHaveAttribute("aria-current", "page");
 });
 
-test("the corner carries the day order and opens the pages used now and then", async ({ signedIn: page }) => {
-  await expect(corner(page)).toHaveAccessibleName(/^Day Order 3\. More:/);
+test("the corner carries the day order and opens the calendar in one tap", async ({ signedIn: page }) => {
+  await expect(corner(page)).toHaveAccessibleName(/^Day Order 3\. Calendar/);
   await corner(page).click();
+  await expect(page).toHaveURL("/calendar");
+  await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
+});
+
+test("More, or holding the corner, opens the pages used now and then", async ({ signedIn: page }) => {
+  await more(page).click();
   const menu = page.getByRole("dialog", { name: "More" });
   await expect(menu.getByRole("button", { name: "Close" })).toBeFocused();
-  await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/calendar/i, /skips/i, /history/i, /settings/i]);
+  await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/skips/i, /history/i, /settings/i]);
 
   await menu.getByRole("button", { name: /^settings$/i }).click();
   await expect(page).toHaveURL("/settings");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
-  await corner(page).click();
-  await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /^calendar$/i }).click();
-  await expect(page).toHaveURL("/calendar");
-
-  await corner(page).click();
+  await more(page).click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
+
+  // Held, the corner opens the menu and the press doesn't also open the calendar.
+  await corner(page).hover();
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+  await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
+  await expect(page).toHaveURL("/settings");
 });
 
 test("the corner sits flush in the bottom-right corner, on the tab bar where there is one", async ({ signedIn: page, isMobile }) => {

@@ -105,12 +105,9 @@ try {
   await page.goto(`${APP}/marks`);
   await shot(2000);
 
-  // The corner, and marking a class from its calendar.
+  // The corner opens the calendar; marking a class from it.
   await page.goto(`${APP}/`);
-  await page.getByRole("button", { name: /More: calendar/ }).click();
-  await page.getByRole("dialog", { name: "More" }).waitFor();
-  await shot(2000);
-  await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /^calendar$/i }).click();
+  await page.getByRole("button", { name: /Calendar\. Hold for/ }).click();
   await page.waitForURL(`${APP}/calendar`);
   await shot(1400);
   await page.getByRole("button", { name: /^7\s*D\d$/ }).click();

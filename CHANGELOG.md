@@ -9,6 +9,15 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Removed
 
+- The iPhone's Shortcuts (alarm, Focus, share sheet), the calendar subscription and the feeds behind
+  them; the iPhone card leaves Settings.
+- The Apple theme. Brutalist and OLED remain; a stored Apple theme opens as Brutalist.
+- Pasting marks or a timetable from the portal, and "Copy every subject's marks". Pasting the
+  attendance page stays.
+- The expected end-sem score in Settings. A subject's own expected score, set on its Targets card,
+  still counts.
+- The "Assume present" switch: unmarked past classes are now always counted as attended, with
+  Catch up and Undo in Settings as before.
 - The animated explainers: tapping a number no longer plays how it was worked out, and the captions,
   the voice and "Make a video" go with it. The numbers themselves are unchanged.
 - Autopilot, the class recorder, flashcards, and Siri's questions with the Leave and Screenshot
@@ -31,6 +40,13 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- The corner opens the calendar in one tap. Held, or from the new More button in the top bar and the
+  sidebar, it opens Skips, History and Settings, and its stickers now arrive in about a third of
+  the time. The calendar button leaves the phone's top bar.
+- Today leads with the next deadline that carries marks: a test, an assignment or a lab, with its
+  countdown and the score it needs.
+- In the calendar, "Declare a holiday" folds away until opened, and Settings folds the semester's
+  dates under one row.
 - A PDF now opens onto paper-shaped pages with a soft sweep where each one is still drawing, instead
   of blank white boxes, and a page fades in the moment it's ready. The pages below the fold read as
   pages on the way rather than gaps, and only the ones actually drawing animate, so a long file stays

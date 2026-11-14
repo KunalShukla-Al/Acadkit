@@ -81,7 +81,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("the corner, open", async ({ signedIn: page }) => {
       await waitForLaunch(page);
-      await page.getByRole("button", { name: /More: calendar/ }).click();
+      await page.getByRole("button", { name: /^More: / }).click();
       await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
       await page.waitForTimeout(800);
       expect(await audit(page)).toEqual([]);

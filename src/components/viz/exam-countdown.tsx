@@ -3,16 +3,17 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Dot } from "@/components/ui/misc";
-import { countdownLabel, examUrgency, nextExam } from "@/lib/examCountdown";
+import { countdownLabel, examUrgency, nextMarked } from "@/lib/examCountdown";
 import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
 import { deadlineLabel } from "@/lib/deadlines";
 import { formatDate } from "@acadkit/core/dates";
+import { testTitle } from "@acadkit/core/subjectShort";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { useListedDeadlines, useMarks, useSettings, useSubjects } from "@/hooks/useData";
 import { cn } from "@/lib/utils";
 
-/** A countdown to the next exam, and the score that would move your grade. */
+/** A countdown to the next thing that carries marks, and the score that would move your grade. */
 export function ExamCountdown() {
   const tone = useTone();
   const { data: deadlines } = useListedDeadlines();
@@ -27,12 +28,15 @@ export function ExamCountdown() {
     return () => clearInterval(t);
   }, []);
 
-  const upcoming = nextExam(deadlines, now);
+  const upcoming = nextMarked(deadlines, now);
   if (!upcoming) return null;
 
   const { deadline, daysAway } = upcoming;
   const subject = subjects?.find((s) => s.id === deadline.subject_id);
   const urgency = examUrgency(daysAway);
+  // Which test it is, with its subject: "DSA FT-III". A title that is only a course code says nothing, so the type stands in.
+  const named = deadline.title.replace(/^\s*\d{2}[A-Z]{3}\d{3}[A-Z]\b\s*/, "").trim();
+  const title = testTitle(named || deadlineLabel(deadline, null), subject);
 
   const need = subject
     ? deadlineNeed(
@@ -42,7 +46,7 @@ export function ExamCountdown() {
         {
           deadlines: (deadlines ?? []).filter((d) => d.subject_id === deadline.subject_id),
           targetSgpa: settings?.target_sgpa ?? 8.5,
-          assumedExternalPct: settings?.assumed_external_pct ?? null,
+          assumedExternalPct: null,
         }
       )
     : null;
@@ -66,7 +70,7 @@ export function ExamCountdown() {
           </p>
           <p className="mt-1 flex items-start gap-2 text-lg font-extrabold">
             {subject && <Dot color={subject.color_hex} className="mt-2 shrink-0" />}
-            <span className="line-clamp-2">{deadlineLabel(deadline, subject)}</span>
+            <span className="line-clamp-2">{title}</span>
           </p>
           <p className="mt-0.5 text-xs font-medium text-muted">
             {formatDate(deadline.due_date.slice(0, 10), {
@@ -74,7 +78,7 @@ export function ExamCountdown() {
               day: "numeric",
               month: "long",
             })}
-            {deadline.max_marks ? ` · out of ${deadline.max_marks}` : ""}
+            {` · out of ${deadline.max_marks}`}
           </p>
         </div>
 
@@ -97,19 +101,8 @@ export function ExamCountdown() {
           <p className="text-sm font-bold">{say(VOICE.examToday, tone)}</p>
         ) : advice ? (
           <p className="text-sm font-bold text-accent">{advice}</p>
-        ) : !Number(deadline.max_marks) ? (
-          // No mark total: the fix is on the deadline itself.
-          <Link
-            to="/calendar"
-            className="flex items-center gap-1.5 text-sm font-semibold text-muted"
-          >
-            {say(VOICE.examNoMaxMarks, tone)}
-            <ArrowRight className="h-3.5 w-3.5 shrink-0" />
-          </Link>
         ) : (
-          // A mark total exists but the subject has no marks to set a pace
-          // from, so the fix is in Marks - sending you to the deadline
-          // would be sending you to fix something that isn't broken.
+          // The subject has no marks to set a pace from, so the fix is in Marks.
           <Link
             to="/marks"
             className="flex items-center gap-1.5 text-sm font-semibold text-muted"

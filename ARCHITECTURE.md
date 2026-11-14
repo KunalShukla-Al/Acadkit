@@ -12,7 +12,7 @@ AcadKit runs in three places, and the Mac does the heavy work:
  five tabs, themeable look  ---->    Postgres, RLS by PIN    <----     sync tick, night shift
  offline cache, file cache  <----    Broadcast on pin:<pin>
                                      study-files bucket      <----     files, links, jobs.json
- Shortcuts, Calendar        ---->    feeds edge function               menu bar, Quick Action
+                                                                       menu bar, Quick Action
 ```
 
 - The app reads and writes its own rows and listens for changes on its PIN's Broadcast topic. It
@@ -20,8 +20,6 @@ AcadKit runs in three places, and the Mac does the heavy work:
   stay in a file cache.
 - The Mac holds the study folder and the models. It uploads files and what it works out from them
   (links, topics, prep), files what you share into Inbox, and says when each job ran.
-- The iPhone outside the app (Shortcuts, the calendar subscription) reaches the data only
-  through the feeds function, with a token you can revoke.
 - `packages/core` holds the rules all three use, so a number means the same on every surface.
 
 Where each part is described:
@@ -31,7 +29,7 @@ Where each part is described:
   File viewer, Continue, PWA and iOS.
 - The Mac: Study files (the sync, the menu bar), Night shift,
   Everything connected; the Quick Action is under Continue.
-- Outside the app: Feeds (Shortcuts, the calendar), Portal sync.
+- Outside the app: Portal sync.
 
 The sections below follow that order.
 
@@ -93,7 +91,7 @@ Supabase <- src/api/<table>.ts <- src/hooks/useData.ts (React Query) <- pages
 
 - `src/api` has one module per table or area (`settings`, `subjects`, `timetable`, `attendance`,
   `marks`, `deadlines`, `portal`, `history`, `suggestions`, `runup`, `push`, `account`,
-  and `studyFiles`, `feeds`), and `db.ts` for what they share.
+  and `studyFiles`), and `db.ts` for what they share.
 
 - The Supabase client is typed by `src/lib/database.ts`: the types `npm run db:types` generates
   from the migrations (`database.types.ts`, which CI checks are current), with each jsonb column
@@ -127,17 +125,20 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   hour (`Greeting`, "you're awake, kunal"), under a struck-out "welcome back, scholar" in the
   brutalist voice. Its card (`TodayCard`) shows
   today's classes, the one on now and the next, or the next day with classes once today's are
-  over. Under it, the next three deadlines each open the Deadlines page (`/deadlines`, under the
-  next exam's countdown). Above the day is only what needs you: a suggestion, a page to continue,
-  each empty when there's nothing. Today's cards live in
+  over. Above it, the next deadline that carries marks, a test, an assignment or a lab, with its
+  countdown and what it needs (`ExamCountdown`, `nextMarked`); one, never a list. Under the day,
+  the next three deadlines each open the Deadlines page (`/deadlines`, under the same countdown).
+  Above them all is only what needs you: a suggestion, a page to continue, each empty when there's
+  nothing. Today's cards live in
   `src/components/home`.
 - The Run-up chip (`src/components/layout/runup-chip.tsx`) rings the day's targets ticked and
   opens `/runup`; another day is `/runup/<date>`.
 - The corner (`src/components/layout/corner.tsx`) is a lime quarter-disc fixed in the
   bottom-right corner, above the tab bar (`--nav-h`, which the bar keeps), carrying today's Day
-  Order, a star on a day without classes. Tapped, it turns into a close button, and Calendar,
-  Skips, History and Settings burst out of it as tilted
-  stickers, kept clear of the bars. Escape or a tap elsewhere closes it.
+  Order, a star on a day without classes. A tap opens the calendar, the page I open most, and
+  starts its download on touch. Held for 450 ms (or right-clicked), or from More in the phone's top
+  bar and the Mac's sidebar, it turns into a close button and Skips, History and Settings burst
+  out of it as tilted stickers, quickly, kept clear of the bars. Escape or a tap elsewhere closes it.
 - Attendance (`/attendance`) and Marks (`/marks`) each lead with their number, the overall gauge
   and the predicted SGPA, then Now and Forecast, Marks and Targets.
 - Study (`/study`) is the study folder: its folders, search inside files, and the
@@ -170,7 +171,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   Continue and Tomorrow offline's hint showing, and at midday,
   when some of the day's classes are over. A sheet's body takes focus, so a keyboard can scroll it even when
   nothing in it does.
-- Old links (notifications, bookmarks, the Shortcuts) can still name the old screens, Grades,
+- Old links (notifications, bookmarks) can still name the old screens, Grades,
   Plan and You, which have no route of their own now. The shell sends each to the page it meant
   before it draws (`movedTo`: `/grades?show=marks` to `/marks`, `/plan?show=runup` to `/runup`,
   `/you` to `/settings`, `/files?dir=…` to `/study?dir=…`), keeping the rest of the query and the
@@ -178,17 +179,12 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
 
 ## Themes
 
-Brutalist (the default), Apple and OLED, set on `[data-theme]` and synced with the account
-(migration 018). A theme stored before any of them existed (quiet, sakura, terminal, aurora) comes
-back as brutalist. Brutalist is lime on near-black or near-white with a coral second accent,
+Brutalist (the default) and OLED, set on `[data-theme]` and synced with the account
+(migration 018). A theme stored before them (quiet, sakura, terminal, aurora, apple) comes back as
+brutalist. Brutalist is lime on near-black or near-white with a coral second accent,
 squircle cards with a real border and no shadow, and its titles and numbers in Chakra Petch
 (`--font-display`): page titles oversized and lowercase, section labels lowercase and
-wide-tracked (`src/index.css`). OLED is true black with no colour. Apple is the iOS/macOS look:
-the system font (real SF Pro on the devices it runs on), neutral grouped-gray grounds, a
-system-blue accent and continuous-corner cards, so AcadKit reads native beside the other apps. Its
-five tabs and a few detail screens are drawn as parallel components in `src/components/ios/`, gated
-on the theme and reusing the same hooks and core maths as the default screens, with a native shell
-(a quiet header and tab bar) under `[data-theme="apple"]`.
+wide-tracked (`src/index.css`). OLED is true black with no colour.
 
 `src/lib/voice.ts` holds the app's copy in the theme's register (`useTone`). Brutalist talks back,
 lowercase and blunt ("currently trapped", "30 min of your life left"); OLED talks quietly, short
@@ -208,8 +204,7 @@ where it has one. Notifications keep the plain line.
   theme list (`THEME_NAMES`), the store's theme-color and the pre-paint script in `index.html`
   (filled in by `vite.config.ts`) all read the same file. A theme may set its own `--font-sans`,
   `--font-display` and `--font-mono`; where it doesn't, the global defaults stand. That is what
-  lets a theme be a whole design system rather than a recolour - Apple sets the system font, so no
-  web font loads for it.
+  lets a theme be a whole design system rather than a recolour.
 - `src/design/contrast.test.ts` measures every token pair the app sets one on the other, in every
   theme and mode, against WCAG AA: text 4.5:1, the accent as a shape 3:1. It runs with the unit
   tests in CI. Brutalist's light lime is let off as a shape: it is a fill under ink (the active
@@ -486,45 +481,12 @@ others about the same thing.
     backoff, and records it sent only once a browser has it.
 - The steps, secrets and rollback are in `supabase/functions/send-reminders/DEPLOY.md`.
 
-## Feeds
-
-What reads AcadKit without signing in (the iPhone's Shortcuts, a calendar subscription) uses a
-private token, one per account, in `feed_tokens` (migration 047). The database makes it (48 hex
-characters); the app may only insert its PIN, read its own token and delete it, which revokes
-it. Every feed request makes one call, `feed_use` (migration 052, service role only), that looks
-the token up, refuses it once its PIN has no owner, stamps its last use and counts it against 30
-requests a minute; over that the feeds answer 429. Deleting everything in Settings revokes it.
-- `supabase/functions/feeds` serves them. `GET /feeds/today?token=…` is the day at a glance from
-  core (`packages/core/src/today.ts`): the Day Order or the holiday, the classes with their
-  attendance and how many can be skipped, an alarm time, the week's tests (each with its type, and
-  `from`, the file it was read from when it has one), and one sentence. Dates
-  are IST: the edge runtime runs on UTC. `GET /feeds/calendar.ics?token=…` is the same account as
-  a calendar to subscribe to (`webcal://`): every class from a week back to two months ahead, and
-  each pending test and deadline at its due time (`packages/core/src/ics.ts`, which also writes
-  the Settings export). `POST /feeds/share?token=…&name=…` takes a file's bytes, for the share
-  sheet: they go to the PIN's inbox with a `study_uploads` row for `Inbox/<name>` (or `&folder=…`),
-  exactly as the app's Upload does, and the Mac saves them at its next tick. Names follow
-  `packages/core/src/uploads.ts`, and the 50 MB cap holds.
-- The iPhone's Shortcuts are built on the Mac for the account's token (`scripts/lib/shortcuts.mjs`,
-  run by the tick through `sync:app`): AcadKit Alarm sets an alarm an hour before the first class,
-  AcadKit Focus (run when that alarm stops, and on arriving at SRM) turns Do Not Disturb on until
-  the last class ends, only while one is still ahead (`focusUntil`), and shows the class on now or
-  next (`arrive`), and AcadKit, in the share sheet, posts each shared item to the share feed by
-  name (a photo without an extension gets one from its type). Each is a plist of actions
-  in the format Cherri writes, signed with `shortcuts sign` and uploaded to
-  `<pin>/shortcuts/<name>.shortcut`. They are rebuilt when the token changes and taken down when
-  it is revoked.
-- Settings' iPhone card (`components/settings/iphone-card.tsx`, `src/api/feeds.ts`) turns the token
-  on, adds the calendar as a `webcal://` link, offers each Shortcut as a signed download once the
-  Mac has built it, copies the today link, and revokes. `handle.ts` is the handler with its database and clock
-  passed in, so Vitest runs it. The function imports core from outside `supabase/`, so it deploys
-  with `--use-api`, and checks its own token, so with `--no-verify-jwt`.
-
 ## Portal sync
 
 A bookmarklet (`scripts/portal-sync/`) scrapes the SRM portal and posts to `portal-ingest`,
 signed with `HMAC-SHA256(INGEST_SECRET, pin)`. The parser (`src/lib/portal/parse.ts`) matches
-header text, never DOM paths, and also powers Settings, where you paste a portal page.
+header text, never DOM paths. Settings takes a pasted attendance page the same way
+(`src/lib/portal/paste.ts`); marks and the timetable are typed in, since they change a row at a time.
 
 ```bash
 supabase secrets set INGEST_SECRET="<long random string>"

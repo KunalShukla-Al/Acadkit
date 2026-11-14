@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowRight, BadgeCheck, Ban, CalendarCheck2, Check, Clock3, PartyPopper, Sunrise, X } from "lucide-react";
+import { ArrowRight, BadgeCheck, Ban, Check, Clock3, PartyPopper, Sunrise, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Dot, EmptyState } from "@/components/ui/misc";
 import { useAttendance, useDeadlines, useSettings, useSubjects, useTimetable } from "@/hooks/useData";
@@ -94,21 +94,6 @@ export function TodayCard() {
         disabled={isNextDay}
         statusFor={({ slot }) => statusOfSlot(slot)}
       />
-
-      {/* Removing the swipe made auto-marking the only thing writing attendance from this screen, so it has to be obvious when it is off. */}
-      {settings && settings.auto_mark_present !== true && !isNextDay && (
-        <Link
-          to="/settings"
-          className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-warn/25 bg-warn/10 p-3 text-xs font-semibold"
-        >
-          <CalendarCheck2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            Attendance isn't being marked automatically. Turn on{" "}
-            <b>auto-mark present</b> in Settings, and correct the days you missed from the
-            Calendar.
-          </span>
-        </Link>
-      )}
 
       <div className="p-4">
         {info.kind === "pre-semester" ? (

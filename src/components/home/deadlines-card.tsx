@@ -103,7 +103,7 @@ export function DeadlinesCard({ preview = false }: { preview?: boolean }) {
                     {
                       deadlines: (deadlines ?? []).filter((x) => x.subject_id === d.subject_id),
                       targetSgpa: settings?.target_sgpa ?? 8.5,
-                      assumedExternalPct: settings?.assumed_external_pct ?? null,
+                      assumedExternalPct: null,
                     }
                   )
                 : null;

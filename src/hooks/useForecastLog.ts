@@ -72,7 +72,7 @@ export function useForecastLog(): void {
       semesterWindow(s),
       s?.target_sgpa ?? 8.5,
       deadlines.data ?? [],
-      s?.assumed_external_pct ?? null,
+      null,
       snapshots.data ?? []
     );
     const history = historyOffsets(archives.data ?? [], subjects.data);

@@ -1,12 +1,11 @@
 import { diffDays, toISODate } from "@acadkit/core/dates";
 import type { Deadline } from "@acadkit/core/types";
 
-/** The next exam, if it is close enough to be worth shouting about. */
-
+/** How far ahead a countdown looks, in days. */
 export const HORIZON_DAYS = 21;
 
 /**
- * How long an exam stays on the card after it starts. Long enough to cover
+ * How long a test stays on the card after it starts. Long enough to cover
  * sitting it; after that it is over, whether or not it was marked done.
  */
 export const LINGER_HOURS = 3;
@@ -17,22 +16,28 @@ export interface ExamCountdown {
   daysAway: number;
 }
 
-export function nextExam(
-  deadlines: Deadline[] | undefined,
-  now: Date = new Date(),
-  horizon: number = HORIZON_DAYS
-): ExamCountdown | null {
+/** The soonest pending deadline `pick` accepts, from now to `horizon` days out. */
+function soonest(deadlines: Deadline[] | undefined, now: Date, horizon: number, pick: (d: Deadline) => boolean): ExamCountdown | null {
   const today = toISODate(now);
   const candidates = (deadlines ?? [])
-    .filter((d) => d.status === "pending" && d.type === "exam")
+    .filter((d) => d.status === "pending" && pick(d))
     .filter((d) => !finished(d.due_date, now))
     .map((d) => ({ deadline: d, daysAway: diffDays(today, d.due_date.slice(0, 10)) }))
-    // An exam on an earlier day is history, not a countdown. Today still
-    // counts until it has run its course - you may well be sitting it in an hour.
+    // One on an earlier day is history, not a countdown. Today still counts
+    // until it has run its course - you may well be sitting it in an hour.
     .filter((c) => c.daysAway >= 0 && c.daysAway <= horizon)
     .sort((a, b) => a.daysAway - b.daysAway);
-
   return candidates[0] ?? null;
+}
+
+/** The next exam, if it is close enough to be worth shouting about. */
+export function nextExam(deadlines: Deadline[] | undefined, now: Date = new Date(), horizon: number = HORIZON_DAYS): ExamCountdown | null {
+  return soonest(deadlines, now, horizon, (d) => d.type === "exam");
+}
+
+/** The next deadline of any kind that carries marks: what Today's countdown is about. */
+export function nextMarked(deadlines: Deadline[] | undefined, now: Date = new Date(), horizon: number = HORIZON_DAYS): ExamCountdown | null {
+  return soonest(deadlines, now, horizon, (d) => Number(d.max_marks) > 0);
 }
 
 /** Started more than LINGER_HOURS ago. A bare date has no start time, so it lasts the day. */

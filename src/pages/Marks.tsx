@@ -1,6 +1,4 @@
 import { MarkHabitsCard } from "@/components/insights/habits-card";
-import { useAppStore } from "@/store/app";
-import { MarksApple } from "@/components/ios/marks";
 import { useMemo, useState } from "react";
 import { jumpTargetId } from "@/lib/jump";
 import { toast } from "sonner";
@@ -213,8 +211,6 @@ function SubjectMarksCard({
 }
 
 export default function Marks() {
-  const themeName = useAppStore((s) => s.themeName);
-  if (themeName === "apple") return <MarksApple />;
   return <MarksInner />;
 }
 

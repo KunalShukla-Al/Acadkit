@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   CalendarCheck2,
   CalendarRange,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   PartyPopper,
@@ -338,10 +339,14 @@ export default function Calendar() {
               <Plus className="h-4 w-4" /> Add deadline on this date
             </Button>
             {canDeclare && (
-              <div className="space-y-2.5 rounded-2xl border bg-surface-2/40 p-3">
-                <p className="flex items-center gap-2 text-sm font-bold">
-                  <PartyPopper className="h-4 w-4" /> Declare a holiday
-                </p>
+              // Folded: declaring a holiday is rare, and it shouldn't push the day's own actions down.
+              <details key={selected} className="group rounded-2xl border bg-surface-2/40">
+                <summary className="flex cursor-pointer list-none items-center gap-2 p-3 text-sm font-bold [&::-webkit-details-marker]:hidden">
+                  <PartyPopper className="h-4 w-4" />
+                  <span className="flex-1">Declare a holiday</span>
+                  <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="space-y-2.5 px-3 pb-3">
                 <p className="text-xs text-muted">
                   No classes this day. Choose what happens to its Day Order {selectedInfo?.dayOrder}.
                 </p>
@@ -353,7 +358,8 @@ export default function Calendar() {
                     Cancel it
                   </Button>
                 </div>
-              </div>
+                </div>
+              </details>
             )}
             {canAddClassDay && (
               <div className="space-y-2.5 rounded-2xl border bg-surface-2/40 p-3">

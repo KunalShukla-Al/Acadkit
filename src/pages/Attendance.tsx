@@ -1,5 +1,3 @@
-import { useAppStore } from "@/store/app";
-import { AttendanceApple } from "@/components/ios/attendance";
 import { AttendanceHabitsCard } from "@/components/insights/habits-card";
 import { reconcile, type Reconciliation } from "@/lib/reconcile";
 import { useMemo, useState } from "react";
@@ -197,8 +195,6 @@ function SubjectRow({
 }
 
 export default function Attendance() {
-  const themeName = useAppStore((s) => s.themeName);
-  if (themeName === "apple") return <AttendanceApple />;
   return <AttendanceInner />;
 }
 

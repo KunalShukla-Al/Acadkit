@@ -1,5 +1,7 @@
 # 0003. Feeds, Siri and Shortcuts behind revocable tokens
 
+> **14 November 2026: superseded.** The feeds, the iPhone's Shortcuts and the calendar subscription were removed: I didn't use them. `feed_tokens` stays in the database, empty of use, until a migration drops it.
+
 > **13 November 2026:** Autopilot, the class recorder, Siri's questions and the flashcards were removed after a month unused. The decision below still holds for what remains: the sync, search and Everything connected.
 
 - Status: accepted with the feeds (October 2026); written down 16 Nov 2026

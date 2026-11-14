@@ -10,7 +10,6 @@ import { RENDITION } from "../lib/renditions.mjs";
 import { checkNotices, checkProjects } from "../lib/weekly.mjs";
 import { checkRunup, splitRunup } from "../lib/runup.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP } from "../lib/storage.mjs";
-import { handle as feedsHandle } from "../../supabase/functions/feeds/handle.ts";
 
 const PORT = 54321;
 const PIN = "1234";
@@ -294,8 +293,6 @@ const SEED = {
   active_days: [],
   // Migration 043: run-up tasks ticked as done.
   plan_ticks: [],
-  // Migration 047: the feeds' private token.
-  feed_tokens: [],
   // Migration 062: where you're reading, for Continue.
   reading_now: [],
 };
@@ -533,9 +530,6 @@ const server = createServer((req, res) => {
   // ---- storage (study files) ---- Serves the real study folder from this Mac, so /files previews with real names and sizes.
   if (u.pathname.startsWith("/storage/v1/")) return mockStorage(req, res, u, state);
 
-  // ---- the feeds ---- The real handler (supabase/functions/feeds/handle.ts) on the mock's tables.
-  if (u.pathname.startsWith("/functions/v1/feeds/")) return mockFeeds(req, res, u, state);
-
   // ---- study search ---- Without its model: word overlap stands in for meaning.
   if (u.pathname === "/functions/v1/study-search") return mockStudySearch(req, res);
 
@@ -548,44 +542,6 @@ function mockStudySearch(req, res) {
   req.on("end", () => {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ results: [] }));
-  });
-}
-
-/**
- * The feeds, run by their real handler with the mock's tables behind it:
- * the share endpoint, today and the calendar, for the e2e specs.
- * Its clock is the specs' frozen morning (7:30 IST on MOCK_TODAY) when set.
- */
-function mockFeeds(req, res, u, { db, stored }) {
-  const chunks = [];
-  req.on("data", (c) => chunks.push(c));
-  req.on("end", async () => {
-    const mine = (table, pin) => db[table].filter((r) => r.device_id === pin);
-    const deps = {
-      use: async (token) => {
-        const row = db.feed_tokens.find((t) => t.token === token);
-        if (!row || !db.device_owners.some((o) => o.device_id === row.device_id)) return null;
-        row.last_used_at = new Date().toISOString();
-        return { pin: row.device_id, allowed: true };
-      },
-      load: async (pin) => ({
-        settings: mine("settings", pin)[0] ?? null,
-        subjects: mine("subjects", pin),
-        slots: mine("timetable_slots", pin),
-        attendance: mine("attendance", pin),
-        snapshots: mine("portal_snapshots", pin),
-        deadlines: mine("deadlines", pin).filter((d) => d.status === "pending"),
-      }),
-      share: async (pin, f) => {
-        stored.set(f.key, Buffer.from(f.bytes).toString());
-        db.study_uploads.push({ id: uid("upl", ++seq), device_id: pin, path: f.path, key: f.key, size: f.bytes.length, status: "pending", created_at: new Date().toISOString() });
-      },
-      now: () => (process.env.MOCK_TODAY ? new Date(`${process.env.MOCK_TODAY}T07:30:00+05:30`) : new Date()),
-    };
-    const body = chunks.length && req.method !== "GET" ? Buffer.concat(chunks) : undefined;
-    const answer = await feedsHandle(new Request(`http://127.0.0.1:${PORT}${req.url}`, { method: req.method, headers: req.headers, body }), deps);
-    res.writeHead(answer.status, Object.fromEntries(answer.headers));
-    res.end(Buffer.from(await answer.arrayBuffer()));
   });
 }
 
@@ -689,13 +645,6 @@ function handleRest(req, res, u, { db }) {
         rows.some((r) => db.active_days.some((d) => d.device_id === r.device_id && d.day === r.day))
       )
         return reply(409, { code: "23505", message: "duplicate key value violates unique constraint \"active_days_pkey\"" });
-      // The database makes a feed token; the app may send only its PIN (migration 047's column grant).
-      if (table === "feed_tokens") {
-        if (rows.some((r) => "token" in r)) return reply(403, { code: "42501", message: "permission denied for table feed_tokens" });
-        if (rows.some((r) => db.feed_tokens.some((t) => t.device_id === r.device_id)))
-          return reply(409, { code: "23505", message: "duplicate key value violates unique constraint \"feed_tokens_pkey\"" });
-        for (const r of rows) Object.assign(r, { token: randomBytes(24).toString("hex"), created_at: new Date().toISOString(), last_used_at: null });
-      }
       const conflict = (u.searchParams.get("on_conflict") || "").split(",").filter(Boolean);
       const out = [];
       for (const row of rows) {
