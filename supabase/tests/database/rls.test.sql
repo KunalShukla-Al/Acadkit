@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(108);
+select plan(116);
 
 -- ---------------------------------------------------------------------------
 -- Seed, as the table owner (RLS does not apply)
@@ -104,6 +104,25 @@ select is_empty(
   $$select tablename || '.' || policyname from pg_policies
     where schemaname = 'public' and roles && array['anon', 'public']::name[]$$,
   'no policy in public grants anything to signed-out (anon) or public'
+);
+
+select is_empty(
+  $$select tablename || '.' || policyname from pg_policies
+    where schemaname = 'public'
+      and (coalesce(qual, '') !~ '(owns_device|auth\.uid)' and coalesce(with_check, '') !~ '(owns_device|auth\.uid)')$$,
+  'every policy in public is tied to the row''s owner'
+);
+
+select is_empty(
+  $$select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')$$,
+  'signed out (anon), no function in public can be called'
+);
+
+select is_empty(
+  $$select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prosecdef and has_function_privilege('authenticated', p.oid, 'execute')$$,
+  'no SECURITY DEFINER function in public is callable by signed-in users'
 );
 
 -- ---------------------------------------------------------------------------
@@ -212,6 +231,24 @@ select throws_ok(
   '42501', null, 'A cannot tick a task under B''s PIN'
 );
 delete from plan_ticks where device_id = '2222';
+
+-- Crash reports: under A's own PIN, or none before a PIN is set (migration 064).
+select lives_ok(
+  $$insert into error_log (device_id, message) values ('1111', 'own crash')$$,
+  'A can file a crash report under their own PIN'
+);
+select lives_ok(
+  $$insert into error_log (device_id, message) values (null, 'crash before a PIN')$$,
+  'A can file a crash report before choosing a PIN'
+);
+select throws_ok(
+  $$insert into error_log (device_id, message) values ('2222', 'planted')$$,
+  '42501', null, 'A cannot file a crash report under B''s PIN'
+);
+select throws_ok(
+  $$insert into error_log (device_id, message) values ('1111', repeat('x', 2001))$$,
+  '23514', null, 'A crash report past the size caps is refused'
+);
 
 -- Feed tokens: the database makes them, and A can only make and revoke their own.
 select throws_ok(
@@ -360,6 +397,10 @@ select throws_ok(
   $$insert into marks (device_id, subject_id, component_type, label, marks_obtained, max_marks)
     values ('1111', '00000000-0000-4000-8000-000000001111', 'CT', 'planted', 15, 15)$$,
   '42501', null, 'signed out, nothing can be written'
+);
+select throws_ok(
+  $$insert into error_log (device_id, message) values (null, 'anonymous')$$,
+  '42501', null, 'signed out, no crash report can be filed'
 );
 
 -- ---------------------------------------------------------------------------
