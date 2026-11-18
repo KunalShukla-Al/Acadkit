@@ -67,8 +67,9 @@ jobs:
         with:
           version: latest
 
+      # --yes: the CLI asks for confirmation and, with no terminal, refuses without it.
       - name: Apply migrations
-        run: supabase db push --project-ref "$PROJECT_REF"
+        run: supabase db push --project-ref "$PROJECT_REF" --yes
 
       # verify_jwt for each comes from supabase/config.toml; --use-api bundles server-side.
       - name: Deploy functions
