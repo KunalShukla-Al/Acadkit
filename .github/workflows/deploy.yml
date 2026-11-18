@@ -67,7 +67,8 @@ jobs:
         with:
           version: latest
 
-      # --yes: the CLI asks for confirmation and, with no terminal, refuses without it.
+      # --yes on db push and functions deploy: the CLI asks before changing production and,
+      # with no terminal here, refuses. The environment's required reviewer is the confirmation.
       - name: Apply migrations
         run: supabase db push --project-ref "$PROJECT_REF" --yes
 
@@ -76,5 +77,5 @@ jobs:
         if: needs.plan.outputs.functions != ''
         run: |
           for f in ${{ needs.plan.outputs.functions }}; do
-            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api
+            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --yes
           done
