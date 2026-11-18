@@ -57,6 +57,9 @@ for (const day of RUN_IN) {
 test("Today names each end-sem on its day, and moves on once it's sat", async ({ signedIn: page }) => {
   test.setTimeout(60_000);
   const subjects = await serverRows<{ id: string; code: string }>(page.request, "subjects");
+  // The mock seeds a unit test nine days from today, which can land on an end-sem day; mark it done so only the end-sems count.
+  for (const d of await serverRows<{ id: string; type: string }>(page.request, "deadlines"))
+    if (d.type === "exam") await page.request.patch(`${MOCK_API}/deadlines?id=eq.${d.id}`, { data: { status: "done" } });
   for (const [i, [day, code]] of END_SEMS.entries()) {
     await page.request.post(`${MOCK_API}/deadlines`, {
       data: { id: `00000000-0000-4000-8000-0000000000e${i}`, device_id: "1234", subject_id: subjects.find((s) => s.code === code)!.id, title: "End-sem", type: "exam", due_date: `${day}T14:00:00+05:30`, status: "pending", priority: "high" },

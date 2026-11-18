@@ -163,14 +163,13 @@ describe("highlight", () => {
   });
 });
 
-describe("recentFiles", async () => {
-  const { recentFiles } = await import("./studyFiles");
-  const now = Date.parse("2026-09-28T12:00:00Z");
-  const f = (path: string, daysAgo: number, kind?: string) =>
-    ({ path, size: 1, mtime: now - daysAgo * 86_400_000, key: path, kind }) as never;
-  it("lists the last fortnight's files, newest first, without papers and syllabi", () => {
-    const out = recentFiles([f("a.pdf", 20), f("b.pdf", 1), f("c.pdf", 3), f("p.pdf", 0, "pyq"), f("s.pdf", 0, "syllabus")], now);
-    expect(out.map((x: { path: string }) => x.path)).toEqual(["b.pdf", "c.pdf"]);
+describe("isHiddenFolder", async () => {
+  const { isHiddenFolder } = await import("./studyFiles");
+  it("hides only the top-level Syllabi folder", () => {
+    expect(isHiddenFolder("", "Syllabi")).toBe(true);
+    expect(isHiddenFolder("", "syllabi")).toBe(true);
+    expect(isHiddenFolder("Operating_Systems", "Syllabi")).toBe(false);
+    expect(isHiddenFolder("", "SRM_Sem4")).toBe(false);
   });
 });
 

@@ -7,7 +7,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { subjectIndex, tagFile } from "../lib/tags.mjs";
 import { RENDITION } from "../lib/renditions.mjs";
-import { checkNotices, checkProjects } from "../lib/weekly.mjs";
+import { checkProjects } from "../lib/weekly.mjs";
 import { checkRunup, splitRunup } from "../lib/runup.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP } from "../lib/storage.mjs";
 
@@ -445,13 +445,11 @@ function mockStorage(req, res, u, { stored }) {
     if (!existsSync(file)) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
     return json(200, { ...JSON.parse(readFileSync(file, "utf8")), generatedAt: Date.now() });
   }
-  // The Study page's "This week" notices and "Projects" card, checked as the real sync checks them.
-  if (m[1] === "1234/notices.json" || m[1] === "1234/projects.json") {
-    const notices = m[1] === "1234/notices.json";
-    const file = path.join(STUDY_DIR, "_src", notices ? "acadkit_notices.json" : "acadkit_projects.json");
+  // The Study page's Projects card, checked as the real sync checks it.
+  if (m[1] === "1234/projects.json") {
+    const file = path.join(STUDY_DIR, "_src", "acadkit_projects.json");
     if (!existsSync(file)) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
-    const raw = JSON.parse(readFileSync(file, "utf8"));
-    return json(200, (notices ? checkNotices(raw, new Set(studyFiles.map((f) => f.path))) : checkProjects(raw)).body);
+    return json(200, checkProjects(JSON.parse(readFileSync(file, "utf8"))).body);
   }
   // The Run-up page's plan, checked and split as the real sync checks and splits it.
   if (m[1] === "1234/runup.json" || m[1].startsWith("1234/runup/")) {
