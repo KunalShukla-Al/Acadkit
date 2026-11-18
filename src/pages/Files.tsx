@@ -3,10 +3,10 @@ import { warmViewer } from "@/components/viewer/loaders";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Undo2, Upload, X } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Undo2, Upload, X } from "lucide-react";
 import { FileRow, SearchHitRow, SwipeToDelete } from "@/components/study/file-row";
 import { StorageMeter } from "@/components/study/storage-meter";
-import { ProjectsCard, ThisWeekCard } from "@/components/study/this-week";
+import { ProjectsCard } from "@/components/study/projects-card";
 import { MacLine } from "@/components/mac-line";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
@@ -31,7 +31,7 @@ import { useStudyDeletions } from "@/hooks/useStudyDeletions";
 import { useMacStatus } from "@/hooks/useMacStatus";
 import type { MacState } from "@/lib/mac";
 import { courseNames, titleCase } from "@/lib/curriculum";
-import { baseName, formatSize, groupHits, listFolder, prettyName, isReferenceFolder, isSyllabusFile, RECENT_DAYS, recentFiles, searchFiles, type StudyFile } from "@/lib/studyFiles";
+import { baseName, formatSize, groupHits, listFolder, prettyName, isHiddenFolder, isReferenceFolder, isSyllabusFile, searchFiles, type StudyFile } from "@/lib/studyFiles";
 
 // The cards and their reviews load on their own; nothing in the folder waits for them.
 
@@ -211,11 +211,6 @@ function FilesInner() {
     const name = names.get(f.subject_code) ?? (fromFile ? titleCase(fromFile) : null);
     return name ? { title: name, note: `Syllabus · ${f.subject_code}` } : {};
   };
-  // New and updated on the Mac in the last fortnight, at the top level only:
-  // what the weekly scan and your uploads have just brought in.
-  const [recentOpen, setRecentOpen] = useState(false);
-  const recent = useMemo(() => (!dir && !searching ? recentFiles(files, now) : []), [files, dir, searching, now]);
-
   // Search by meaning (study-search, migration 030): sent on Enter, not per keystroke.
   const hits = useQuery({
     queryKey: ["study-search", pin, deep],
@@ -480,48 +475,11 @@ function FilesInner() {
         </Link>
       )}
 
-      {/* Above the folders: the projects, then the week's notices with the new files. */}
+      {/* Above the folders: the projects. */}
       {!dir && !searching && <ProjectsCard now={now} />}
 
-      {!dir && !searching && (
-        <ThisWeekCard files={files} now={now}>
-          {recent.length > 0 && (
-            <div className="divide-y">
-              <button
-                type="button"
-                onClick={() => setRecentOpen((v) => !v)}
-                aria-expanded={recentOpen}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
-              >
-                <Clock className="h-4 w-4 shrink-0 text-accent" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold">
-                    {recent.length} new file{recent.length === 1 ? "" : "s"} in the last {RECENT_DAYS} days
-                  </span>
-                  <span className="block truncate text-xs font-medium text-muted">Latest: {baseName(recent[0].path)}</span>
-                </span>
-                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted transition-transform", recentOpen && "rotate-180")} />
-              </button>
-              {recentOpen &&
-                recent.map((f) => (
-                  <FileRow
-                    key={f.path}
-                    file={f}
-                    showFolder
-                    course={courseLinkFor(f, null)}
-                    deleting={pendingByPath.has(f.path)}
-                    onDelete={canDelete ? () => askDelete(f) : undefined}
-                    onUndo={() => undoDelete(f.path)}
-                    swipeToDelete
-                  />
-                ))}
-            </div>
-          )}
-        </ThisWeekCard>
-      )}
-
       <section className="card divide-y overflow-hidden p-0">
-        {!searching && view.folders.filter((x) => !isReferenceFolder(dir, x.name)).map(folderRow)}
+        {!searching && view.folders.filter((x) => !isReferenceFolder(dir, x.name) && !isHiddenFolder(dir, x.name)).map(folderRow)}
 
         {!searching &&
           (uploads.data ?? [])
@@ -559,7 +517,7 @@ function FilesInner() {
           />
         ))}
 
-        {!searching && view.folders.filter((x) => isReferenceFolder(dir, x.name)).map(folderRow)}
+        {!searching && view.folders.filter((x) => isReferenceFolder(dir, x.name) && !isHiddenFolder(dir, x.name)).map(folderRow)}
 
         {searching && results.length === 0 && (
           <p className="px-4 py-8 text-center text-sm font-medium text-muted">No file names match “{query.trim()}”.</p>

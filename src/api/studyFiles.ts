@@ -3,7 +3,7 @@ import { cachedFile, isCached, storeFile } from "@/lib/fileCache";
 import { MAX_UPLOAD_BYTES, safeUploadName } from "@acadkit/core/uploads";
 import { baseName, type StorageData, type StudyFile, type StudyHit, type StudyManifest } from "@/lib/studyFiles";
 import type { PrepData, TopicsData, TopicsIndex } from "@/lib/examPrep";
-import type { NoticesData, ProjectsData } from "@/lib/thisWeek";
+import type { ProjectsData } from "@/lib/projects";
 import { shownFile } from "@/lib/viewer";
 
 const BUCKET = "study-files";
@@ -97,11 +97,6 @@ export async function fetchStudyPrep(pin: string): Promise<PrepData | null> {
     throw error;
   }
   return JSON.parse(await data.text()) as PrepData;
-}
-
-/** The weekly scan's notices (scripts/lib/weekly.mjs), or null before any sync has sent them. */
-export async function fetchStudyNotices(pin: string): Promise<NoticesData | null> {
-  return storedJson<NoticesData>(`${pin}/notices.json`);
 }
 
 /** What the bucket holds against the free plan's 1 GB (scripts/lib/storage.mjs), or null before a sync has measured it. */

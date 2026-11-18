@@ -95,6 +95,14 @@ export function isReferenceFolder(dir: string, name: string): boolean {
   return !dir && /^(syllabi|srm_sem\d{1,2})$/i.test(name);
 }
 
+/**
+ * A top-level folder Study doesn't list: the syllabus books (`Syllabi/`), which
+ * each subject page and search still reach.
+ */
+export function isHiddenFolder(dir: string, name: string): boolean {
+  return !dir && /^syllabi$/i.test(name);
+}
+
 /** The immediate children of `dir` ("" is the root). */
 export function listFolder(files: StudyFile[], dir: string): FolderView {
   const prefix = dir ? `${dir}/` : "";
@@ -243,18 +251,6 @@ export function highlight(content: string, query: string, width = 220): Array<{ 
  */
 export function isSyllabusFile(f: StudyFile): boolean {
   return f.kind === "syllabus" || /^syllabi\//i.test(f.path);
-}
-
-/** How far back "New & updated" looks. */
-export const RECENT_DAYS = 14;
-
-/** Files new or changed on the Mac in the last fortnight, newest first: what the weekly scan, WhatsApp saves and your uploads just brought in. */
-export function recentFiles(files: StudyFile[], now: number, limit = 6): StudyFile[] {
-  const since = now - RECENT_DAYS * 86_400_000;
-  return files
-    .filter((f) => f.mtime >= since && f.mtime <= now + 86_400_000 && f.kind !== "pyq" && !isSyllabusFile(f))
-    .sort((a, b) => b.mtime - a.mtime)
-    .slice(0, limit);
 }
 
 // ---------- past papers by exam ----------
