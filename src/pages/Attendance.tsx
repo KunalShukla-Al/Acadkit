@@ -1,9 +1,7 @@
-import { AttendanceHabitsCard } from "@/components/insights/habits-card";
 import { useMemo, useState } from "react";
 import { JumpPills } from "@/components/ui/jump-pills";
 import { jumpTargetId } from "@/lib/jump";
 import { subjectShort } from "@acadkit/core/subjectShort";
-import { motion } from "motion/react";
 import {
   AlertTriangle,
   GraduationCap,
@@ -30,27 +28,24 @@ import {
   type SubjectAttendance,
 } from "@acadkit/core/attendance";
 import { buildEffectiveMap, semesterWindow } from "@acadkit/core/calendar";
-import { relativeDay, todayISO } from "@acadkit/core/dates";
-import { attendanceTrend } from "@acadkit/core/projections";
+import { formatDate, relativeDay, todayISO } from "@acadkit/core/dates";
+import { attendanceTrend, type SubjectProjection } from "@acadkit/core/projections";
 import { syncHealth } from "@/lib/syncHealth";
-import { PortalCheck } from "@/components/viz/portal-check";
+import { ShareImageButton } from "@/components/share-image-button";
+import { buildAttendanceShare, renderAttendanceCard } from "@/lib/shareCard";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
-import { cn, haptic } from "@/lib/utils";
-import { Segmented } from "@/components/ui/segmented";
-import { useSwipe } from "@/hooks/useSwipe";
-import { slideTransition, slideVariants } from "@/lib/slide";
-import { AttendanceProjection } from "@/components/insights/attendance-projection";
+import { cn } from "@/lib/utils";
 import { useProjectionReport } from "@/hooks/useProjectionReport";
 
 function SubjectRow({
   stats,
-  left,
+  projected,
   jumpedAt,
 }: {
   stats: SubjectAttendance;
-  /** Its classes still on the calendar and not yet marked; null without a timetable to count them from. */
-  left: number | null;
+  /** Its projection: classes left, and the day it gets back over 65 and 75. Null without a timetable. */
+  projected: SubjectProjection | null;
   /** Set when a subject chip at the top jumped here: the row opens to show its detail. */
   jumpedAt?: number;
 }) {
@@ -68,7 +63,7 @@ function SubjectRow({
     ["Total", stats.total],
     ["Attended", stats.attended],
     ["Absent", stats.total - stats.attended],
-    ["Left", left ?? "—"],
+    ["Left", projected?.remaining ?? "—"],
   ];
 
   return (
@@ -94,6 +89,17 @@ function SubjectRow({
               ? say(VOICE.noClassesMarked, tone)
               : say(VOICE.hoursWasted, tone, stats.attended, stats.total)}
           </p>
+          {/* Under 65 or 75, the day each comes back by attending every class; gone once it's over both. */}
+          {projected && projected.climbs.length > 0 && (
+            <p className="mt-1 text-xs font-bold tabular">
+              {projected.climbs.map((c, i) => (
+                <span key={c.bar} className={c.date ? "text-warn-deep" : "text-bad-deep"}>
+                  {i > 0 && <span className="text-muted"> · </span>}
+                  {c.bar}% {c.date ? `by ${formatDate(c.date)}` : "out of reach"}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </button>
 
@@ -137,29 +143,6 @@ function AttendanceInner() {
   const { data: settings } = useSettings();
   const { data: timetable } = useTimetable();
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(() => new Set());
-  // Where you are, or where the semester ends up. The forecast used to
-  // be a tab on Insights, a sheet away from the numbers it projects.
-  const [view, setView] = useState<"now" | "forecast">("now");
-  // A pane slides in when you switch to it; the first is just there.
-  const [firstView] = useState(view);
-  // Same order as the switch, so a swipe lands where the eye expects.
-  // Ends are walls rather than wrapping, as on the other swipeable pages.
-  const VIEWS = ["now", "forecast"] as const;
-  const [dir, setDir] = useState(0);
-  const goView = (next: (typeof VIEWS)[number]) => {
-    setDir(VIEWS.indexOf(next) > VIEWS.indexOf(view) ? 1 : -1);
-    setView(next);
-  };
-  const viewSwipe = useSwipe(
-    () => {
-      const next = VIEWS[VIEWS.indexOf(view) + 1];
-      if (next) { haptic(); goView(next); }
-    },
-    () => {
-      const next = VIEWS[VIEWS.indexOf(view) - 1];
-      if (next) { haptic(); goView(next); }
-    }
-  );
   const projection = useProjectionReport();
 
   const overall = useMemo(
@@ -167,12 +150,12 @@ function AttendanceInner() {
     [subjects, attendance, snapshots]
   );
 
-  // Each subject's classes still to come, for its row; none to count without a timetable.
-  const leftBySubject = useMemo(
+  // Each subject's projection, for its row; none without a timetable to count classes from.
+  const projected = useMemo(
     () =>
       projection.timetable.length === 0
         ? null
-        : new Map(projection.report.perSubject.map((p) => [p.subject.id, p.remaining])),
+        : new Map(projection.report.perSubject.map((p) => [p.subject.id, p])),
     [projection.timetable.length, projection.report]
   );
   // Depend on the two fields, not the settings object: React Query
@@ -227,8 +210,8 @@ function AttendanceInner() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between px-1">
-        <div>
+      <div className="flex items-center justify-between gap-3 px-1">
+        <div className="min-w-0">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">
               {say(VOICE.titleAttendance, tone)}
@@ -254,44 +237,28 @@ function AttendanceInner() {
             </p>
           )}
         </div>
+        {/* Attendance as an image, as Marks shares the semester's grades. */}
+        <ShareImageButton
+          filename="acadkit-attendance.png"
+          render={() =>
+            renderAttendanceCard(
+              buildAttendanceShare({
+                name: settings?.name,
+                semester: settings?.semester,
+                attended: overall.attended,
+                total: overall.total,
+                percentage: overall.percentage,
+                subjects: overall.subjects.map((s) => ({
+                  label: subjectShort(s.subject),
+                  color: s.subject.color_hex,
+                  percentage: s.percentage,
+                  min: s.min,
+                })),
+              })
+            )
+          }
+        />
       </div>
-
-      <Segmented
-        layoutId="attendance-view"
-        options={[
-          { value: "now", label: "Now" },
-          { value: "forecast", label: "Forecast" },
-        ]}
-        value={view}
-        onChange={goView}
-        className="w-full sm:w-64"
-      />
-
-
-      <motion.div
-        key={view}
-        custom={dir}
-        variants={slideVariants}
-        initial={view !== firstView ? "enter" : false}
-        animate="center"
-        transition={slideTransition}
-        className="space-y-4"
-        data-swipe
-        {...viewSwipe}
-      >
-      {view === "forecast" ? (
-        <>
-          <AttendanceProjection
-            report={projection.report}
-            declared={projection.declared}
-            semWindow={projection.semWindow}
-            noTimetable={projection.timetable.length === 0}
-          />
-          <AttendanceHabitsCard />
-        </>
-      ) : (
-      <>
-      <PortalCheck />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <section className="card flex flex-col items-center p-6 lg:col-span-2">
@@ -433,16 +400,13 @@ function AttendanceInner() {
           <SubjectRow
             key={s.subject.id}
             stats={s}
-            left={leftBySubject ? leftBySubject.get(s.subject.id) ?? 0 : null}
+            projected={projected?.get(s.subject.id) ?? null}
             jumpedAt={jumped?.id === s.subject.id ? jumped.at : undefined}
           />
         ))}
       </div>
 
       <BunkWallet stats={overall.subjects} />
-      </>
-      )}
-      </motion.div>
 
     </div>
   );

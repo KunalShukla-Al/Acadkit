@@ -289,7 +289,7 @@ describe("skips", () => {
   });
 });
 
-describe("class days left", () => {
+describe("a subject with nothing left", () => {
   const slot = (subject_id: string): TimetableSlot => ({
     id: `t${subject_id}`,
     device_id: "p",
@@ -308,19 +308,51 @@ describe("class days left", () => {
     end_time: "08:50:00",
     status: "present",
   });
-  const subjects = [subj({ id: "s1" }), subj({ id: "s2" })];
-  // Day Order 1 falls on 3, 10 and 17 August; "today" is the 10th.
-  const win = { start: "2026-08-03", end: "2026-08-21" };
+  it("a subject with nothing left is final: safe above its bar, critical below, never 'watch'", () => {
+    // Twenty July classes marked, the window over on the 31st with none of its classes left.
+    const history = (present: number) =>
+      Array.from({ length: 20 }, (_, i) => ({
+        ...marked("s1", `2026-07-${String(i + 1).padStart(2, "0")}`),
+        status: i < present ? ("present" as const) : ("absent" as const),
+      }));
+    const ended = { start: "2026-07-01", end: "2026-07-31" };
+    const final = (present: number) =>
+      buildProjection([subj({ id: "s1" })], history(present), [slot("s1")], [], [], "2026-07-31", ended).perSubject[0];
 
-  it("count today while any of its classes is unmarked", () => {
-    const { overall } = buildProjection(subjects, [marked("s1", "2026-08-10")], [slot("s1"), slot("s2")], [], [], "2026-08-10", win);
-    expect(overall.classDays).toBe(2);
+    expect(final(19).remaining).toBe(0);
+    expect(final(19).riskLevel).toBe("safe");
+    expect(final(10).riskLevel).toBe("critical");
+  });
+});
+
+describe("climbs - the way back over 65 and 75", () => {
+  // A class every day order, so every working day has one.
+  const slots: TimetableSlot[] = [1, 2, 3, 4, 5].map((d) => ({ id: `t${d}`, device_id: "p", subject_id: "s1", day_order: d, start_time: "08:00:00", end_time: "08:50:00", room: null }));
+  const record = (date: string, present: boolean): AttendanceRecord => ({
+    id: date, device_id: "p", subject_id: "s1", date, start_time: "08:00:00", end_time: "08:50:00",
+    status: present ? "present" : "absent",
+  });
+  const july = (present: number, of: number) =>
+    Array.from({ length: of }, (_, i) => record(`2026-07-${String(i + 1).padStart(2, "0")}`, i < present));
+  const climbs = (present: number, of: number, end = "2026-08-31") =>
+    buildProjection([subj({ id: "s1" })], july(present, of), slots, [], [], "2026-07-21", { start: "2026-07-01", end }).perSubject[0].climbs;
+
+  it("under both bars: 65 first, then 75, each with its classes and the day of the last", () => {
+    const [low, high] = climbs(10, 20);
+    // 50% of 20: 65 needs 9 in a row (19/29), 75 needs 20 (30/40).
+    expect(low).toMatchObject({ bar: 65, classes: 9 });
+    expect(high).toMatchObject({ bar: 75, classes: 20 });
+    expect(low.date! < high.date!).toBe(true);
   });
 
-  it("drop today once every class of it is marked", () => {
-    const recs = [marked("s1", "2026-08-10"), marked("s2", "2026-08-10")];
-    const { overall } = buildProjection(subjects, recs, [slot("s1"), slot("s2")], [], [], "2026-08-10", win);
-    expect(overall.classDays).toBe(1);
-    expect(overall.remaining).toBe(2);
+  it("between the bars, only 75; over both, none", () => {
+    expect(climbs(14, 20).map((c) => c.bar)).toEqual([75]);
+    expect(climbs(16, 20)).toEqual([]);
+  });
+
+  it("a bar too far for the classes left has no date", () => {
+    const [low, high] = climbs(10, 20, "2026-07-31");
+    expect(low.date).not.toBeNull();
+    expect(high.date).toBeNull();
   });
 });

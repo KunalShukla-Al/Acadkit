@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
-import { CalendarClock, Check, Hourglass, Lock, Plus, TriangleAlert, UserX } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CalendarClock, Check, Hourglass, Lock, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useUpdateSubject } from "@/hooks/useData";
 import { useResetOn } from "@/hooks/useResetOn";
@@ -9,7 +8,6 @@ import {
   editableAssessment,
   floorHalf,
   floorMarks,
-  floorTotal,
   type SolvedComponent,
 } from "@acadkit/core/plan";
 import { GRADE_COLORS, GRADE_TABLE } from "@acadkit/core/grades";
@@ -38,10 +36,6 @@ function need(n: number): string {
 /** A mark you already hold: floored to 2 decimals, so it is never overstated (or understated by a half). */
 function have(n: number): string {
   return fmt(floorMarks(n));
-}
-
-function pct(rate: number): string {
-  return `${Math.round(rate * 100)}%`;
 }
 
 /**
@@ -271,113 +265,6 @@ export function EndSemRow({ p, c }: { p: SubjectGradeProjection; c: SolvedCompon
   );
 }
 
-/**
- * The one sentence worth reading on the card: what the target costs from
- * here, with any results you're waiting on counted at what you expect. An
- * end-sem you've said what to expect of counts at that, and the share it
- * names is of the tests left.
- */
-function Verdict({ p, o }: { p: SubjectGradeProjection; o: ExpectedOutlook }) {
-  const { plan } = o;
-  const grade = p.targetGrade;
-  const assumed = plan.assumedExternal;
-  const rate = plan.requiredRate === null ? null : pct(Math.max(0, plan.requiredRate));
-  const counting = o.pending > 0 ? " counting what you expect" : "";
-
-  if (plan.status === "final")
-    return (
-      <>
-        Finishes at <b className="tabular">{floorTotal(plan.banked)}/100</b>{counting} —{" "}
-        <b style={{ color: GRADE_COLORS[plan.floorGrade] }}>{plan.floorGrade}</b>.
-      </>
-    );
-
-  if (plan.status === "locked" && assumed !== null)
-    return (
-      <>
-        <b>{grade}</b> holds with the <b className="tabular">{have(assumed)}</b> you expect in the end-sem{counting}, even at
-        zero in the tests left.
-      </>
-    );
-
-  if (plan.status === "locked")
-    return (
-      <>
-        <b>{grade}</b> is banked{counting} - it holds even scoring zero on everything left. You have{" "}
-        <b className="tabular">{have(plan.slack ?? 0)}</b> marks of slack.
-      </>
-    );
-
-  if (plan.status === "out-of-reach")
-    return (
-      <>
-        {assumed !== null ? (
-          <>
-            With <b className="tabular">{have(assumed)}</b> expected in the end-sem, <b>{grade}</b> needs{" "}
-            <b className="tabular">{need(plan.needed)}</b> from the tests and only{" "}
-            <b className="tabular">{have(plan.remainingInternal)}</b> are left{counting}.{" "}
-          </>
-        ) : (
-          <>
-            <b>{grade}</b> needs <b className="tabular">{need(plan.needed)}</b> marks and only{" "}
-            <b className="tabular">{have(plan.pool)}</b> are left{counting}.{" "}
-          </>
-        )}
-        {plan.bestReachable ? (
-          <>
-            Best still reachable is <b style={{ color: GRADE_COLORS[plan.bestReachable] }}>{plan.bestReachable}</b>.
-          </>
-        ) : (
-          <>Even C is out of reach now.</>
-        )}
-      </>
-    );
-
-  if (!plan.hasAnyMarks)
-    return assumed !== null ? (
-      <>
-        Nothing graded yet. With <b className="tabular">{have(assumed)}</b> expected in the end-sem, <b>{grade}</b> needs{" "}
-        <b className="text-accent">{rate}</b> of the <b className="tabular">{have(plan.remainingInternal)}</b> internal marks.
-      </>
-    ) : (
-      <>
-        Nothing graded yet. <b>{grade}</b> needs <b className="text-accent">{rate}</b> of every mark this
-        semester.
-      </>
-    );
-
-  // How much of the ask the results you're waiting on already cover.
-  const covered = o.pending > 0 ? o.actual.needed - plan.needed : 0;
-  const needed = (
-    <span className="font-bold tabular">
-      {need(plan.needed)}
-    </span>
-  );
-  return (
-    <>
-      {assumed !== null ? (
-        <>
-          <b>{grade}</b> needs <b className="tabular">{need(plan.needed + assumed)}</b> of the{" "}
-          <b className="tabular">{have(plan.pool)}</b> marks left. With <b className="tabular">{have(assumed)}</b> expected
-          in the end-sem, that's {needed} of the <b className="tabular">{have(plan.remainingInternal)}</b> in the tests -{" "}
-          <b className="text-accent">{rate}</b> of them.
-        </>
-      ) : (
-        <>
-          <b>{grade}</b> needs {needed} of the <b className="tabular">{have(plan.pool)}</b> marks left -{" "}
-          <b className="text-accent">{rate}</b> of everything from here.
-        </>
-      )}
-      {covered >= 0.5 && (
-        <span className="text-muted">
-          {" "}Your expected {o.pending === 1 ? "mark covers" : "marks cover"}{" "}
-          <b className="tabular text-ink">{have(covered)}</b> of it.
-        </span>
-      )}
-    </>
-  );
-}
-
 /** The field an expectation is typed into: blank shows `placeholder` (a target, or "?" for a test that's been sat); filled, it counts in the plan as though it were in - but it is never saved as a mark, and the real one replaces it the moment it lands (packages/core/src/expected.ts). */
 function ExpectInput({
   p,
@@ -493,53 +380,6 @@ function GradedRow({ row }: { row: ExpectedRow }) {
   );
 }
 
-/** Whether the end-sem is even available to you. */
-function Attendance({ p }: { p: SubjectGradeProjection }) {
-  const e = p.eligibility;
-  if (e.status === "safe" || e.status === "unknown") return null;
-  const barred = e.status === "barred";
-
-  return (
-    <div
-      className={cn(
-        "mt-4 flex items-start gap-2 rounded-2xl border p-3.5 text-sm font-semibold",
-        barred ? "border-bad/30 bg-bad/10 text-bad-deep" : "border-warn/30 bg-warn/10"
-      )}
-    >
-      <UserX className="mt-0.5 h-4 w-4 shrink-0" />
-      <span>
-        {barred ? (
-          <>
-            Attendance is <b className="tabular">{Math.round(e.pct ?? 0)}%</b> and cannot reach
-            {" "}<b className="tabular">{e.min}%</b> - attending everything left tops out at{" "}
-            <b className="tabular">{Math.round(e.bestPct)}%</b>. The end-sem is{" "}
-            {Math.round(p.internalWeight === 100 ? 0 : 100 - p.internalWeight)} of the marks
-            below, and this plan assumes you can sit it.
-          </>
-        ) : (
-          <>
-            Attendance is <b className="tabular">{Math.round(e.pct ?? 0)}%</b>. Attend the next{" "}
-            <b className="tabular">{e.needToAttend}</b> class
-            {e.needToAttend === 1 ? "" : "es"} to clear{" "}
-            <b className="tabular">{e.min}%</b>
-            {e.min !== 75 && <span className="font-medium"> (ML)</span>}
-            {e.clearBy && <> by {formatDate(e.clearBy, { day: "numeric", month: "short" })}</>} —
-            below it the end-sem is off the table and none of this applies.
-          </>
-        )}
-      </span>
-    </div>
-  );
-}
-
-const BAND: Record<string, string> = {
-  locked: "border-good/25 bg-good/10",
-  "on-track": "border-good/25 bg-good/10",
-  final: "border-transparent bg-surface-2/60",
-  push: "border-warn/25 bg-warn/10",
-  "out-of-reach": "border-bad/25 bg-bad/10",
-};
-
 /** One subject's budget: what's in, what you're waiting on, and what the target now asks of everything still to come. */
 export function SubjectBudgetCard({
   p: base,
@@ -550,50 +390,17 @@ export function SubjectBudgetCard({
 }) {
   // Everything forward-looking reads the solve with expectations counted.
   const p = { ...base, plan: o.plan, pool: o.plan.pool };
-  const split = p.internalOnly
-    ? "internals are the whole 100"
-    : p.internalWeight === 0
-      ? "end sem is the whole 100"
-      : `${Math.round(p.internalWeight)} internal · ${Math.round(100 - p.internalWeight)} end sem`;
-  const expected = o.plan.banked - o.actual.banked;
   const next = o.rows.find((r) => r.state === "open" && r.component.date && !r.component.overdue)?.component;
   const dateOf = new Map(o.actual.components.map((c) => [labelMatchKey(c.label), c.date]));
 
   return (
     <motion.section id={jumpTargetId("tgt", base.subject.id)} className="card p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex items-start gap-2 font-bold">
-            <Dot color={p.subject.color_hex} className="mt-1.5 shrink-0" />
-            <span className="line-clamp-2">{p.subject.name}</span>
-          </p>
-          <p className="mt-0.5 text-xs font-medium text-muted">
-            {split} · <b className="tabular">{have(o.actual.banked)}</b> returned
-            {o.pending > 0 && (
-              <>
-                {" "}+ <b className="tabular">{have(expected)}</b> expected
-              </>
-            )}
-            , <b className="tabular">{have(o.plan.pool)}</b> to play for
-          </p>
-        </div>
+        <p className="flex min-w-0 items-start gap-2 font-bold">
+          <Dot color={p.subject.color_hex} className="mt-1.5 shrink-0" />
+          <span className="line-clamp-2">{p.subject.name}</span>
+        </p>
         <TargetPicker p={p} />
-      </div>
-
-      <Attendance p={p} />
-
-      <div className={cn("mt-4 rounded-2xl border p-3.5 text-sm font-semibold", BAND[o.plan.status] ?? BAND.final)}>
-        <Verdict p={p} o={o} />
-
-        {/* The card is waiting on one thing; it may as well offer it. */}
-        {!o.plan.hasAnyMarks && o.plan.status !== "final" && (
-          <Link
-            to="/marks"
-            className="mt-2.5 inline-flex h-9 items-center gap-1.5 rounded-xl bg-surface px-3 text-xs font-bold text-ink"
-          >
-            <Plus className="h-3.5 w-3.5" /> Add a mark
-          </Link>
-        )}
       </div>
 
       {next && next.required !== null && o.plan.status !== "locked" && (

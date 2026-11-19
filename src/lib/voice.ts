@@ -344,13 +344,6 @@ export const VOICE = {
     brutal: () => "mark a day and find out which colour you are.",
   }),
 
-
-  // ---- risk labels ----
-
-  riskSafe: pick({ plain: () => "On track" }),
-  riskWatch: pick({ plain: () => "Watch", quiet: () => "Close" }),
-  riskCritical: pick({ plain: () => "Critical", quiet: () => "At risk" }),
-
   // ---- marks ----
 
   noInternals: pick({
@@ -364,11 +357,6 @@ export const VOICE = {
     plain: () => "Add the classes that run on this day order - attendance marking needs them.",
     quiet: () => "No classes on this day order yet.",
     brutal: () => "nothing here. add your classes or stay in the dark.",
-  }),
-
-  insightsNeedTimetable: pick({
-    plain: () => "Build your timetable first",
-    brutal: () => "no timetable, no predictions.",
   }),
 
   insightsNeedMarks: pick({
