@@ -693,18 +693,18 @@ export function subjectOutlook(
 }
 
 /**
- * Every internal has its mark: nothing planned, dated or still unannounced is
- * left to come, so there is nothing more to add. The end-sem doesn't count.
- *
- * Marks no plan accounts for, adding up past the internal weight, are in some
- * other unit (a paper's raw score, say 34/50), so they can't say the internals
- * are done; more may still come.
+ * Whether a subject needs a way to add a mark beyond the tiles it already has.
+ * A component the plan announced has its own tile to fill in, so Add marks is
+ * for the rest: weight nobody has announced yet, a test known only from a
+ * deadline, or unplanned marks that add up past the internal weight - those
+ * are in some other unit (a paper's raw score, say 34/50), so more may come.
+ * With every internal marked or announced, there is nothing for it to add.
  */
-export function internalsComplete(outlook: SubjectOutlook): boolean {
-  if (!outlook.hasAnyMarks) return false;
-  if (outlook.components.some((c) => c.kind !== "external" && c.obtained === null)) return false;
+export function canAddMarks(subject: Subject, outlook: SubjectOutlook): boolean {
+  const tiled = new Set(announcedPending(subject, outlook.internalComponents).map((c) => c.key));
+  if (outlook.components.some((c) => c.kind !== "external" && c.obtained === null && !tiled.has(c.key))) return true;
   const unplanned = outlook.components.some((c) => c.kind === "extra");
-  return !(unplanned && outlook.internalMax > outlook.internalWeight + 1e-9);
+  return unplanned && outlook.internalMax > outlook.internalWeight + 1e-9;
 }
 
 export interface SgpaResult {

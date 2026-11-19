@@ -13,11 +13,10 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
 import { SubjectBudgetCard } from "@/components/insights/subject-budget";
 import { expectedOutlook, setExpected } from "@acadkit/core/expected";
 import { buildProjection } from "@acadkit/core/projections";
-import type { AttendanceRecord, Deadline, Mark, Subject, TimetableSlot } from "@acadkit/core/types";
+import type { Deadline, Mark, Subject } from "@acadkit/core/types";
 
 const SUBJECT: Subject = {
   id: "s1",
@@ -55,8 +54,6 @@ const mark = (label: string, obtained: number, max: number): Mark => ({
 });
 
 interface Extras {
-  attendance?: AttendanceRecord[];
-  timetable?: TimetableSlot[];
   deadlines?: Deadline[];
 }
 
@@ -75,8 +72,8 @@ function outlookOf(
 function renderFor(subject: Subject, marks: Mark[], extras: Extras = {}): string {
   const report = buildProjection(
     [subject],
-    extras.attendance ?? [],
-    extras.timetable ?? [],
+    [],
+    [],
     marks,
     [],
     "2026-09-15",
@@ -86,16 +83,12 @@ function renderFor(subject: Subject, marks: Mark[], extras: Extras = {}): string
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return renderToStaticMarkup(
-    // The card links to /marks when nothing is graded, so it needs a
-    // router the same way it needs a query client.
-    <MemoryRouter>
-      <QueryClientProvider client={qc}>
-        <SubjectBudgetCard
-          p={report.gradeProjections[0]}
-          o={outlookOf(report.gradeProjections[0], marks, extras.deadlines ?? [], "2026-09-15")}
-        />
-      </QueryClientProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <SubjectBudgetCard
+        p={report.gradeProjections[0]}
+        o={outlookOf(report.gradeProjections[0], marks, extras.deadlines ?? [], "2026-09-15")}
+      />
+    </QueryClientProvider>
   );
 }
 
@@ -129,17 +122,15 @@ const text = (html: string) =>
     .trim();
 
 describe("SubjectBudgetCard", () => {
-  it("shows the split and the target picker", () => {
+  it("is the subject, its target and its components: no split line, no verdict", () => {
     const t = text(render([]));
     expect(t).toContain("Data Structures");
-    expect(t).toContain("60 internal · 40 end sem");
-    expect(t).toContain("0 returned");
-    expect(t).toContain("100 to play for");
+    expect(t).toContain("Needed for A");
+    for (const gone of ["internal · ", "to play for", "of every mark", "Add a mark"]) expect(t).not.toContain(gone);
   });
 
   it("spreads the target across every component before anything is graded", () => {
     const t = text(render([]));
-    expect(t).toContain("71% of every mark this semester");
     // 71% of each component's own marks, rounded up to the next half:
     // 3.55 is displayed as 4 because 3.5 would not actually be enough.
     expect(t).toContain("Assignment 4/5");
@@ -162,35 +153,22 @@ describe("SubjectBudgetCard", () => {
     const t = text(render([mark("Assignment", 5, 5), mark("CT-1", 2, 15)]));
     expect(t).toContain("CT-1 2/15");
     // 64 needed from the 80 left = 80% of everything.
-    expect(t).toContain("80%");
     expect(t).toContain("CT-2 12/15");
     expect(t).toContain("Lab 8/10");
     expect(t).toContain("Model 12/15");
     expect(t).toContain("End semester 32/40");
-    // No pace sentence: one test's rate is not a forecast.
-    expect(t).not.toContain("You're taking");
   });
 
-  it("says a locked target is locked instead of asking for marks", () => {
+  it("asks nothing more of a target that's banked", () => {
     const t = text(
       renderFor({ ...SUBJECT, target_grade: "C" }, [
         mark("Assignment", 5, 5), mark("CT-1", 15, 15), mark("CT-2", 15, 15),
         mark("Lab", 10, 10), mark("Model", 15, 15),
       ])
     );
-    expect(t).toContain("C is banked");
     // Every internal is graded, so the end-sem is all that's pending -
     // and it is asked for nothing.
     expect(t).toContain("End semester 0/40");
-  });
-
-  it("names the best still reachable when the target is gone", () => {
-    const t = text(
-      render([
-        mark("Assignment", 0, 5), mark("CT-1", 0, 15), mark("CT-2", 0, 15), mark("Lab", 0, 10),
-      ])
-    );
-    expect(t).toContain("Best still reachable is C");
   });
 
   it("labels the undeclared internal weight rather than hiding it", () => {
@@ -210,46 +188,7 @@ describe("SubjectBudgetCard", () => {
     };
     const t = text(renderFor(oneBigCT, [mark("CT-1", 42.36, 60)]));
     // Floored to 2 places, not rounded to 42 or 42.5.
-    expect(t).toContain("42.36 returned");
-  });
-
-  it("leads with attendance when the end-sem is at risk", () => {
-    const absences: AttendanceRecord[] = [1, 2, 3, 4].map((i) => ({
-      id: `a${i}`,
-      device_id: "1234",
-      subject_id: "s1",
-      date: `2026-09-0${i}`,
-      start_time: "08:00:00",
-      end_time: "08:50:00",
-      status: i === 1 ? "present" : "absent",
-    }));
-    const slots: TimetableSlot[] = [1, 2, 3, 4, 5].map((day_order) => ({
-      id: `t${day_order}`,
-      device_id: "1234",
-      subject_id: "s1",
-      day_order,
-      start_time: "08:00:00",
-      end_time: "08:50:00",
-      room: null,
-    }));
-
-    const atRisk = text(renderFor(SUBJECT, [], { attendance: absences, timetable: slots }));
-    expect(atRisk).toContain("Attendance is 25%");
-    expect(atRisk).toContain("Attend the next 8 classes to clear 75%");
-
-    // With no classes left to recover in, it stops being a warning.
-    const barred = text(renderFor(SUBJECT, [], { attendance: absences }));
-    expect(barred).toContain("cannot reach 75%");
-    expect(barred).toContain("this plan assumes you can sit it");
-  });
-
-  it("says nothing about attendance when it is fine", () => {
-    const present: AttendanceRecord[] = [{
-      id: "a1", device_id: "1234", subject_id: "s1", date: "2026-09-01",
-      start_time: "08:00:00", end_time: "08:50:00", status: "present",
-    }];
-    const t = text(renderFor(SUBJECT, [], { attendance: present }));
-    expect(t).not.toContain("Attendance is");
+    expect(t).toContain("CT-1 42.36/60");
   });
 
   it("dates the components and names what is next", () => {
@@ -319,14 +258,12 @@ describe("SubjectBudgetCard", () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const t = text(
       renderToStaticMarkup(
-        <MemoryRouter>
-          <QueryClientProvider client={qc}>
-            <SubjectBudgetCard
-              p={report.gradeProjections[0]}
-              o={outlookOf(report.gradeProjections[0], [], [], "2026-09-15", 85)}
-            />
-          </QueryClientProvider>
-        </MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <SubjectBudgetCard
+            p={report.gradeProjections[0]}
+            o={outlookOf(report.gradeProjections[0], [], [], "2026-09-15", 85)}
+          />
+        </QueryClientProvider>
       )
     );
     expect(t).toContain("End semester assumed 34/40");
@@ -362,16 +299,6 @@ describe("SubjectBudgetCard", () => {
     expect(t).toContain("End semester assumed 34/40");
     // 71 − 34 = 37 across the 60 internal marks, not 71 across all 100.
     expect(t).toContain("CT-1 9.5/15");
-    expect(t).toContain("Nothing graded yet. With 34 expected in the end-sem, A needs 62% of the 60 internal marks.");
-    // With a mark in, the whole ask, then what the assumption leaves the tests: 32 of the 55, not "32 of the 95 left".
-    const marked = text(renderFor(withTarget, [mark("Assignment", 5, 5)]));
-    expect(marked).toContain("A needs 66 of the 95 marks left. With 34 expected in the end-sem, that's 32 of the 55 in the tests - 58% of them.");
-  });
-
-  it("offers the thing it is waiting for", () => {
-    expect(text(render([]))).toContain("Add a mark");
-    // Once something is graded the card has an answer, not a request.
-    expect(text(render([mark("Assignment", 5, 5)]))).not.toContain("Add a mark");
   });
 
   it("counts a result you're waiting on at what you expect", () => {
@@ -390,16 +317,13 @@ describe("SubjectBudgetCard", () => {
     };
     const expecting: Subject = { ...SUBJECT, assessment: setExpected(SUBJECT, "CT-1", { obtained: 9, max: 15 }) };
     const t = text(renderFor(expecting, [mark("Assignment", 5, 5)], { deadlines: [sat] }));
-    expect(t).toContain("5 returned + 9 expected");
     expect(t).toContain("CT-1 3 Sept · awaiting result expect 9/15");
-    expect(t).toContain("Your expected mark covers");
   });
 
   it("lets you expect a test that hasn't happened yet", () => {
     // You can say how CT-2 will go before it's sat, not only while it's marked.
     const expecting: Subject = { ...SUBJECT, assessment: setExpected(SUBJECT, "CT-2", { obtained: 12, max: 15 }) };
     const t = text(renderFor(expecting, [mark("Assignment", 5, 5)]));
-    expect(t).toContain("5 returned + 12 expected");
     expect(t).toContain("CT-2 expected expect 12/15");
     // Every other future test still carries its target, now re-aimed.
     expect(t).toMatch(/CT-1 \d+(\.5)?\/15/);

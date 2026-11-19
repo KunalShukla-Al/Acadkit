@@ -1,10 +1,9 @@
 import { MarkHabitsCard } from "@/components/insights/habits-card";
 import { useMemo, useState, type CSSProperties } from "react";
 import { jumpTargetId } from "@/lib/jump";
-import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Plus, Share2, Target, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus, Target, TrendingUp } from "lucide-react";
+import { ShareImageButton } from "@/components/share-image-button";
 import { Badge, Dot, Skeleton } from "@/components/ui/misc";
 import { SgpaDial } from "@/components/viz/sgpa-dial";
 import { GradeBadge } from "@/components/viz/grade-badge";
@@ -20,8 +19,8 @@ import {
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { countsInSgpa, groupMarksBySubject } from "@acadkit/core/grades";
-import { announcedPending, computeSgpa, floorMarks, floorTotal, internalsComplete, type SubjectOutlook } from "@acadkit/core/plan";
-import { buildShareData, renderShareCard, shareCard } from "@/lib/shareCard";
+import { announcedPending, computeSgpa, floorMarks, floorTotal, canAddMarks, type SubjectOutlook } from "@acadkit/core/plan";
+import { buildShareData, renderShareCard } from "@/lib/shareCard";
 import { computeOverallAttendance } from "@acadkit/core/attendance";
 import type { Mark, PlannedComponent, Subject } from "@acadkit/core/types";
 import { Segmented } from "@/components/ui/segmented";
@@ -31,10 +30,7 @@ import { slideTransition, slideVariants } from "@/lib/slide";
 import { GradesProjection } from "@/components/insights/grades-projection";
 import { useProjectionReport } from "@/hooks/useProjectionReport";
 
-/**
- * Renders the semester to a PNG and hands it to the OS share sheet,
- * falling back to a download where Web Share can't take files.
- */
+/** The semester as an image: predicted SGPA, attendance, and each subject's grade. */
 function ShareButton({
   rows,
   sgpa,
@@ -45,17 +41,15 @@ function ShareButton({
   const { data: settings } = useSettings();
   const { data: attendance } = useAttendance();
   const { data: snapshots } = usePortalSnapshots();
-  const [busy, setBusy] = useState(false);
 
-  async function onShare() {
-    setBusy(true);
-    try {
-      const overall = computeOverallAttendance(
-        rows.map((r) => r.subject),
-        attendance ?? [],
-        snapshots ?? []
-      );
-      const data = buildShareData({
+  async function render() {
+    const overall = computeOverallAttendance(
+      rows.map((r) => r.subject),
+      attendance ?? [],
+      snapshots ?? []
+    );
+    return renderShareCard(
+      buildShareData({
         name: settings?.name,
         semester: settings?.semester,
         sgpa,
@@ -66,29 +60,11 @@ function ShareButton({
           color: r.subject.color_hex,
           hasMarks: r.marks.hasAnyMarks,
         })),
-      });
-      const blob = await renderShareCard(data);
-      const how = await shareCard(blob, "acadkit-semester.png");
-      toast.success(how === "shared" ? "Shared" : "Image saved");
-    } catch (err) {
-      toast.error((err as Error)?.message ?? "Couldn't create the image");
-    } finally {
-      setBusy(false);
-    }
+      })
+    );
   }
 
-  return (
-    <Button
-      variant="secondary"
-      size="sm"
-      className="shrink-0"
-      disabled={busy}
-      onClick={onShare}
-    >
-      <Share2 className="h-4 w-4" />
-      {busy ? "Rendering…" : "Share"}
-    </Button>
-  );
+  return <ShareImageButton render={render} filename="acadkit-semester.png" />;
 }
 
 function Bar({ value, max, color }: { value: number; max: number; color: string }) {
@@ -121,9 +97,10 @@ function SubjectMarksCard({
   // Announced in the plan, not marked yet. Shown so an announcement
   // made from here doesn't disappear into Settings.
   const pending = announcedPending(subject, marks.internalComponents);
-  // With every internal marked there is nothing left to add; a tile still opens its mark to edit.
-  const complete = internalsComplete(marks);
-  const tiles = marks.internalComponents.length + pending.length + (complete ? 0 : 1);
+  // Add marks is for weight with no tile of its own; an announced test fills in from its tile, and a
+  // marked one still opens to edit.
+  const addable = canAddMarks(subject, marks);
+  const tiles = marks.internalComponents.length + pending.length + (addable ? 1 : 0);
 
   return (
     <motion.section layout id={jumpTargetId("marks", subject.id)} className="card p-4">
@@ -202,7 +179,7 @@ function SubjectMarksCard({
               <span className="tabular text-sm font-bold">–<span className="text-xs font-semibold">/{c.max}</span></span>
             </button>
           ))}
-          {!complete && (
+          {addable && (
             <button
               onClick={() => onAdd(subject)}
               className={cn(TILE, "items-center justify-center border border-dashed text-muted hover:bg-surface-2/50 hover:text-ink")}

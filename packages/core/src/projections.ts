@@ -5,6 +5,7 @@ import {
   isCounted,
   minAttendanceFor,
   MIN_ATTENDANCE,
+  ML_ATTENDANCE,
   snapshotsByCode,
 } from "./attendance.ts";
 import type {
@@ -34,8 +35,6 @@ export interface SubjectProjection {
   currentPct: number | null;
   // future (from the calendar)
   remaining: number;
-  /** The days those remaining classes fall on, in order. */
-  remainingDates: string[];
   finalTotal: number; // held + remaining
   // scenarios
   bestPct: number; // attend every remaining class
@@ -51,6 +50,20 @@ export interface SubjectProjection {
   riskScore: number; // 0 (safe) – 100 (doomed)
   /** The bar this subject must clear - 65 on medical leave, else 75. */
   min: number;
+  /** The 65 and 75 bars it's under, lowest first, and the way back to each by attending every class. */
+  climbs: Climb[];
+}
+
+/** Getting back over a bar: the classes in a row it takes, and the day of the last one (null: too few are left). */
+export interface Climb {
+  bar: number;
+  classes: number;
+  date: string | null;
+}
+
+/** The fewest classes in a row to attend for attended/held to reach bar%, in integers so 65 lands exactly. */
+function streakTo(bar: number, attended: number, held: number): number {
+  return Math.max(0, Math.ceil((bar * held - 100 * attended) / (100 - bar)));
 }
 
 export interface OverallProjection {
@@ -68,8 +81,6 @@ export interface OverallProjection {
    */
   skipBudget: number;
   tightest: Subject | null;
-  /** Days that still have a class you haven't marked: today drops out once its classes are marked. */
-  classDays: number;
 }
 
 interface FutureOccurrence {
@@ -111,8 +122,13 @@ function riskFrom(
   pacePct: number | null,
   bestPct: number,
   skipBudget: number,
-  min: number
+  min: number,
+  remaining: number
 ): { level: RiskLevel; score: number } {
+  // Nothing left to attend: the number is final, and it either cleared the bar or it didn't.
+  if (remaining === 0) {
+    return currentPct === null || currentPct >= min ? { level: "safe", score: 0 } : { level: "critical", score: 100 };
+  }
   if (bestPct < min) return { level: "critical", score: 100 };
   const ref = pacePct ?? currentPct;
   if (ref === null) return { level: "safe", score: 10 };
@@ -162,10 +178,7 @@ export function projectSubject(
   );
 
   // If below: smallest streak K of future attends so 100·(attended+K) ≥ min·(held+K)
-  let mustAttendStreak = 0;
-  if (currentPct !== null && currentPct < minPct) {
-    mustAttendStreak = Math.max(0, Math.ceil((minPct * held - 100 * attended) / (100 - minPct)));
-  }
+  const mustAttendStreak = currentPct !== null && currentPct < minPct ? streakTo(minPct, attended, held) : 0;
   const reachable = bestPct >= min * 100 - 1e-9;
 
   // The date of the mustAttendStreak-th future class - attend every class up to and
@@ -177,7 +190,14 @@ export function projectSubject(
   let safeUntil: string | null = null;
   if (skipBudget > 0 && future[skipBudget - 1]) safeUntil = future[skipBudget - 1].date;
 
-  const { level, score } = riskFrom(currentPct, pacePct, bestPct, skipBudget, min * 100);
+  const { level, score } = riskFrom(currentPct, pacePct, bestPct, skipBudget, min * 100, remaining);
+
+  const climbs = [ML_ATTENDANCE, MIN_ATTENDANCE]
+    .filter((bar) => currentPct !== null && currentPct < bar)
+    .map((bar) => {
+      const classes = streakTo(bar, attended, held);
+      return { bar, classes, date: future[classes - 1]?.date ?? null };
+    });
 
   return {
     subject,
@@ -185,7 +205,6 @@ export function projectSubject(
     held,
     currentPct,
     remaining,
-    remainingDates: [...new Set(future.map((f) => f.date))],
     finalTotal,
     bestPct,
     worstPct,
@@ -198,6 +217,7 @@ export function projectSubject(
     riskLevel: level,
     riskScore: score,
     min: min * 100,
+    climbs,
   };
 }
 
@@ -526,7 +546,6 @@ export function buildProjection(
     pacePct: oRate !== null && oFinal > 0 ? ((oAttended + oRate * oRemaining) / oFinal) * 100 : null,
     skipBudget: tightest?.skipBudget ?? 0,
     tightest: tightest?.subject ?? null,
-    classDays: new Set(perSubject.flatMap((p) => p.remainingDates)).size,
   };
 
   const whatIf: WhatIfRow[] = perSubject
@@ -595,16 +614,6 @@ export function buildProjection(
     floorSgpa,
     gradesAtRisk,
   };
-}
-
-/** Count of working class-days left in the semester (for headline copy). */
-export function classDaysLeft(
-  declared: DeclaredHoliday[],
-  from: string = todayISO(),
-  window: SemesterWindow = semesterWindow()
-): number {
-  const effMap = buildEffectiveMap(declared, window);
-  return Object.keys(effMap).filter((d) => d >= from && d <= window.end).length;
 }
 
 export { parseISODate };

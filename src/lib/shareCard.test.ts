@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildShareData } from "@/lib/shareCard";
+import { buildAttendanceShare, buildShareData } from "@/lib/shareCard";
 import type { Grade } from "@acadkit/core/grades";
 
 const DATE = new Date("2026-09-03T12:00:00Z");
@@ -84,5 +84,31 @@ describe("buildShareData", () => {
   it("omits the semester when unknown", () => {
     const d = buildShareData({ sgpa: 9, attendancePct: 80, subjects: [], date: DATE });
     expect(d.footer).not.toContain("Semester");
+  });
+});
+
+describe("buildAttendanceShare", () => {
+  const sub = (label: string, percentage: number | null, min = 75) => ({ label, color: "#7c6af7", percentage, min });
+
+  it("leads with the overall number and the classes behind it", () => {
+    const d = buildAttendanceShare({ name: "Kunal", semester: 3, attended: 340, total: 400, percentage: 85, subjects: [], date: DATE });
+    expect(d.title).toBe("Kunal's attendance");
+    expect(d.overall).toBe("85%");
+    expect(d.overallLabel).toBe("340 of 400 classes attended");
+    expect(d.footer).toBe("Semester 3 · 3 Sept 2026 · AcadKit");
+  });
+
+  it("colours each subject against its own bar, and skips one with nothing marked", () => {
+    const d = buildAttendanceShare({
+      attended: 0,
+      total: 0,
+      percentage: null,
+      subjects: [sub("DSA", 80), sub("OS", 70), sub("TBVP", 66, 65), sub("PE", 40), sub("UHV", null)],
+      date: DATE,
+    });
+    expect(d.rows.map((r) => [r.label, r.value])).toEqual([["DSA", "80%"], ["OS", "70%"], ["TBVP", "66%"], ["PE", "40%"]]);
+    expect(d.rows.map((r) => r.valueColor)).toEqual(["#4ade80", "#facc15", "#4ade80", "#fb7185"]);
+    expect(d.overall).toBe("—");
+    expect(d.overallLabel).toBe("no classes marked yet");
   });
 });

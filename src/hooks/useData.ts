@@ -28,7 +28,7 @@ import { deleteAutoMarks, fetchAttendance, insertAutoMarks } from "@/api/attenda
 import { fetchDeadlines } from "@/api/deadlines";
 import { fetchArchives } from "@/api/history";
 import { fetchMarks } from "@/api/marks";
-import { fetchPortalSnapshots, fetchSnapshotHistory } from "@/api/portal";
+import { fetchPortalSnapshots } from "@/api/portal";
 import { PlanTick, fetchPlanTicks } from "@/api/runup";
 import { fetchSuggestionHistory, fetchSuggestions } from "@/api/suggestions";
 
@@ -319,15 +319,6 @@ export function usePortalSnapshots() {
   return useQuery({
     queryKey: ["portal_snapshots", pin],
     queryFn: () => fetchPortalSnapshots(pin),
-  });
-}
-
-/** Every portal sync, oldest first (migration 029). Empty before it runs. */
-export function useSnapshotHistory() {
-  const pin = usePin();
-  return useQuery({
-    queryKey: ["snapshot_history", pin],
-    queryFn: () => fetchSnapshotHistory(pin),
   });
 }
 

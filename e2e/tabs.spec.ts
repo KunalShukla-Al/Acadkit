@@ -196,8 +196,8 @@ test("nothing plays in: what a page shows is there when you arrive", async ({ si
 });
 
 test("a page's view still slides in when you switch to it", async ({ signedIn: page }) => {
-  await page.goto("/attendance");
-  await page.getByRole("tab", { name: "Forecast" }).click();
+  await page.goto("/marks");
+  await page.getByRole("tab", { name: "Targets" }).click();
   const pane = page.locator("[data-swipe].space-y-4");
   await expect.poll(() => pane.evaluate((e) => (e as HTMLElement).style.transform), { timeout: 3000 }).toMatch(/translateX/);
 });

@@ -1,4 +1,5 @@
 import type { Grade } from "@acadkit/core/grades";
+import { attendanceColor } from "@acadkit/core/attendance";
 
 /** A shareable summary image. */
 
@@ -43,10 +44,55 @@ export function buildShareData(input: {
       input.attendancePct === null ? "—" : `${Math.round(input.attendancePct)}%`,
     attendanceLabel: "attendance",
     rows,
-    footer: `${input.semester ? `Semester ${input.semester} · ` : ""}${date.toLocaleDateString(
-      "en-GB",
-      { day: "numeric", month: "short", year: "numeric" }
-    )} · AcadKit`,
+    footer: footerLine(input.semester, date),
+  };
+}
+
+/** "Semester 3 · 19 Nov 2026 · AcadKit", the line every card ends on. */
+function footerLine(semester: number | null | undefined, date: Date): string {
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return `${semester ? `Semester ${semester} · ` : ""}${day} · AcadKit`;
+}
+
+// ---------------------------------------------------------------------
+// Attendance card
+// ---------------------------------------------------------------------
+
+export interface AttendanceShare {
+  title: string;
+  overall: string;
+  overallColor: string;
+  overallLabel: string;
+  rows: Array<{ label: string; color: string; value: string; valueColor: string }>;
+  footer: string;
+}
+
+/** The share image for attendance, as Marks has one for grades: the overall number, then each subject's. */
+export function buildAttendanceShare(input: {
+  name?: string | null;
+  semester?: number | null;
+  attended: number;
+  total: number;
+  percentage: number | null;
+  subjects: Array<{ label: string; color: string; percentage: number | null; min: number }>;
+  date?: Date;
+}): AttendanceShare {
+  const grey = "#9ca3af";
+  return {
+    title: input.name ? `${input.name}'s attendance` : "My attendance",
+    overall: input.percentage === null ? "—" : `${Math.round(input.percentage)}%`,
+    overallColor: input.percentage === null ? grey : attendanceColor(input.percentage),
+    overallLabel: input.total > 0 ? `${input.attended} of ${input.total} classes attended` : "no classes marked yet",
+    rows: input.subjects
+      .filter((s) => s.percentage !== null)
+      .slice(0, MAX_ROWS)
+      .map((s) => ({
+        label: s.label,
+        color: s.color,
+        value: `${Math.round(s.percentage!)}%`,
+        valueColor: attendanceColor(s.percentage, s.min),
+      })),
+    footer: footerLine(input.semester, input.date ?? new Date()),
   };
 }
 
@@ -71,8 +117,10 @@ function roundRect(
   ctx.closePath();
 }
 
-/** Draw the card and hand back a PNG blob. */
-export async function renderShareCard(data: ShareData): Promise<Blob> {
+const sans = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+/** A blank card: the dark ground and a soft wash of `rgb` (as "r,g,b") from (x, y), so it isn't a flat rectangle. */
+function blankCard(rgb: string, alpha: number, x: number, y: number, radius: number) {
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -81,15 +129,54 @@ export async function renderShareCard(data: ShareData): Promise<Blob> {
 
   ctx.fillStyle = "#0b0b0f";
   ctx.fillRect(0, 0, W, H);
-
-  // A soft accent wash so the card isn't a flat rectangle.
-  const glow = ctx.createRadialGradient(W * 0.8, 120, 0, W * 0.8, 120, 720);
-  glow.addColorStop(0, "rgba(124,106,247,0.30)");
-  glow.addColorStop(1, "rgba(124,106,247,0)");
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  glow.addColorStop(0, `rgba(${rgb},${alpha})`);
+  glow.addColorStop(1, `rgba(${rgb},0)`);
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
+  return { canvas, ctx };
+}
 
-  const sans = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+/** One subject's chip: its colour dot, its label, and its value on the right. */
+function chipRow(ctx: CanvasRenderingContext2D, y: number, row: { color: string; label: string; value: string; valueColor?: string }) {
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  roundRect(ctx, 80, y, W - 160, 62, 20);
+  ctx.fill();
+
+  ctx.fillStyle = row.color;
+  ctx.beginPath();
+  ctx.arc(120, y + 31, 11, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#e5e7eb";
+  ctx.font = `600 32px ${sans}`;
+  ctx.fillText(row.label, 152, y + 43);
+
+  ctx.fillStyle = row.valueColor ?? "#ffffff";
+  ctx.font = `800 32px ${sans}`;
+  ctx.textAlign = "right";
+  ctx.fillText(row.value, W - 112, y + 43);
+  ctx.textAlign = "left";
+}
+
+function footer(ctx: CanvasRenderingContext2D, text: string) {
+  ctx.fillStyle = "#6b7280";
+  ctx.font = `600 28px ${sans}`;
+  ctx.fillText(text, 80, H - 70);
+}
+
+function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't render the image"))),
+      "image/png"
+    )
+  );
+}
+
+/** Draw the marks card and hand back a PNG blob. */
+export async function renderShareCard(data: ShareData): Promise<Blob> {
+  const { canvas, ctx } = blankCard("124,106,247", 0.3, W * 0.8, 120, 720);
 
   ctx.fillStyle = "#ffffff";
   ctx.font = `700 44px ${sans}`;
@@ -114,38 +201,37 @@ export async function renderShareCard(data: ShareData): Promise<Blob> {
   // Subject chips.
   let y = 790;
   for (const row of data.rows) {
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    roundRect(ctx, 80, y, W - 160, 62, 20);
-    ctx.fill();
-
-    ctx.fillStyle = row.color;
-    ctx.beginPath();
-    ctx.arc(120, y + 31, 11, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#e5e7eb";
-    ctx.font = `600 32px ${sans}`;
-    ctx.fillText(row.code, 152, y + 43);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `800 32px ${sans}`;
-    ctx.textAlign = "right";
-    ctx.fillText(row.grade, W - 112, y + 43);
-    ctx.textAlign = "left";
-
+    chipRow(ctx, y, { color: row.color, label: row.code, value: row.grade });
     y += 74;
   }
 
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `600 28px ${sans}`;
-  ctx.fillText(data.footer, 80, H - 70);
+  footer(ctx, data.footer);
+  return toPng(canvas);
+}
 
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't render the image"))),
-      "image/png"
-    )
-  );
+/** Draw the attendance card: the overall number as the hero, each subject's below. */
+export async function renderAttendanceCard(data: AttendanceShare): Promise<Blob> {
+  const { canvas, ctx } = blankCard("212,245,69", 0.22, W * 0.8, 120, 720);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 44px ${sans}`;
+  ctx.fillText(data.title, 80, 150);
+
+  ctx.fillStyle = data.overallColor;
+  ctx.font = `800 260px ${sans}`;
+  ctx.fillText(data.overall, 80, 420);
+  ctx.fillStyle = "#9ca3af";
+  ctx.font = `600 38px ${sans}`;
+  ctx.fillText(data.overallLabel, 84, 480);
+
+  let y = 580;
+  for (const row of data.rows) {
+    chipRow(ctx, y, row);
+    y += 74;
+  }
+
+  footer(ctx, data.footer);
+  return toPng(canvas);
 }
 
 /**
@@ -193,22 +279,7 @@ export interface SurvivalShare {
  * is a thing people screenshot once.
  */
 export async function renderSurvivalCard(data: SurvivalShare): Promise<Blob> {
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas is unavailable on this device");
-
-  ctx.fillStyle = "#0b0b0f";
-  ctx.fillRect(0, 0, W, H);
-
-  const glow = ctx.createRadialGradient(W * 0.2, 90, 0, W * 0.2, 90, 700);
-  glow.addColorStop(0, "rgba(212,245,69,0.22)");
-  glow.addColorStop(1, "rgba(212,245,69,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  const sans = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+  const { canvas, ctx } = blankCard("212,245,69", 0.22, W * 0.2, 90, 700);
 
   ctx.fillStyle = "#d4f545";
   ctx.font = `700 40px ${sans}`;
@@ -244,16 +315,8 @@ export async function renderSurvivalCard(data: SurvivalShare): Promise<Blob> {
     wrap(ctx, `already gone: ${data.lost.join(", ")}`, 80, y, W - 160, 40);
   }
 
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `600 28px ${sans}`;
-  ctx.fillText(data.footer, 80, H - 70);
-
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't render the image"))),
-      "image/png"
-    )
-  );
+  footer(ctx, data.footer);
+  return toPng(canvas);
 }
 
 /** Break `text` to `maxWidth`, drawing each line `lineHeight` apart. */
@@ -307,8 +370,6 @@ export async function renderWrappedCard(data: WrappedShare): Promise<Blob> {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas is unavailable on this device");
-
-  const sans = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 
   ctx.fillStyle = "#07070a";
   ctx.fillRect(0, 0, W, H);
@@ -366,14 +427,6 @@ export async function renderWrappedCard(data: WrappedShare): Promise<Blob> {
     wrap(ctx, stat.label, x + 32, y + 152, cellW - 64, 34);
   });
 
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `600 28px ${sans}`;
-  ctx.fillText(data.footer, 80, H - 70);
-
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't render the image"))),
-      "image/png"
-    )
-  );
+  footer(ctx, data.footer);
+  return toPng(canvas);
 }
