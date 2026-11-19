@@ -44,7 +44,7 @@ function SubjectRow({
   jumpedAt,
 }: {
   stats: SubjectAttendance;
-  /** Its projection: classes left, and the day it gets back over 65 and 75. Null without a timetable. */
+  /** Its projection: classes left, and the day it gets back over its bar. Null without a timetable. */
   projected: SubjectProjection | null;
   /** Set when a subject chip at the top jumped here: the row opens to show its detail. */
   jumpedAt?: number;
@@ -65,6 +65,7 @@ function SubjectRow({
     ["Absent", stats.total - stats.attended],
     ["Left", projected?.remaining ?? "—"],
   ];
+  const below = projected !== null && pct !== null && pct < projected.min;
 
   return (
     <div id={jumpTargetId("att", stats.subject.id)} className="card overflow-hidden">
@@ -89,15 +90,10 @@ function SubjectRow({
               ? say(VOICE.noClassesMarked, tone)
               : say(VOICE.hoursWasted, tone, stats.attended, stats.total)}
           </p>
-          {/* Under 65 or 75, the day each comes back by attending every class; gone once it's over both. */}
-          {projected && projected.climbs.length > 0 && (
-            <p className="mt-1 text-xs font-bold tabular">
-              {projected.climbs.map((c, i) => (
-                <span key={c.bar} className={c.date ? "text-warn-deep" : "text-bad-deep"}>
-                  {i > 0 && <span className="text-muted"> · </span>}
-                  {c.bar}% {c.date ? `by ${formatDate(c.date)}` : "out of reach"}
-                </span>
-              ))}
+          {/* Under its bar (65 on medical leave, else 75), the day it gets back over by attending every class. */}
+          {below && (
+            <p className={cn("mt-1 text-xs font-bold tabular", projected.recoveryDate ? "text-warn-deep" : "text-bad-deep")}>
+              {projected.min}% {projected.recoveryDate ? `by ${formatDate(projected.recoveryDate)}` : "out of reach"}
             </p>
           )}
         </div>
