@@ -288,3 +288,39 @@ describe("skips", () => {
     expect(overall.tightest?.name).toBe("Short");
   });
 });
+
+describe("class days left", () => {
+  const slot = (subject_id: string): TimetableSlot => ({
+    id: `t${subject_id}`,
+    device_id: "p",
+    subject_id,
+    day_order: 1,
+    start_time: "08:00:00",
+    end_time: "08:50:00",
+    room: null,
+  });
+  const marked = (subject_id: string, date: string): AttendanceRecord => ({
+    id: `${subject_id}${date}`,
+    device_id: "p",
+    subject_id,
+    date,
+    start_time: "08:00:00",
+    end_time: "08:50:00",
+    status: "present",
+  });
+  const subjects = [subj({ id: "s1" }), subj({ id: "s2" })];
+  // Day Order 1 falls on 3, 10 and 17 August; "today" is the 10th.
+  const win = { start: "2026-08-03", end: "2026-08-21" };
+
+  it("count today while any of its classes is unmarked", () => {
+    const { overall } = buildProjection(subjects, [marked("s1", "2026-08-10")], [slot("s1"), slot("s2")], [], [], "2026-08-10", win);
+    expect(overall.classDays).toBe(2);
+  });
+
+  it("drop today once every class of it is marked", () => {
+    const recs = [marked("s1", "2026-08-10"), marked("s2", "2026-08-10")];
+    const { overall } = buildProjection(subjects, recs, [slot("s1"), slot("s2")], [], [], "2026-08-10", win);
+    expect(overall.classDays).toBe(1);
+    expect(overall.remaining).toBe(2);
+  });
+});

@@ -8,6 +8,7 @@ import {
   editableAssessment,
   gradeForTargetSgpa,
   inferType,
+  internalsComplete,
   solveSubjectPlan,
 } from "./plan.ts";
 import type { Assessment, Deadline, Grade, Mark, PlannedComponent, Subject } from "./types.ts";
@@ -397,6 +398,41 @@ describe("subjectOutlook - the number every screen outside Insights shows", () =
     expect(o.hasAnyMarks).toBe(false);
     expect(o.predictedTotal).toBe(0);
     expect(o.pool).toBe(100);
+  });
+});
+
+describe("internalsComplete - when there is nothing left to add", () => {
+  it("is complete once the marks fill the internal weight, with or without an end-sem", () => {
+    const s = subject({ internal: 60, components: [] });
+    const marks = [mark("FJ-1", 11.1, 15), mark("LLJ-1", 6, 7), mark("FJ-2", 12.8, 15), mark("LLJ-2", 6, 8), mark("FJ-3", 11.8, 15)];
+    expect(internalsComplete(subjectOutlook(s, marks))).toBe(true);
+    expect(internalsComplete(subjectOutlook(s, [...marks, mark("End sem", 30, 40, true)]))).toBe(true);
+  });
+
+  it("isn't, while weight is still unannounced", () => {
+    const o = subjectOutlook(subject({ internal: 60, components: [] }), [mark("FJ-1", 11, 15)]);
+    expect(internalsComplete(o)).toBe(false);
+  });
+
+  it("isn't, while a planned component has no mark, even if the rest overfill the weight", () => {
+    const s = subject({ internal: 60, components: plan([["CT-1", 30], ["CT-2", 30]]) });
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 40, 60)]))).toBe(false);
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 25, 30), mark("CT-2", 20, 30)]))).toBe(true);
+  });
+
+  it("isn't, when unplanned marks overshoot the weight: they're raw scores, and more may come", () => {
+    const s = subject({ internal: 60, components: [] });
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 34, 50), mark("CT-2", 30, 50)]))).toBe(false);
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 34, 50), mark("Assignment", 8, 10)]))).toBe(true);
+  });
+
+  it("is, when a plan covers marks entered as raw scores", () => {
+    const s = subject({ internal: 60, components: plan([["CT-1", 30], ["CT-2", 30]]) });
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 40, 50), mark("CT-2", 45, 50)]))).toBe(true);
+  });
+
+  it("isn't, with nothing marked at all", () => {
+    expect(internalsComplete(subjectOutlook(subject({ internal: 60, components: [] }), []))).toBe(false);
   });
 });
 

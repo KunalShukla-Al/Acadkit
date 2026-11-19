@@ -1,9 +1,9 @@
 import { MarkHabitsCard } from "@/components/insights/habits-card";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { jumpTargetId } from "@/lib/jump";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Pencil, Plus, Share2, Target, TrendingUp } from "lucide-react";
+import { Plus, Share2, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Dot, Skeleton } from "@/components/ui/misc";
 import { SgpaDial } from "@/components/viz/sgpa-dial";
@@ -20,12 +20,12 @@ import {
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { countsInSgpa, groupMarksBySubject } from "@acadkit/core/grades";
-import { announcedPending, computeSgpa, floorMarks, floorTotal, type SubjectOutlook } from "@acadkit/core/plan";
+import { announcedPending, computeSgpa, floorMarks, floorTotal, internalsComplete, type SubjectOutlook } from "@acadkit/core/plan";
 import { buildShareData, renderShareCard, shareCard } from "@/lib/shareCard";
 import { computeOverallAttendance } from "@acadkit/core/attendance";
 import type { Mark, PlannedComponent, Subject } from "@acadkit/core/types";
 import { Segmented } from "@/components/ui/segmented";
-import { haptic } from "@/lib/utils";
+import { cn, haptic } from "@/lib/utils";
 import { useSwipe } from "@/hooks/useSwipe";
 import { slideTransition, slideVariants } from "@/lib/slide";
 import { GradesProjection } from "@/components/insights/grades-projection";
@@ -121,14 +121,12 @@ function SubjectMarksCard({
   // Announced in the plan, not marked yet. Shown so an announcement
   // made from here doesn't disappear into Settings.
   const pending = announcedPending(subject, marks.internalComponents);
+  // With every internal marked there is nothing left to add; a tile still opens its mark to edit.
+  const complete = internalsComplete(marks);
+  const tiles = marks.internalComponents.length + pending.length + (complete ? 0 : 1);
 
   return (
-    <motion.section
-      layout
-      id={jumpTargetId("marks", subject.id)}
-     
-      className="card p-5"
-    >
+    <motion.section layout id={jumpTargetId("marks", subject.id)} className="card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-start gap-2 font-bold">
@@ -147,34 +145,50 @@ function SubjectMarksCard({
         )}
       </div>
 
-      {/* Internals so far (raw) */}
-      <div className="mt-4">
-        <div className="mb-1.5 flex items-baseline justify-between text-xs font-semibold">
-          <span className="text-muted">Internals so far</span>
+      {/* Internals so far, raw, and the total they put you on pace for. */}
+      <div className="mt-3">
+        <div className="mb-1.5 flex items-baseline justify-between gap-3 text-xs font-semibold">
           <span className="tabular">
+            <span className="text-muted">Internals so far</span>{" "}
             <AnimatedNumber value={floorMarks(marks.internalObtained)} decimals={2} trim />
             <span className="text-muted"> / {marks.internalMax}</span>
           </span>
+          {marks.hasAnyMarks ? (
+            <span className="flex items-center gap-1 tabular">
+              <TrendingUp className="h-3.5 w-3.5 text-accent" />
+              <span className="text-muted">On pace</span>
+              <AnimatedNumber value={floorTotal(marks.predictedTotal)} decimals={2} trim />
+              <span className="text-muted">/ 100</span>
+            </span>
+          ) : (
+            <span className="text-muted">{say(VOICE.noInternals, tone)}</span>
+          )}
         </div>
         <Bar value={marks.internalObtained} max={marks.internalMax} color={subject.color_hex} />
       </div>
 
-      {/* Components */}
-      {(marks.internalComponents.length > 0 || pending.length > 0) && (
-        <div className="mt-4 flex flex-wrap gap-2">
+      {/* One tile per component. On a wide card they share one row; on a narrow
+          one they split into even rows. Either way they stretch, so no row
+          ends short. */}
+      <div className="@container mt-3" style={{ "--per": tiles <= 4 ? tiles : Math.ceil(tiles / 2) } as CSSProperties}>
+        <div className="flex flex-wrap gap-1.5">
           {marks.internalComponents.map((m) => (
             <button
               key={m.id}
               onClick={() => onEdit(subject, m)}
-              // px/py rather than a fixed height so the chip still hugs
-              // its label; py-3 takes it from 30px to a tappable 42.
-              className="group flex items-center gap-1.5 rounded-xl border bg-surface-2/50 px-3 py-3 text-xs font-semibold transition-colors hover:bg-surface-2"
+              className={cn(TILE, "border bg-surface-2/50 hover:bg-surface-2")}
             >
-              {m.label}
-              <span className="tabular text-muted">
-                {m.marks_obtained}/{m.max_marks}
+              <span className="text-[11px] font-semibold text-muted">{m.label}</span>
+              <span className="tabular text-sm font-bold">
+                {m.marks_obtained}
+                <span className="text-xs font-semibold text-muted">/{m.max_marks}</span>
               </span>
-              <Pencil className="h-3 w-3 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              {/* How much of this one you took. */}
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-[3px]"
+                style={{ width: `${m.max_marks > 0 ? Math.min(100, (m.marks_obtained / m.max_marks) * 100) : 0}%`, backgroundColor: subject.color_hex }}
+              />
             </button>
           ))}
           {pending.map((c) => (
@@ -182,33 +196,31 @@ function SubjectMarksCard({
               key={c.key}
               onClick={() => onAdd(subject, c)}
               aria-label={`Enter marks for ${c.label}`}
-              className="flex items-center gap-1.5 rounded-xl border border-dashed bg-transparent px-3 py-3 text-xs font-semibold text-muted transition-colors hover:bg-surface-2/50"
+              className={cn(TILE, "border border-dashed text-muted hover:bg-surface-2/50")}
             >
-              {c.label}
-              <span className="tabular">–/{c.max}</span>
-              <Plus className="h-3 w-3" />
+              <span className="text-[11px] font-semibold">{c.label}</span>
+              <span className="tabular text-sm font-bold">–<span className="text-xs font-semibold">/{c.max}</span></span>
             </button>
           ))}
+          {!complete && (
+            <button
+              onClick={() => onAdd(subject)}
+              className={cn(TILE, "items-center justify-center border border-dashed text-muted hover:bg-surface-2/50 hover:text-ink")}
+            >
+              <span className="flex items-center gap-1 text-xs font-semibold">
+                <Plus className="h-3.5 w-3.5" /> Add marks
+              </span>
+            </button>
+          )}
         </div>
-      )}
-
-      <div className="mt-4 flex items-center justify-between border-t pt-4">
-        {marks.hasAnyMarks ? (
-          <p className="flex items-center gap-1.5 text-sm font-bold tabular">
-            <TrendingUp className="h-4 w-4 text-accent" />
-            On pace for <AnimatedNumber value={floorTotal(marks.predictedTotal)} decimals={2} trim />
-            <span className="text-muted">/ 100</span>
-          </p>
-        ) : (
-          <p className="text-sm font-semibold text-muted">{say(VOICE.noInternals, tone)}</p>
-        )}
-        <Button variant="secondary" size="sm" onClick={() => onAdd(subject)}>
-          <Plus className="h-3.5 w-3.5" /> Add marks
-        </Button>
       </div>
     </motion.section>
   );
 }
+
+/** A component tile: tappable, and it stretches with its row (see --per above). */
+const TILE =
+  "relative flex min-h-[3.25rem] min-w-[4.5rem] flex-1 basis-[calc(100%/var(--per)-0.5rem)] flex-col justify-center gap-0.5 overflow-hidden rounded-xl px-3 py-2 text-left transition-colors @[24rem]:basis-0";
 
 export default function Marks() {
   return <MarksInner />;

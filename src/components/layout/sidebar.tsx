@@ -58,7 +58,7 @@ export function Sidebar() {
           <RunupChip wide />
         </Suspense>
         <CalendarButton wide />
-        <MoreButton wide />
+        <MoreButton />
       </div>
 
       <nav className="mt-6 flex flex-1 flex-col gap-1" aria-label="Primary">

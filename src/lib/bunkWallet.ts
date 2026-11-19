@@ -51,10 +51,3 @@ export function buildWallet(stats: SubjectAttendance[]): Wallet {
     empty: rows.length === 0,
   };
 }
-
-/** How many pips to draw for a balance. */
-export const PIP_CAP = 8;
-
-export function pipsFor(left: number): { pips: number; overflow: number } {
-  return { pips: Math.min(left, PIP_CAP), overflow: Math.max(0, left - PIP_CAP) };
-}

@@ -1,40 +1,26 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
-import { CalendarX2, History, Settings, X, type LucideIcon } from "lucide-react";
-import { CORNER, CornerMark } from "@/components/layout/corner-mark";
+import { CalendarX2, ChevronRight, History, Settings, X, type LucideIcon } from "lucide-react";
+import { CornerMark } from "@/components/layout/corner-mark";
+import { CORNER, CORNER_INSET, cornerBox, cornerRadius } from "@/components/layout/corner-shape";
 import { cn } from "@/lib/utils";
-
-const STICKER = 68;
-/** Clear of the top bar above, and how far the stickers reach above and below their anchor, labels included. */
-const TOP = 72;
-const REACH_UP = 270;
-const REACH_DOWN = 70;
 
 interface Item {
   label: string;
   icon: LucideIcon;
   to: string;
-  tone: keyof typeof TONES;
-  /** Where its sticker lands from the anchor, and its tilt. */
-  at: [dx: number, dy: number, tilt: number];
 }
 
-const TONES = {
-  lime: "bg-brand text-brand-ink",
-  coral: "bg-accent-2 text-brand-ink",
-};
-
-/** What the corner holds: the pages used now and then, as a cluster of stickers beside it. */
+/** What the corner holds: the pages used now and then. */
 const ITEMS: Item[] = [
-  { label: "Skips", icon: CalendarX2, to: "/skips", tone: "coral", at: [-210, -160, 7] },
-  { label: "History", icon: History, to: "/history", tone: "lime", at: [-238, -40, 9] },
-  { label: "Settings", icon: Settings, to: "/settings", tone: "coral", at: [-134, 8, -6] },
+  { label: "Skips", icon: CalendarX2, to: "/skips" },
+  { label: "History", icon: History, to: "/history" },
+  { label: "Settings", icon: Settings, to: "/settings" },
 ];
 
-/** The tab bar's height, which it keeps in --nav-h; 0 where there's no bar. */
-function navHeight(): number {
-  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 0;
-}
+/** The card's gap above the corner. */
+const GAP = 8;
+const SPRING = { type: "spring", stiffness: 520, damping: 36 } as const;
 
 interface Props {
   onClose: () => void;
@@ -42,21 +28,16 @@ interface Props {
 }
 
 /**
- * The corner, open: the stickers burst out of it, and the corner turns
- * into its close button. `onPick` gets an item's page.
+ * The corner, open: it grows into a card of the pages it holds, one row
+ * each, and turns into its own close button. `onPick` gets a row's page.
  */
 export default function CornerMenu({ open, ...props }: Props & { open: boolean }) {
-  return createPortal(<AnimatePresence>{open && <Burst key="menu" {...props} />}</AnimatePresence>, document.body);
+  return createPortal(<AnimatePresence>{open && <Panel key="menu" {...props} />}</AnimatePresence>, document.body);
 }
 
-function Burst({ onClose, onPick }: Props) {
+function Panel({ onClose, onPick }: Props) {
   // Closing, it lets taps through to the page and the corner underneath.
   const present = useIsPresent();
-  const bottom = window.innerHeight - navHeight();
-  // The corner's own middle, where the stickers start from.
-  const origin = { x: window.innerWidth - CORNER / 3, y: bottom - CORNER / 3 };
-  // The cluster hangs off a point on the right just above the tab bar, kept clear of the bars.
-  const anchor = { x: window.innerWidth - 34, y: Math.min(Math.max(window.innerHeight - 152, TOP + REACH_UP), window.innerHeight - 80 - REACH_DOWN) };
 
   return (
     <motion.div
@@ -67,52 +48,54 @@ function Burst({ onClose, onPick }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.08 }}
+      transition={{ duration: 0.12 }}
     >
       {/* Tapping anywhere else closes it too; the keyboard has the close button and Escape. */}
-      <button type="button" aria-hidden tabIndex={-1} className="absolute inset-0 bg-bg/95" onClick={onClose} />
+      <button type="button" aria-hidden tabIndex={-1} className="absolute inset-0 bg-bg/80" onClick={onClose} />
 
-      {ITEMS.map((item, i) => {
-        const [dx, dy, tilt] = item.at;
-        const from = { left: origin.x - 48, top: origin.y - STICKER / 2, opacity: 0, scale: 0.2 };
-        return (
+      {/* Grows out of the corner below it, so it reads as the corner opening; it shares
+          the corner's shape, its tight corner on the same side. */}
+      <motion.div
+        className="card absolute w-60 p-1.5"
+        style={{
+          right: CORNER_INSET,
+          bottom: `calc(var(--nav-h, 0px) + ${CORNER_INSET + CORNER + GAP}px)`,
+          borderRadius: cornerRadius(26),
+          transformOrigin: "bottom right",
+        }}
+        initial={{ opacity: 0, scale: 0.4 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.12 } }}
+        transition={SPRING}
+      >
+        {ITEMS.map((item, i) => (
           <motion.button
             key={item.label}
             type="button"
             onClick={() => onPick(item.to)}
-            initial={from}
-            animate={{ left: anchor.x + dx - 48, top: anchor.y + dy - STICKER / 2, opacity: 1, scale: 1 }}
-            exit={{ ...from, transition: { duration: 0.1 } }}
-            transition={{ type: "spring", stiffness: 900, damping: 40, delay: i * 0.015 }}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            className="group absolute flex w-24 flex-col items-center gap-2.5 outline-none"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING, delay: 0.04 + i * 0.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left outline-none transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <motion.span
-              initial={{ rotate: 0 }}
-              animate={{ rotate: tilt }}
-              transition={{ type: "spring", stiffness: 700, damping: 30, delay: i * 0.015 }}
-              className={cn(
-                "relative flex items-center justify-center rounded-[22px] ring-accent/60 ring-offset-2 ring-offset-bg group-focus-visible:ring-4",
-                TONES[item.tone]
-              )}
-              style={{ width: STICKER, height: STICKER }}
-            >
-              <item.icon className="h-7 w-7" strokeWidth={2.2} />
-            </motion.span>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-ink">{item.label}</span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-ink">
+              <item.icon className="h-5 w-5" strokeWidth={2.2} />
+            </span>
+            <span className="flex-1 text-sm font-bold text-ink">{item.label}</span>
+            <ChevronRight className="h-4 w-4 text-muted" />
           </motion.button>
-        );
-      })}
+        ))}
+      </motion.div>
 
-      {/* The corner, turned into the close button where it sits, over the stickers until they fly out. */}
+      {/* The corner, turned into the close button where it sits. */}
       <button
         type="button"
         aria-label="Close"
         autoFocus
         onClick={onClose}
-        className="absolute right-0 rounded-tl-full bg-brand text-brand-ink"
-        style={{ width: CORNER, height: CORNER, bottom: "var(--nav-h, 0px)" }}
+        className="absolute bg-brand text-brand-ink"
+        style={cornerBox}
       >
         <CornerMark>
           <motion.span

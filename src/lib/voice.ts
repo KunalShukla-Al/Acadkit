@@ -144,12 +144,6 @@ export const VOICE = {
     brutal: () => "no marks yet. nothing to aim at.",
   }),
 
-  /** Prompt inviting you to plan skips on the heatmap. */
-  forecastHint: pick({
-    plain: () => "Pick a day ahead to see the cost of skipping it.",
-    quiet: () => "Pick a day to see what skipping it costs.",
-    brutal: () => "tap a future day. see what it costs you.",
-  }),
 
   /** `n` days, `c` classes selected. */
   forecastSelected: pick<[n: number, c: number]>({
@@ -350,11 +344,6 @@ export const VOICE = {
     brutal: () => "mark a day and find out which colour you are.",
   }),
 
-  /** `n` future classes can still be missed. */
-  skipBudget: pick<[n: number]>({
-    plain: (n) => `class${n === 1 ? "" : "es"} you can skip`,
-    brutal: (n) => (n === 0 ? "you can skip nothing" : `free skip${n === 1 ? "" : "s"} left`),
-  }),
 
   // ---- risk labels ----
 

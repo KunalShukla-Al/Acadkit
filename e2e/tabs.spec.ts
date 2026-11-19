@@ -4,7 +4,6 @@ import { expect, MOCK_API, test, waitForLaunch } from "./fixtures";
 // The five tabs (src/lib/screens.ts), the Run-up in the top bar and the corner (src/components/layout).
 const bar = (page: Page) => page.getByRole("navigation", { name: "Primary" }).last();
 const corner = (page: Page) => page.getByRole("button", { name: /Calendar\. Hold for/ });
-const more = (page: Page) => page.getByRole("button", { name: /^More: / });
 
 test("the bar is the five tabs, each lit for its pages, and the corner's and the Run-up's light none", async ({ signedIn: page }) => {
   await expect(bar(page).getByRole("link")).toHaveText(["Today", "Timetable", "Attendance", "Marks", "Study"]);
@@ -103,8 +102,11 @@ test("the corner carries the day order and opens the calendar in one tap", async
   await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
 });
 
-test("More, or holding the corner, opens the pages used now and then", async ({ signedIn: page }) => {
-  await more(page).click();
+test("holding the corner opens the pages used now and then, and the phone's top bar has no More of its own", async ({ signedIn: page }) => {
+  await expect(page.getByRole("banner").getByRole("button", { name: /^More: / })).toHaveCount(0);
+
+  // A right-click is what a held finger sends.
+  await corner(page).click({ button: "right" });
   const menu = page.getByRole("dialog", { name: "More" });
   await expect(menu.getByRole("button", { name: "Close" })).toBeFocused();
   await expect(menu.getByRole("button").filter({ hasText: /\w/ })).toHaveText([/skips/i, /history/i, /settings/i]);
@@ -113,7 +115,7 @@ test("More, or holding the corner, opens the pages used now and then", async ({ 
   await expect(page).toHaveURL("/settings");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
-  await more(page).click();
+  await corner(page).click({ button: "right" });
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "More" })).toHaveCount(0);
 
@@ -126,12 +128,14 @@ test("More, or holding the corner, opens the pages used now and then", async ({ 
   await expect(page).toHaveURL("/settings");
 });
 
-test("the corner sits flush in the bottom-right corner, on the tab bar where there is one", async ({ signedIn: page, isMobile }) => {
+test("the corner floats in the bottom-right, as far from the edge as from the tab bar where there is one", async ({ signedIn: page, isMobile }) => {
   const box = (await corner(page).boundingBox())!;
   const { width, height } = page.viewportSize()!;
   const floor = isMobile ? (await bar(page).boundingBox())!.y : height;
-  expect(Math.round(box.x + box.width)).toBe(width);
-  expect(Math.round(box.y + box.height)).toBe(Math.round(floor));
+  const fromEdge = Math.round(width - (box.x + box.width));
+  const fromFloor = Math.round(floor - (box.y + box.height));
+  expect(fromEdge).toBeGreaterThan(0);
+  expect(fromFloor).toBe(fromEdge);
 });
 
 test("old links (notifications, bookmarks, the Shortcuts) land on the page they meant", async ({ signedIn: page }) => {

@@ -1,5 +1,4 @@
 import { AttendanceHabitsCard } from "@/components/insights/habits-card";
-import { reconcile, type Reconciliation } from "@/lib/reconcile";
 import { useMemo, useState } from "react";
 import { JumpPills } from "@/components/ui/jump-pills";
 import { jumpTargetId } from "@/lib/jump";
@@ -7,10 +6,7 @@ import { subjectShort } from "@acadkit/core/subjectShort";
 import { motion } from "motion/react";
 import {
   AlertTriangle,
-  ChevronDown,
   GraduationCap,
-  ShieldCheck,
-  Siren,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -31,7 +27,6 @@ import {
   attendanceColor,
   attendanceTextClass,
   computeOverallAttendance,
-  snapshotsByCode,
   type SubjectAttendance,
 } from "@acadkit/core/attendance";
 import { buildEffectiveMap, semesterWindow } from "@acadkit/core/calendar";
@@ -50,11 +45,12 @@ import { useProjectionReport } from "@/hooks/useProjectionReport";
 
 function SubjectRow({
   stats,
-  recon,
+  left,
   jumpedAt,
 }: {
   stats: SubjectAttendance;
-  recon: Reconciliation | null;
+  /** Its classes still on the calendar and not yet marked; null without a timetable to count them from. */
+  left: number | null;
   /** Set when a subject chip at the top jumped here: the row opens to show its detail. */
   jumpedAt?: number;
 }) {
@@ -67,18 +63,20 @@ function SubjectRow({
     if (jumpedAt) setOpen(true);
   }
   const pct = stats.percentage;
+  const canOpen = stats.total > 0;
+  const counts: Array<[string, number | string]> = [
+    ["Total", stats.total],
+    ["Attended", stats.attended],
+    ["Absent", stats.total - stats.attended],
+    ["Left", left ?? "—"],
+  ];
 
   return (
-    <motion.div
-      layout
-      id={jumpTargetId("att", stats.subject.id)}
-     
-      className="card overflow-hidden"
-    >
+    <div id={jumpTargetId("att", stats.subject.id)} className="card overflow-hidden">
       <button
         className="flex w-full items-center gap-4 p-4 text-left"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
+        onClick={() => canOpen && setOpen((v) => !v)}
+        aria-expanded={canOpen ? open : undefined}
       >
         <ProgressRing value={pct ?? 0} size={56} strokeWidth={6} color={attendanceColor(pct)}>
           <span className={cn("text-xs font-extrabold tabular", attendanceTextClass(pct))}>
@@ -97,100 +95,31 @@ function SubjectRow({
               : say(VOICE.hoursWasted, tone, stats.attended, stats.total)}
           </p>
         </div>
-
-        <ChevronDown
-          className={cn("h-4 w-4 shrink-0 text-muted transition-transform", open && "rotate-180")}
-        />
       </button>
 
-      {open && stats.total > 0 && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          className="border-t"
-        >
-          <div className="grid grid-cols-2 divide-x">
-            <div className="flex items-center gap-3 p-4">
-              <ShieldCheck className="h-5 w-5 shrink-0 text-good-deep" />
-              <div>
-                <span className="text-lg font-extrabold tabular">
-                  {stats.canBunk}
-                </span>
-                <p className="text-[11px] font-semibold text-muted">
-                  {say(VOICE.skipBudget, tone, stats.canBunk)}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4">
-              <Siren
-                className={cn(
-                  "h-5 w-5 shrink-0",
-                  stats.needToAttend > 0 ? "text-bad-deep" : "text-muted"
-                )}
-              />
-              <div>
-                <span className="text-lg font-extrabold tabular">
-                  {stats.needToAttend}
-                </span>
-                <p className="text-[11px] font-semibold text-muted">needed to reach {stats.min}%</p>
-              </div>
-            </div>
-          </div>
-
-
-          {/* The app's number is the portal's brought up to date, which means it is deliberately not the portal's. */}
-          {recon && (
-            <div className="border-t px-4 py-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted">
-                Why this differs from the portal
-              </p>
-              <dl className="mt-2 space-y-1.5 text-xs">
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-muted">
-                    Portal, {relativeDay(recon.portalAsOf)}
-                  </dt>
-                  <dd className="shrink-0 font-semibold tabular">
-                    {recon.portalAttended}/{recon.portalConducted}
-                    {/* One decimal, matching "Now" below. */}
-                    {recon.portalPercentage !== null
-                      ? ` · ${recon.portalPercentage.toFixed(1)}%`
-                      : ""}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-muted">
-                    {recon.sinceCounted === 0
-                      ? "Nothing marked since"
-                      : `Marked since · ${recon.sinceAttended} of ${recon.sinceCounted} attended`}
-                    {recon.sinceCancelled > 0
-                      ? ` (${recon.sinceCancelled} cancelled, not counted)`
-                      : ""}
-                  </dt>
-                  <dd className="shrink-0 font-semibold tabular">
-                    {recon.sinceCounted === 0
-                      ? "—"
-                      : `+${recon.sinceAttended}/${recon.sinceCounted}`}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-3 border-t pt-1.5">
-                  <dt className="font-bold">Now</dt>
-                  <dd className={cn("shrink-0 font-extrabold tabular", attendanceTextClass(recon.percentage))}>
-                    {recon.attended}/{recon.conducted}
-                    {recon.percentage !== null ? ` · ${recon.percentage.toFixed(1)}%` : ""}
-                  </dd>
-                </div>
-              </dl>
-              {recon.delta !== null && Math.abs(recon.delta) >= 0.05 && (
-                <p className="mt-2 text-[11px] text-muted">
-                  Your marking has moved it {recon.delta > 0 ? "up" : "down"}{" "}
-                  {Math.abs(recon.delta).toFixed(1)} points since the last sync.
-                </p>
-              )}
-            </div>
+      {/* Opens by its rows, 0fr to 1fr, which the browser eases without measuring the
+          content, so the card grows smoothly and the rows below follow it. */}
+      {canOpen && (
+        <div
+          inert={!open}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
           )}
-        </motion.div>
+        >
+          <div className="overflow-hidden">
+            <dl className="grid grid-cols-4 divide-x border-t">
+              {counts.map(([label, value]) => (
+                <div key={label} className="flex flex-col-reverse items-center px-2 py-3">
+                  <dt className="text-[11px] font-semibold text-muted">{label}</dt>
+                  <dd className="text-lg font-extrabold tabular">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -238,21 +167,14 @@ function AttendanceInner() {
     [subjects, attendance, snapshots]
   );
 
-  /**
-   * Why each subject's number isn't the one the portal printed.
-   *
-   * Computed here rather than in the row because this is where the raw
-   * records and snapshots are; the row only ever sees totals.
-   */
-  const reconciliations = useMemo(() => {
-    const byCode = snapshotsByCode(snapshots ?? []);
-    const out = new Map<string, Reconciliation>();
-    for (const s of subjects ?? []) {
-      const r = reconcile(s, attendance ?? [], byCode.get(s.code.trim().toUpperCase()));
-      if (r) out.set(s.id, r);
-    }
-    return out;
-  }, [subjects, attendance, snapshots]);
+  // Each subject's classes still to come, for its row; none to count without a timetable.
+  const leftBySubject = useMemo(
+    () =>
+      projection.timetable.length === 0
+        ? null
+        : new Map(projection.report.perSubject.map((p) => [p.subject.id, p.remaining])),
+    [projection.timetable.length, projection.report]
+  );
   // Depend on the two fields, not the settings object: React Query
   // hands back a new object on every refetch, so listing `settings`
   // would satisfy the linter by defeating the memo.
@@ -314,7 +236,7 @@ function AttendanceInner() {
           </div>
           {overall.portalAsOf && health.state !== "stale" && (
             <p className="mt-0.5 text-[11px] font-medium text-muted">
-              Synced {relativeDay(overall.portalAsOf)} · classes marked since are counted on top
+              Synced {relativeDay(overall.portalAsOf)}
             </p>
           )}
           {/* Silent staleness is the failure mode: the sync writes with no
@@ -465,45 +387,38 @@ function AttendanceInner() {
                 onToggleSkip={toggleSkip}
               />
 
-              {/* The forecast only earns space once there is a plan to
-                  report on; before that it's a hint, not a readout. */}
-              {plan.baseline !== null && (
+              {/* What the days you've pencilled in as skips would cost, once there are some. */}
+              {plan.baseline !== null && skipped.size > 0 && (
                 <div className="mt-4 border-t pt-3">
-                  {skipped.size === 0 ? (
-                    <p className="text-xs font-medium text-muted">
-                      {say(VOICE.forecastHint, tone)}
-                    </p>
-                  ) : (
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-muted">
-                          {say(VOICE.forecastSelected, tone, skipped.size, plan.classesSkipped)}
-                        </p>
-                        <p
-                          className={cn(
-                            "mt-0.5 text-2xl font-extrabold tabular",
-                            attendanceTextClass(plan.projected)
-                          )}
-                        >
-                          {plan.projected!.toFixed(1)}%
-                          <span className="ml-2 text-sm font-bold text-muted">
-                            {plan.delta.toFixed(1)}
-                          </span>
-                        </p>
-                        {plan.belowMinimum && (
-                          <p className="mt-0.5 text-xs font-bold text-bad-deep">
-                            {say(VOICE.forecastBelow, tone)}
-                          </p>
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-muted">
+                        {say(VOICE.forecastSelected, tone, skipped.size, plan.classesSkipped)}
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-0.5 text-2xl font-extrabold tabular",
+                          attendanceTextClass(plan.projected)
                         )}
-                      </div>
-                      <button
-                        onClick={() => setSkipped(new Set())}
-                        className="shrink-0 rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold"
                       >
-                        Clear
-                      </button>
+                        {plan.projected!.toFixed(1)}%
+                        <span className="ml-2 text-sm font-bold text-muted">
+                          {plan.delta.toFixed(1)}
+                        </span>
+                      </p>
+                      {plan.belowMinimum && (
+                        <p className="mt-0.5 text-xs font-bold text-bad-deep">
+                          {say(VOICE.forecastBelow, tone)}
+                        </p>
+                      )}
                     </div>
-                  )}
+                    <button
+                      onClick={() => setSkipped(new Set())}
+                      className="shrink-0 rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -518,7 +433,7 @@ function AttendanceInner() {
           <SubjectRow
             key={s.subject.id}
             stats={s}
-            recon={reconciliations.get(s.subject.id) ?? null}
+            left={leftBySubject ? leftBySubject.get(s.subject.id) ?? 0 : null}
             jumpedAt={jumped?.id === s.subject.id ? jumped.at : undefined}
           />
         ))}
