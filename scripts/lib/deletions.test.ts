@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
 import { dropFromPrep, freeName, resolveRequest, shaOfKey, sourceOf, trashName, webVersionOf } from "./deletions.mjs";
 
 const ROOT = "/Users/me/Documents/SRM_Sem3";
@@ -27,6 +30,39 @@ describe("resolveRequest", () => {
   });
   it("refuses non-strings", () => {
     expect(resolveRequest(ROOT, null as unknown as string)).toHaveProperty("error");
+  });
+});
+
+describe("resolveRequest on disk, with symlinks", () => {
+  const base = realpathSync(mkdtempSync(path.join(tmpdir(), "acadkit-links-")));
+  const root = path.join(base, "SRM_Sem3");
+  const outside = path.join(base, "elsewhere");
+  mkdirSync(path.join(root, "OS", "02_Notes"), { recursive: true });
+  mkdirSync(outside);
+  writeFileSync(path.join(root, "OS", "02_Notes", "Unit 1.pdf"), "notes");
+  writeFileSync(path.join(outside, "secret.txt"), "not yours");
+  symlinkSync(outside, path.join(root, "Linked"));
+  symlinkSync(path.join(outside, "secret.txt"), path.join(root, "OS", "secret.pdf"));
+  symlinkSync(path.join(root, "OS", "02_Notes"), path.join(root, "Notes"));
+  afterAll(() => rmSync(base, { recursive: true, force: true }));
+
+  it("allows a real file", () => {
+    expect(resolveRequest(root, "OS/02_Notes/Unit 1.pdf")).toEqual({ full: path.join(root, "OS", "02_Notes", "Unit 1.pdf") });
+  });
+  it("refuses a file reached through a linked folder that leads outside", () => {
+    expect(resolveRequest(root, "Linked/secret.txt").error).toMatch(/link that leads outside/);
+  });
+  it("refuses a new file written into a linked folder that leads outside", () => {
+    expect(resolveRequest(root, "Linked/new/upload.pdf").error).toMatch(/link that leads outside/);
+  });
+  it("refuses a file that is itself a link to outside", () => {
+    expect(resolveRequest(root, "OS/secret.pdf").error).toMatch(/link that leads outside/);
+  });
+  it("allows a link that stays inside the folder", () => {
+    expect(resolveRequest(root, "Notes/Unit 1.pdf")).toHaveProperty("full");
+  });
+  it("allows a new file in a real folder", () => {
+    expect(resolveRequest(root, "OS/02_Notes/new/photo.jpg")).toHaveProperty("full");
   });
 });
 

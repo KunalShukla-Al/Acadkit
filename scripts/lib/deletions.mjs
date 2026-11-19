@@ -2,6 +2,7 @@
  * Pure helpers for scripts/apply-study-deletions.mjs, kept apart so they
  * can be tested without a Mac, a bucket or a Trash.
  */
+import { realpathSync } from "node:fs";
 import path from "node:path";
 
 /** Where a requested path lives on disk, or why it may not be touched. */
@@ -15,7 +16,31 @@ export function resolveRequest(root, rel) {
     return { error: "the sync never uploads this path" };
   const full = path.resolve(root, ...parts);
   if (!full.startsWith(path.resolve(root) + path.sep)) return { error: "not a path inside the study folder" };
+  if (!insideOnDisk(root, full)) return { error: "a link that leads outside the study folder" };
   return { full };
+}
+
+/**
+ * Whether `full` really sits inside `root` once symlinks are followed: the
+ * deepest part of the path that exists must resolve inside the root's real
+ * location, so a linked folder can't carry a write or a delete elsewhere.
+ * A root that isn't on disk has nothing to follow.
+ */
+function insideOnDisk(root, full) {
+  let realRoot;
+  try {
+    realRoot = realpathSync(root);
+  } catch {
+    return true;
+  }
+  for (let p = full; ; p = path.dirname(p)) {
+    try {
+      const real = realpathSync(p);
+      return real === realRoot || real.startsWith(realRoot + path.sep);
+    } catch {
+      if (path.dirname(p) === p) return false;
+    }
+  }
 }
 
 /** The content hash inside a storage key: "<pin>/blobs/<sha256>.<ext>" → sha256. */
