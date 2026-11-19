@@ -420,6 +420,17 @@ describe("internalsComplete - when there is nothing left to add", () => {
     expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 25, 30), mark("CT-2", 20, 30)]))).toBe(true);
   });
 
+  it("isn't, when unplanned marks overshoot the weight: they're raw scores, and more may come", () => {
+    const s = subject({ internal: 60, components: [] });
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 34, 50), mark("CT-2", 30, 50)]))).toBe(false);
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 34, 50), mark("Assignment", 8, 10)]))).toBe(true);
+  });
+
+  it("is, when a plan covers marks entered as raw scores", () => {
+    const s = subject({ internal: 60, components: plan([["CT-1", 30], ["CT-2", 30]]) });
+    expect(internalsComplete(subjectOutlook(s, [mark("CT-1", 40, 50), mark("CT-2", 45, 50)]))).toBe(true);
+  });
+
   it("isn't, with nothing marked at all", () => {
     expect(internalsComplete(subjectOutlook(subject({ internal: 60, components: [] }), []))).toBe(false);
   });

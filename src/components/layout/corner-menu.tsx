@@ -1,7 +1,8 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { CalendarX2, ChevronRight, History, Settings, X, type LucideIcon } from "lucide-react";
-import { CORNER, CornerMark } from "@/components/layout/corner-mark";
+import { CornerMark } from "@/components/layout/corner-mark";
+import { CORNER, CORNER_INSET, cornerBox, cornerRadius } from "@/components/layout/corner-shape";
 import { cn } from "@/lib/utils";
 
 interface Item {
@@ -17,8 +18,8 @@ const ITEMS: Item[] = [
   { label: "Settings", icon: Settings, to: "/settings" },
 ];
 
-/** The panel's gap from the screen edge and from the corner below it. */
-const EDGE = 12;
+/** The card's gap above the corner. */
+const GAP = 8;
 const SPRING = { type: "spring", stiffness: 520, damping: 36 } as const;
 
 interface Props {
@@ -52,10 +53,16 @@ function Panel({ onClose, onPick }: Props) {
       {/* Tapping anywhere else closes it too; the keyboard has the close button and Escape. */}
       <button type="button" aria-hidden tabIndex={-1} className="absolute inset-0 bg-bg/80" onClick={onClose} />
 
-      {/* Grows out of the corner below it, so it reads as the corner opening. */}
+      {/* Grows out of the corner below it, so it reads as the corner opening; it shares
+          the corner's shape, its tight corner on the same side. */}
       <motion.div
         className="card absolute w-60 p-1.5"
-        style={{ right: EDGE, bottom: `calc(var(--nav-h, 0px) + ${CORNER + EDGE / 2}px)`, transformOrigin: "bottom right" }}
+        style={{
+          right: CORNER_INSET,
+          bottom: `calc(var(--nav-h, 0px) + ${CORNER_INSET + CORNER + GAP}px)`,
+          borderRadius: cornerRadius(26),
+          transformOrigin: "bottom right",
+        }}
         initial={{ opacity: 0, scale: 0.4 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.12 } }}
@@ -87,8 +94,8 @@ function Panel({ onClose, onPick }: Props) {
         aria-label="Close"
         autoFocus
         onClick={onClose}
-        className="absolute right-0 rounded-tl-full bg-brand text-brand-ink"
-        style={{ width: CORNER, height: CORNER, bottom: "var(--nav-h, 0px)" }}
+        className="absolute bg-brand text-brand-ink"
+        style={cornerBox}
       >
         <CornerMark>
           <motion.span

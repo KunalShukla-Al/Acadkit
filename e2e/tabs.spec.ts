@@ -126,12 +126,14 @@ test("More, or holding the corner, opens the pages used now and then", async ({ 
   await expect(page).toHaveURL("/settings");
 });
 
-test("the corner sits flush in the bottom-right corner, on the tab bar where there is one", async ({ signedIn: page, isMobile }) => {
+test("the corner floats in the bottom-right, as far from the edge as from the tab bar where there is one", async ({ signedIn: page, isMobile }) => {
   const box = (await corner(page).boundingBox())!;
   const { width, height } = page.viewportSize()!;
   const floor = isMobile ? (await bar(page).boundingBox())!.y : height;
-  expect(Math.round(box.x + box.width)).toBe(width);
-  expect(Math.round(box.y + box.height)).toBe(Math.round(floor));
+  const fromEdge = Math.round(width - (box.x + box.width));
+  const fromFloor = Math.round(floor - (box.y + box.height));
+  expect(fromEdge).toBeGreaterThan(0);
+  expect(fromFloor).toBe(fromEdge);
 });
 
 test("old links (notifications, bookmarks, the Shortcuts) land on the page they meant", async ({ signedIn: page }) => {

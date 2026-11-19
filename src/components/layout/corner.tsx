@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, Star } from "lucide-react";
 import { useToday } from "@/hooks/useToday";
-import { CORNER, CornerMark } from "@/components/layout/corner-mark";
+import { CornerMark } from "@/components/layout/corner-mark";
+import { cornerBox } from "@/components/layout/corner-shape";
 import { cn, haptic } from "@/lib/utils";
 
 // The menu and the calendar load on their own; a finger on the corner starts both downloads.
@@ -17,8 +18,8 @@ const OPEN_MORE = "acadkit:open-more";
 const HOLD_MS = 450;
 
 /**
- * The corner: a lime quarter-disc fixed in the bottom-right corner, above
- * the tab bar on a phone (`--nav-h`, which the bar keeps), carrying
+ * The corner: a lime squircle floating in the bottom-right, above the tab
+ * bar on a phone (`--nav-h`, which the bar keeps; shape in corner-mark.tsx), carrying
  * today's Day Order (a star on a day without classes). A tap opens the
  * calendar, the page I open most. Held, or from a More button, it grows
  * into a card of the pages used now and then (Skips, History, Settings;
@@ -96,9 +97,9 @@ export function Corner() {
           haptic();
           navigate("/calendar");
         }}
-        style={{ width: CORNER, height: CORNER, bottom: "var(--nav-h, 0px)" }}
+        style={cornerBox}
         className={cn(
-          "fixed right-0 z-40 touch-manipulation select-none rounded-tl-full bg-brand text-brand-ink transition-[transform,opacity] [-webkit-touch-callout:none] active:scale-95",
+          "fixed z-40 touch-manipulation select-none bg-brand text-brand-ink transition-[transform,opacity] [-webkit-touch-callout:none] active:scale-95",
           open && "pointer-events-none opacity-0"
         )}
       >

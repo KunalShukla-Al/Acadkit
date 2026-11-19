@@ -695,9 +695,16 @@ export function subjectOutlook(
 /**
  * Every internal has its mark: nothing planned, dated or still unannounced is
  * left to come, so there is nothing more to add. The end-sem doesn't count.
+ *
+ * Marks no plan accounts for, adding up past the internal weight, are in some
+ * other unit (a paper's raw score, say 34/50), so they can't say the internals
+ * are done; more may still come.
  */
-export function internalsComplete(budget: SubjectBudget): boolean {
-  return budget.hasAnyMarks && budget.components.every((c) => c.kind === "external" || c.obtained !== null);
+export function internalsComplete(outlook: SubjectOutlook): boolean {
+  if (!outlook.hasAnyMarks) return false;
+  if (outlook.components.some((c) => c.kind !== "external" && c.obtained === null)) return false;
+  const unplanned = outlook.components.some((c) => c.kind === "extra");
+  return !(unplanned && outlook.internalMax > outlook.internalWeight + 1e-9);
 }
 
 export interface SgpaResult {
