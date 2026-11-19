@@ -325,34 +325,27 @@ describe("a subject with nothing left", () => {
   });
 });
 
-describe("climbs - the way back over 65 and 75", () => {
-  // A class every day order, so every working day has one.
+describe("the way back to a subject's own bar", () => {
+  // A class every day order, so every working day has one; 13 of 20 marked in July is 65%.
   const slots: TimetableSlot[] = [1, 2, 3, 4, 5].map((d) => ({ id: `t${d}`, device_id: "p", subject_id: "s1", day_order: d, start_time: "08:00:00", end_time: "08:50:00", room: null }));
-  const record = (date: string, present: boolean): AttendanceRecord => ({
-    id: date, device_id: "p", subject_id: "s1", date, start_time: "08:00:00", end_time: "08:50:00",
-    status: present ? "present" : "absent",
-  });
-  const july = (present: number, of: number) =>
-    Array.from({ length: of }, (_, i) => record(`2026-07-${String(i + 1).padStart(2, "0")}`, i < present));
-  const climbs = (present: number, of: number, end = "2026-08-31") =>
-    buildProjection([subj({ id: "s1" })], july(present, of), slots, [], [], "2026-07-21", { start: "2026-07-01", end }).perSubject[0].climbs;
+  const july = Array.from({ length: 20 }, (_, i): AttendanceRecord => ({
+    id: `j${i}`, device_id: "p", subject_id: "s1", date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+    start_time: "08:00:00", end_time: "08:50:00", status: i < 13 ? "present" : "absent",
+  }));
+  const at = (medical_leave: boolean) =>
+    buildProjection([subj({ id: "s1", medical_leave })], july, slots, [], [], "2026-07-21", { start: "2026-07-01", end: "2026-08-31" }).perSubject[0];
 
-  it("under both bars: 65 first, then 75, each with its classes and the day of the last", () => {
-    const [low, high] = climbs(10, 20);
-    // 50% of 20: 65 needs 9 in a row (19/29), 75 needs 20 (30/40).
-    expect(low).toMatchObject({ bar: 65, classes: 9 });
-    expect(high).toMatchObject({ bar: 75, classes: 20 });
-    expect(low.date! < high.date!).toBe(true);
+  it("is 75 without medical leave: 65% still has a date to get back over 75", () => {
+    const p = at(false);
+    expect(p.min).toBe(75);
+    expect(p.mustAttendStreak).toBe(8); // 21 of 28
+    expect(p.recoveryDate).not.toBeNull();
   });
 
-  it("between the bars, only 75; over both, none", () => {
-    expect(climbs(14, 20).map((c) => c.bar)).toEqual([75]);
-    expect(climbs(16, 20)).toEqual([]);
-  });
-
-  it("a bar too far for the classes left has no date", () => {
-    const [low, high] = climbs(10, 20, "2026-07-31");
-    expect(low.date).not.toBeNull();
-    expect(high.date).toBeNull();
+  it("is 65 alone on medical leave: 65% is already clear, so there is nothing to climb", () => {
+    const p = at(true);
+    expect(p.min).toBe(65);
+    expect(p.mustAttendStreak).toBe(0);
+    expect(p.recoveryDate).toBeNull();
   });
 });

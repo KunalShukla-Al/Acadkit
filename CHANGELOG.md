@@ -12,7 +12,7 @@ existing data or installs, a minor version for new features, a patch version for
 - The timetable's check that its subjects don't match the portal.
 - The heatmap's legend and its "tap a future day" hint; a skip you pencil in still shows its cost.
 - The attendance forecast, with its Now / Forecast switch and the "Which classes you miss" card it
-  carried. The one thing it was used for, the day a subject gets back over 65% and 75%, now sits
+  carried. The one thing it was used for, the day a subject gets back over its bar, now sits
   under each subject on Attendance.
 - The warning that the last portal sync looks off.
 - From each subject's Targets card: the line with its split and what's returned, the attendance
@@ -44,8 +44,8 @@ existing data or installs, a minor version for new features, a patch version for
 ### Added
 
 - Attendance shares as an image, the way Marks shares the semester: overall, then each subject.
-- Each subject under 65% or 75% says the day it gets back over each by attending every class, or
-  that it can't this semester. Once a subject is over both, the line goes.
+- Each subject under its bar, 75% or 65% on medical leave, says the day it gets back over by
+  attending every class, or that it can't this semester. Over its bar, the line goes.
 - Run-up tasks can carry what to study them from: videos with their length and channel, and the past
   exam questions to write afterwards, each with its paper, marks, text and a link that opens the
   paper. Each question has its own tick. A task's file can open at a set page.
