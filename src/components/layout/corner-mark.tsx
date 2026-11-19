@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** The closed corner's radius, in px; the open menu's is in corner-menu.tsx. */
+/** The corner's radius, in px. */
 export const CORNER = 64;
 
 /** What the corner shows (the Day Order, or the close X), where its quarter-disc is widest, toward the corner. */

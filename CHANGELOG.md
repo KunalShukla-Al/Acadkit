@@ -46,6 +46,12 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- A subject's marks card is about a third shorter. The internals total and the on-pace total share
+  one line, each mark is a tile with a bar for its share, and the tiles stretch so no row ends short.
+  Add marks is a tile too, and it leaves once every internal has its mark; a tile still opens its
+  mark to edit.
+- The corner's menu is one card of three rows, Skips, History and Settings, that grows out of the
+  corner, in place of the tilted stickers.
 - The corner opens the calendar in one tap. Held, or from the new More button in the top bar and the
   sidebar, it opens Skips, History and Settings, and its stickers now arrive in about a third of
   the time. The calendar button leaves the phone's top bar.

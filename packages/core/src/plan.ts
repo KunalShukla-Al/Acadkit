@@ -692,6 +692,14 @@ export function subjectOutlook(
   };
 }
 
+/**
+ * Every internal has its mark: nothing planned, dated or still unannounced is
+ * left to come, so there is nothing more to add. The end-sem doesn't count.
+ */
+export function internalsComplete(budget: SubjectBudget): boolean {
+  return budget.hasAnyMarks && budget.components.every((c) => c.kind === "external" || c.obtained !== null);
+}
+
 export interface SgpaResult {
   sgpa: number | null;
   totalCredits: number;

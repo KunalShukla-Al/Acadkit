@@ -20,9 +20,9 @@ const HOLD_MS = 450;
  * The corner: a lime quarter-disc fixed in the bottom-right corner, above
  * the tab bar on a phone (`--nav-h`, which the bar keeps), carrying
  * today's Day Order (a star on a day without classes). A tap opens the
- * calendar, the page I open most. Held, or from a More button, the pages
- * used now and then (Skips, History, Settings) burst out of it as tilted
- * stickers (`corner-menu.tsx`), and it turns into their close button.
+ * calendar, the page I open most. Held, or from a More button, it grows
+ * into a card of the pages used now and then (Skips, History, Settings;
+ * `corner-menu.tsx`), and it turns into that card's close button.
  */
 export function Corner() {
   const navigate = useNavigate();
