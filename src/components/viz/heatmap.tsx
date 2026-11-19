@@ -154,22 +154,6 @@ export function AttendanceHeatmap({
           </div>
         ))}
       </motion.div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-medium text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-[4px] bg-good" /> all present
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-[4px] bg-warn" /> mixed
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-[4px] bg-bad" /> absent
-        </span>
-        {future && future.length > 0 && (
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-[4px] border border-dashed border-ink/25" /> ahead
-          </span>
-        )}
-      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWallet, pipsFor, PIP_CAP } from "@/lib/bunkWallet";
+import { buildWallet } from "@/lib/bunkWallet";
 import type { SubjectAttendance } from "@acadkit/core/attendance";
 import type { Subject } from "@acadkit/core/types";
 
@@ -81,20 +81,5 @@ describe("the knife edge", () => {
     const w = buildWallet([row("Maths", 30, 46, 0, 34)]);
     expect(w.credit).toHaveLength(0);
     expect(w.debt[0].onEdge).toBe(false);
-  });
-});
-
-describe("pipsFor", () => {
-  it("draws one pip per skip while the count is readable", () => {
-    expect(pipsFor(3)).toEqual({ pips: 3, overflow: 0 });
-  });
-
-  it("caps the row and moves the rest into a number", () => {
-    // Thirty dots is a texture, not a count.
-    expect(pipsFor(30)).toEqual({ pips: PIP_CAP, overflow: 30 - PIP_CAP });
-  });
-
-  it("draws nothing at zero", () => {
-    expect(pipsFor(0)).toEqual({ pips: 0, overflow: 0 });
   });
 });

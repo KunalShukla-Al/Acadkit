@@ -1,8 +1,7 @@
-import { AnimatePresence, motion } from "motion/react";
 import { Dot } from "@/components/ui/misc";
 import { MIN_ATTENDANCE, type SubjectAttendance } from "@acadkit/core/attendance";
 import { AnimatedNumber } from "@/components/viz/animated-number";
-import { buildWallet, pipsFor } from "@/lib/bunkWallet";
+import { buildWallet } from "@/lib/bunkWallet";
 import { useSurvivalPlan } from "@/hooks/useSurvivalPlan";
 import { formatDate } from "@acadkit/core/dates";
 import { say, VOICE } from "@/lib/voice";
@@ -55,7 +54,6 @@ export function BunkWallet({ stats }: { stats: SubjectAttendance[] }) {
       {wallet.credit.length > 0 && (
         <ul className="divide-y">
           {wallet.credit.map(({ subject, left, onEdge }) => {
-            const { pips, overflow } = pipsFor(left);
             const last = skipBy.get(subject.subject.id);
             return (
               <li
@@ -80,38 +78,14 @@ export function BunkWallet({ stats }: { stats: SubjectAttendance[] }) {
                     </span>
                   ) : null}
                 </span>
-                <span className="flex shrink-0 items-center gap-1">
-                  {/* Spending a skip used to be a silent re-render with one fewer dot. */}
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    {Array.from({ length: pips }, (_, i) => (
-                      <motion.span
-                        key={i}
-                        initial={false}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: [1, 1.9, 0], opacity: [1, 1, 0] }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 22,
-                        }}
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: subject.subject.color_hex }}
-                      />
-                    ))}
-                  </AnimatePresence>
-                  {overflow > 0 && (
-                    <span className="ml-0.5 text-xs font-bold tabular text-muted">+{overflow}</span>
+                {/* A count, not a row of dots; it springs down when a skip is spent. */}
+                <span
+                  className={cn(
+                    "shrink-0 text-lg font-extrabold tabular",
+                    left === 0 && (onEdge ? "text-warn-deep" : "text-muted")
                   )}
-                  {left === 0 && (
-                    <span
-                      className={cn(
-                        "text-xs font-bold",
-                        onEdge ? "text-warn-deep" : "text-muted"
-                      )}
-                    >
-                      none
-                    </span>
-                  )}
+                >
+                  <AnimatedNumber value={left} />
                 </span>
               </li>
             );

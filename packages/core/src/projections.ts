@@ -34,6 +34,8 @@ export interface SubjectProjection {
   currentPct: number | null;
   // future (from the calendar)
   remaining: number;
+  /** The days those remaining classes fall on, in order. */
+  remainingDates: string[];
   finalTotal: number; // held + remaining
   // scenarios
   bestPct: number; // attend every remaining class
@@ -66,6 +68,8 @@ export interface OverallProjection {
    */
   skipBudget: number;
   tightest: Subject | null;
+  /** Days that still have a class you haven't marked: today drops out once its classes are marked. */
+  classDays: number;
 }
 
 interface FutureOccurrence {
@@ -181,6 +185,7 @@ export function projectSubject(
     held,
     currentPct,
     remaining,
+    remainingDates: [...new Set(future.map((f) => f.date))],
     finalTotal,
     bestPct,
     worstPct,
@@ -521,6 +526,7 @@ export function buildProjection(
     pacePct: oRate !== null && oFinal > 0 ? ((oAttended + oRate * oRemaining) / oFinal) * 100 : null,
     skipBudget: tightest?.skipBudget ?? 0,
     tightest: tightest?.subject ?? null,
+    classDays: new Set(perSubject.flatMap((p) => p.remainingDates)).size,
   };
 
   const whatIf: WhatIfRow[] = perSubject

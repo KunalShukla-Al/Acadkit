@@ -9,6 +9,12 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Removed
 
+- The timetable's check that its subjects don't match the portal.
+- The heatmap's legend and its "tap a future day" hint; a skip you pencil in still shows its cost.
+- From the attendance forecast: the "now" figure, the per-subject chips and the "Needs attention"
+  box. Where you are now is the Now view's, and each subject keeps its card below.
+- The More button in the phone's top bar: holding the corner opens Skips, History and Settings.
+  More stays in the Mac's sidebar.
 - The portal bookmarklet and the `portal-ingest` function behind it: every attendance update came
   from a pasted page. Pasting stays.
 - The SwiftBar menu-bar plugin, which needed an app this Mac doesn't have.
@@ -46,6 +52,10 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- An attendance subject opens on a tap, with no arrow, to its total, attended, absent and remaining
+  classes, and grows smoothly instead of jumping. Its skips and its reconciliation with the portal
+  leave it: skips are the wallet's, and when the portal last synced is at the top of the page.
+- The bunk wallet shows each subject's skips as a number instead of a row of dots.
 - A subject's marks card is about a third shorter. The internals total and the on-pace total share
   one line, each mark is a tile with a bar for its share, and the tiles stretch so no row ends short.
   Add marks is a tile too, and it leaves once every internal has its mark; a tile still opens its
@@ -131,6 +141,8 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- Class days left in the attendance forecast counted today after all of today's classes were
+  marked.
 - The Mac's sync no longer hangs when the network drops mid-request: every request now has a time
   limit, and the sync log shows each step as it runs.
 - The semester switch finds the next semester's folder beside the current one, wherever that is,

@@ -18,12 +18,12 @@ const OPEN_MORE = "acadkit:open-more";
 const HOLD_MS = 450;
 
 /**
- * The corner: a lime squircle floating in the bottom-right, above the tab
- * bar on a phone (`--nav-h`, which the bar keeps; shape in corner-mark.tsx), carrying
+ * The corner: a lime squircle floating in the bottom-right (corner-shape.ts),
+ * above the tab bar on a phone (`--nav-h`, which the bar keeps), carrying
  * today's Day Order (a star on a day without classes). A tap opens the
- * calendar, the page I open most. Held, or from a More button, it grows
- * into a card of the pages used now and then (Skips, History, Settings;
- * `corner-menu.tsx`), and it turns into that card's close button.
+ * calendar, the page I open most. Held, or from More in the Mac's sidebar,
+ * it grows into a card of the pages used now and then (Skips, History,
+ * Settings; `corner-menu.tsx`), and it turns into that card's close button.
  */
 export function Corner() {
   const navigate = useNavigate();
@@ -132,21 +132,18 @@ export function Corner() {
   );
 }
 
-/** Opens the corner's menu from the top bar (a phone) or the sidebar (the Mac), for a tap or a keyboard. */
-export function MoreButton({ wide = false }: { wide?: boolean }) {
+/** Opens the corner's menu from the Mac's sidebar, for a click or a keyboard; on a phone, the corner held is the way in. */
+export function MoreButton() {
   return (
     <button
       type="button"
       aria-label="More: skips, history and settings"
       onPointerDown={() => void loadMenu()}
       onClick={() => window.dispatchEvent(new Event(OPEN_MORE))}
-      className={cn(
-        "flex items-center gap-2 rounded-2xl bg-surface-2/70 text-sm font-bold text-ink transition-colors hover:bg-surface-2",
-        wide ? "w-full px-3.5 py-2.5" : "px-2.5 py-2"
-      )}
+      className="flex w-full items-center gap-2 rounded-2xl bg-surface-2/70 px-3.5 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-surface-2"
     >
       <MoreHorizontal className="h-5 w-5 shrink-0" strokeWidth={2.2} />
-      {wide && <span className="flex-1 text-left">More</span>}
+      <span className="flex-1 text-left">More</span>
     </button>
   );
 }

@@ -2,7 +2,6 @@ import { motion } from "motion/react";
 import {
   AlertTriangle,
   CalendarClock,
-  Flame,
   Lightbulb,
   ShieldCheck,
   Siren,
@@ -12,10 +11,8 @@ import {
 import { Badge, Dot, EmptyState } from "@/components/ui/misc";
 import { ProgressRing } from "@/components/viz/progress-ring";
 import { AnimatedNumber } from "@/components/viz/animated-number";
-import { attendanceColor, attendanceTextClass } from "@acadkit/core/attendance";
-import { jumpTargetId } from "@/lib/jump";
+import { attendanceColor } from "@acadkit/core/attendance";
 import { subjectShort } from "@acadkit/core/subjectShort";
-import { JumpPills } from "@/components/ui/jump-pills";
 import {
   classDaysLeft,
   type buildProjection,
@@ -77,11 +74,7 @@ function SubjectProjectionCard({ p }: { p: SubjectProjection }) {
   const pace = p.pacePct;
 
   return (
-    <motion.section
-      id={jumpTargetId("attf", p.subject.id)}
-     
-      className="card p-5"
-    >
+    <motion.section className="card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-start gap-2 font-bold">
@@ -164,7 +157,7 @@ export function AttendanceProjection({
   noTimetable: boolean;
 }) {
   const tone = useTone();
-  const daysLeft = classDaysLeft(declared, todayISO(), semWindow);
+  const semDaysLeft = classDaysLeft(declared, todayISO(), semWindow);
   const preSem = todayISO() < semWindow.start;
   const o = report.overall;
   const shown = report.perSubject.filter((p) => p.held > 0 || p.remaining > 0);
@@ -204,53 +197,15 @@ export function AttendanceProjection({
                 </div>
               </ProgressRing>
 
-              <div className="grid flex-1 grid-cols-2 gap-3 sm:max-w-xs">
-                <Stat label="Now" value={o.currentPct === null ? "—" : `${Math.round(o.currentPct)}%`} />
+              {/* Only what lies ahead: where you are now is the Now view's, and each subject has its card below. */}
+              <div className="grid w-full flex-1 grid-cols-3 gap-2.5 sm:max-w-sm">
                 <Stat label="Classes left" value={String(o.remaining)} />
-                <Stat label="Fewest skips" value={o.tightest ? `${o.skipBudget} · ${subjectShort(o.tightest)}` : "—"} accent />
-                <Stat
-                  label={preSem ? "Sem days left" : "Class days left"}
-                  value={String(daysLeft)}
-                />
+                <Stat label="Fewest skips" value={o.tightest ? String(o.skipBudget) : "—"} note={o.tightest ? subjectShort(o.tightest) : undefined} accent />
+                {/* Before term, the semester's working days; in term, days with a class you haven't marked yet. */}
+                <Stat label={preSem ? "Sem days left" : "Class days left"} value={String(preSem ? semDaysLeft : o.classDays)} />
               </div>
             </div>
-
-            <JumpPills
-              prefix="attf"
-              pills={shown.map((p) => ({
-                id: p.subject.id,
-                label: subjectShort(p.subject),
-                color: p.subject.color_hex,
-                detail: p.pacePct === null ? null : `${Math.round(p.pacePct)}%`,
-                detailClass: attendanceTextClass(p.pacePct, p.min),
-              }))}
-            />
           </section>
-
-          {/* At-risk callout */}
-          {report.atRisk.length > 0 && (
-            <section className="card border-bad/25 bg-bad/5 p-5">
-              <p className="flex items-center gap-2 font-bold text-bad-deep">
-                <Flame className="h-4 w-4" /> Needs attention
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {report.atRisk.map((p) => (
-                  <span
-                    key={p.subject.id}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-                      RISK_STYLE[p.riskLevel].bg,
-                      RISK_STYLE[p.riskLevel].text
-                    )}
-                  >
-                    <Dot color={p.subject.color_hex} className="h-1.5 w-1.5" />
-                    {p.subject.code.slice(-4)}
-                    {p.pacePct !== null ? ` → ${Math.round(p.pacePct)}%` : ""}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* Patterns */}
           <PatternsCard report={report} />
@@ -268,11 +223,13 @@ export function AttendanceProjection({
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+/** One figure: its label, the number, and what the number belongs to when that matters (fewest skips: which subject). */
+function Stat({ label, value, note, accent }: { label: string; value: string; note?: string; accent?: boolean }) {
   return (
-    <div className="rounded-2xl border bg-surface-2/40 px-3.5 py-2.5">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted">{label}</p>
-      <p className={cn("mt-0.5 text-2xl font-extrabold tabular", accent && "text-accent")}>{value}</p>
+    <div className="rounded-2xl border bg-surface-2/40 px-3 py-2.5">
+      <p className="text-[10px] font-bold uppercase leading-tight tracking-wider text-muted">{label}</p>
+      <p className={cn("mt-1 text-2xl font-extrabold leading-none tabular", accent && "text-accent")}>{value}</p>
+      {note && <p className="mt-1 text-[11px] font-bold text-muted">{note}</p>}
     </div>
   );
 }
