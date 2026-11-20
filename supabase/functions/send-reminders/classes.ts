@@ -141,6 +141,12 @@ export function standing(subjectId: string, r: AttendanceData, date: string, sta
   return { attended, held, ahead };
 }
 
+/** Today's classes with no attendance row yet, matched on subject and start time. */
+export function unmarked(todaySlots: Slot[], marks: Mark[], date: string): number {
+  const marked = new Set(marks.filter((m) => m.date === date).map((m) => `${m.subject_id}|${hhmm(m.start_time)}`));
+  return todaySlots.filter((s) => !marked.has(`${s.subject_id}|${hhmm(s.start_time)}`)).length;
+}
+
 export interface Advice {
   /** Classes from here on that can be missed and still finish at or over the bar (the bunk wallet's number). */
   spare: number;

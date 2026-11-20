@@ -13,6 +13,7 @@ import {
   short,
   standing,
   underMessage,
+  unmarked,
   type AttendanceData,
   type DeclaredDay,
 } from "./classes.ts";
@@ -166,21 +167,14 @@ Deno.serve(async (req) => {
 
     // 2) Evening nudge to mark today's attendance (18:00–18:59)
     if (dayOrder && todaySlots.length && ist.getHours() === 18) {
-      const marked = new Set(
-        (attendance ?? [])
-          .filter((a) => a.date === date)
-          .map((a) => `${a.subject_id}|${a.start_time.slice(0, 5)}`)
-      );
-      const unmarked = todaySlots.filter(
-        (s) => !marked.has(`${s.subject_id}|${s.start_time.slice(0, 5)}`)
-      ).length;
-      if (unmarked > 0) {
+      const left = unmarked(todaySlots, attendance ?? [], date);
+      if (left > 0) {
         msgs.push({
           device_id: pin,
           kind: "mark",
           ref: `mark|${date}`,
           title: "Did you miss anything today?",
-          body: `Unmarked from today: ${unmarked} of ${todaySlots.length}. Anything left unmarked counts as attended, so mark what you missed.`,
+          body: `Unmarked from today: ${left} of ${todaySlots.length}. Anything left unmarked counts as attended, so mark what you missed.`,
           url: "/attendance",
         });
       }

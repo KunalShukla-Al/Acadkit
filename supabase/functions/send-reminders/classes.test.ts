@@ -10,6 +10,7 @@ import {
   effectiveMap,
   short,
   standing,
+  unmarked,
   type AttendanceData,
   type DeclaredDay,
   type Mark,
@@ -18,18 +19,20 @@ import {
 
 const WINDOW = { start: "2026-07-21", end: "2026-11-20" };
 
+// The Sem 3 calendar behind the 10–20 Nov reminders, which used the day before's day order.
+const SEM3: DeclaredDay[] = [
+  { date: "2026-08-24" },
+  { date: "2026-10-24", day_order: 3 },
+  { date: "2026-11-09", cancels: true },
+];
+
 describe("the reminders' calendar is the app's", () => {
   const cases: Record<string, DeclaredDay[]> = {
     "nothing declared": [],
     "a holiday that shifts": [{ date: "2026-08-24" }],
     "a holiday that cancels in place": [{ date: "2026-11-09", cancels: true }],
     "a class Saturday": [{ date: "2026-10-24", day_order: 3 }],
-    // The calendar behind the 10–20 Nov reminders, which used the day before's day order.
-    "all three": [
-      { date: "2026-08-24" },
-      { date: "2026-10-24", day_order: 3 },
-      { date: "2026-11-09", cancels: true },
-    ],
+    "the Sem 3 calendar": SEM3,
   };
   for (const [name, declared] of Object.entries(cases)) {
     it(name, () => {
@@ -39,7 +42,7 @@ describe("the reminders' calendar is the app's", () => {
   }
 
   it("a cancelled day order is lost, not pushed onto the next day", () => {
-    const map = effectiveMap(cases["all three"], WINDOW.start, WINDOW.end);
+    const map = effectiveMap(SEM3, WINDOW.start, WINDOW.end);
     expect(map["2026-11-06"]).toBe(2);
     expect(map["2026-11-09"]).toBeUndefined();
     expect(map["2026-11-10"]).toBe(4);
@@ -111,6 +114,19 @@ describe("whether a class can be skipped", () => {
     expect(back.under).toBe(true);
     expect(classMessage("OS", slot, 1, back, 65).body).toContain("You're at 60%. Attend every class and you're back over 65% on 24 Sep.");
   });
+});
+
+it("the evening nudge checks the day's own classes: 12 Nov, Day Order 1, all marked", () => {
+  const eff = effectiveMap(SEM3, WINDOW.start, WINDOW.end);
+  const slots: Slot[] = [
+    { id: "a", subject_id: "tbvp", day_order: 1, start_time: "08:00:00" },
+    { id: "b", subject_id: "tbvp", day_order: 1, start_time: "08:50:00" },
+    { id: "c", subject_id: "os", day_order: 5, start_time: "09:45:00" },
+  ];
+  const marks: Mark[] = ["08:00:00", "08:50:00"].map((t) => ({ subject_id: "tbvp", date: "2026-11-12", start_time: t, status: "present" }));
+  const today = slots.filter((s) => s.day_order === eff["2026-11-12"]);
+  expect(eff["2026-11-12"]).toBe(1);
+  expect(unmarked(today, marks, "2026-11-12")).toBe(0);
 });
 
 describe("the morning's plan", () => {

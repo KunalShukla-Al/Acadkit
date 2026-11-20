@@ -156,7 +156,8 @@ existing data or installs, a minor version for new features, a patch version for
 
 - Class reminders used the day before's day order after a holiday that cancels in place: from
   10 Nov they followed 9 Nov's cancelled Day Order 3 onward, a day behind. The reminders now read
-  the calendar exactly as the app does, and a test keeps the two in step.
+  the calendar exactly as the app does, and a test keeps the two in step. The same lag made the
+  6 PM nudge check the wrong day's classes and say marked days were unmarked.
 - The Mac's sync no longer hangs when the network drops mid-request: every request now has a time
   limit, and the sync log shows each step as it runs.
 - The semester switch finds the next semester's folder beside the current one, wherever that is,
