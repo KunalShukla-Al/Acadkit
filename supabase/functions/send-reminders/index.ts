@@ -4,65 +4,22 @@ import webpush from "npm:web-push@3.6.7";
 import { dispatchConfig, dispatchDeliver, needsDueCount, shouldDispatch } from "./dispatch.ts";
 import { jobsFor, notYetSent, parseMode } from "./jobq.ts";
 import { vapidFor, vapidKeys } from "./vapid.ts";
-
-// --- semester calendar ---
-import { OFFICIAL_HOLIDAYS } from "./calendar.generated.ts";
+import {
+  addDays,
+  advise,
+  classMessage,
+  dayMessage,
+  effectiveMap,
+  short,
+  standing,
+  underMessage,
+  unmarked,
+  type AttendanceData,
+  type DeclaredDay,
+} from "./classes.ts";
 
 const DEFAULT_START = "2026-07-21";
 const DEFAULT_END = "2026-11-18";
-
-function addDays(iso: string, n: number): string {
-  const d = new Date(iso + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-function isWeekend(iso: string): boolean {
-  const day = new Date(iso + "T00:00:00Z").getUTCDay();
-  return day === 0 || day === 6;
-}
-
-/** Day Order 1–5 across every weekday in the window that isn't a holiday. */
-function generateDayOrderMap(start: string, end: string): Record<string, number> {
-  const map: Record<string, number> = {};
-  let order = 1;
-  for (let d = start; d <= end; d = addDays(d, 1)) {
-    if (isWeekend(d) || OFFICIAL_HOLIDAYS[d]) continue;
-    map[d] = order;
-    order = (order % 5) + 1;
-  }
-  return map;
-}
-
-/** A row of settings.declared_holidays: a holiday, or with day_order a class day. */
-interface DeclaredDay {
-  date: string;
-  day_order?: number | null;
-}
-
-/**
- * Declared holidays drop out and shift the remaining orders forward.
- * Class days are added with their own order and shift nothing,
- * matching buildEffectiveMap in packages/core/src/calendar.ts.
- */
-function effectiveMap(
-  declared: DeclaredDay[],
-  start: string,
-  end: string
-): Record<string, number> {
-  const canonical = generateDayOrderMap(start, end);
-  if (!declared.length) return canonical;
-  const set = new Set(declared.filter((h) => h.day_order == null).map((h) => h.date));
-  const dates = Object.keys(canonical);
-  const orders = dates.map((d) => canonical[d]);
-  const working = dates.filter((d) => !set.has(d));
-  const map: Record<string, number> = {};
-  working.forEach((d, i) => (map[d] = orders[i]));
-  for (const h of declared) {
-    if (h.day_order != null && h.date >= start && h.date <= end) map[h.date] = h.day_order;
-  }
-  return map;
-}
 
 // --- IST clock (the app is single-region: SRM KTR) ---
 function istNow() {
@@ -74,12 +31,6 @@ function istNow() {
 const toMin = (t: string) => {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
-};
-const fmt = (t: string) => {
-  const [h, m] = t.split(":").map(Number);
-  const p = h >= 12 ? "PM" : "AM";
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return `${hh}:${String(m).padStart(2, "0")} ${p}`;
 };
 
 /** Titles that mean the end-sem, as labelMatchKey leaves them (see EXTERNAL_ALIASES in packages/core/src/plan.ts). */
@@ -161,32 +112,6 @@ Deno.serve(async (req) => {
       return `${label} ${type.toLowerCase()} due`;
     };
 
-    /** Attendance per subject, matching computeSubjectAttendance in packages/core/src/attendance.ts. */
-    const snapByCode = new Map(
-      (snapshots ?? []).map((s) => [String(s.subject_code).trim().toUpperCase(), s])
-    );
-    // Mirrors isCounted / isAttended in packages/core/src/attendance.ts.
-    const counted = (status: string) => status !== "holiday";
-    const attendedStatus = (status: string) => status === "present" || status === "od";
-    function heldFor(subjectId: string, code: string | null) {
-      const rows = (attendance ?? []).filter(
-        (a) => a.subject_id === subjectId && counted(a.status)
-      );
-      const snap = code ? snapByCode.get(code.trim().toUpperCase()) : undefined;
-      if (snap && Number(snap.conducted) > 0) {
-        const since = rows.filter((a) => a.date > snap.as_of);
-        return {
-          attended:
-            Number(snap.conducted) - Number(snap.absent) +
-            since.filter((a) => attendedStatus(a.status)).length,
-          total: Number(snap.conducted) + since.length,
-        };
-      }
-      return {
-        attended: rows.filter((a) => attendedStatus(a.status)).length,
-        total: rows.length,
-      };
-    }
     /** The bar each subject is held to, matching minAttendanceFor in packages/core/src/attendance.ts: 65% where medical leave is granted, else 75%. */
     const barById = new Map<string, number>(
       (subjects ?? []).map((s) => [s.id as string, s.medical_leave ? 65 : 75])
@@ -197,42 +122,59 @@ Deno.serve(async (req) => {
     const semStart = (settings?.sem_start as string | null) || DEFAULT_START;
     const semEnd = (settings?.sem_end as string | null) || DEFAULT_END;
     const inSemester = date >= semStart && date <= semEnd;
-    const dayOrder = inSemester ? effectiveMap(declared, semStart, semEnd)[date] : undefined;
-    const todaySlots = (timetable ?? []).filter((s) => s.day_order === dayOrder);
+    const eff = inSemester ? effectiveMap(declared, semStart, semEnd) : {};
+    const dayOrder: number | undefined = eff[date];
+    const todaySlots = (timetable ?? [])
+      .filter((s) => s.day_order === dayOrder)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    // 1) Class starting in the next ~15 min
+    /** "OS", as the app's chips name it. */
+    const labelOf = (id: string) => {
+      const s = (subjects ?? []).find((x) => x.id === id);
+      return s ? short(s) : "A subject";
+    };
+    /** What a subject's attendance is read from: its marks, on top of the portal's count when synced. */
+    const snapByCode = new Map((snapshots ?? []).map((s) => [String(s.subject_code).trim().toUpperCase(), s]));
+    const dataFor = (id: string): AttendanceData => {
+      const code = ((subjects ?? []).find((x) => x.id === id)?.code as string | null)?.trim().toUpperCase();
+      const snap = code ? snapByCode.get(code) : undefined;
+      return {
+        slots: timetable ?? [],
+        marks: attendance ?? [],
+        snapshot: snap ? { conducted: Number(snap.conducted), absent: Number(snap.absent), as_of: snap.as_of } : undefined,
+        eff,
+        semStart,
+        semEnd,
+      };
+    };
+
+    // 1) Before each class, 15–20 min ahead so there's time to leave: can it be skipped?
+    //    The cron runs every 10 min; the window is wider so a late run still sends it, once.
     for (const slot of todaySlots) {
-      const start = toMin(slot.start_time.slice(0, 5));
-      const lead = start - minutes;
-      if (lead > 0 && lead <= 15) {
-        msgs.push({
-          device_id: pin,
-          kind: "class",
-          ref: `${slot.id}|${date}`,
-          title: `${subjName.get(slot.subject_id) ?? "Class"} in ${lead} min`,
-          body: `${fmt(slot.start_time.slice(0, 5))}${slot.room ? ` · ${slot.room}` : ""} · Day Order ${dayOrder}`,
-          url: "/",
-        });
-      }
+      const start = slot.start_time.slice(0, 5);
+      const lead = toMin(start) - minutes;
+      if (lead <= 5 || lead > 20) continue;
+      const bar = barById.get(slot.subject_id) ?? 75;
+      const adv = advise(standing(slot.subject_id, dataFor(slot.subject_id), date, start), bar);
+      msgs.push({
+        device_id: pin,
+        kind: "class",
+        ref: `${slot.id}|${date}`,
+        ...classMessage(labelOf(slot.subject_id), slot, dayOrder!, adv, bar),
+        url: "/attendance",
+      });
     }
 
     // 2) Evening nudge to mark today's attendance (18:00–18:59)
     if (dayOrder && todaySlots.length && ist.getHours() === 18) {
-      const marked = new Set(
-        (attendance ?? [])
-          .filter((a) => a.date === date)
-          .map((a) => `${a.subject_id}|${a.start_time.slice(0, 5)}`)
-      );
-      const unmarked = todaySlots.filter(
-        (s) => !marked.has(`${s.subject_id}|${s.start_time.slice(0, 5)}`)
-      ).length;
-      if (unmarked > 0) {
+      const left = unmarked(todaySlots, attendance ?? [], date);
+      if (left > 0) {
         msgs.push({
           device_id: pin,
           kind: "mark",
           ref: `mark|${date}`,
-          title: "Mark today's attendance",
-          body: `${unmarked} class${unmarked > 1 ? "es" : ""} still unmarked from today.`,
+          title: "Did you miss anything today?",
+          body: `Unmarked from today: ${left} of ${todaySlots.length}. Anything left unmarked counts as attended, so mark what you missed.`,
           url: "/attendance",
         });
       }
@@ -266,22 +208,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4) Low-attendance alert (once/day at 08:00), against each subject's
-    //    own bar - a subject on medical leave at 70% is not below it.
-    if (ist.getHours() === 8) {
+    // 4) Each subject under its own bar, before classes (07:00): how far, and the day attending
+    //    every class brings it back. A subject on medical leave at 70% is not under its 65.
+    if (ist.getHours() === 7 && inSemester) {
       for (const subject of subjects ?? []) {
-        const { attended, total } = heldFor(subject.id, subject.code as string | null);
         const bar = barById.get(subject.id) ?? 75;
-        if (total >= 4 && 100 * attended < bar * total) {
-          msgs.push({
-            device_id: pin,
-            kind: "low_attendance",
-            ref: `low|${subject.id}|${date}`,
-            title: `${subject.name ?? "A subject"} is under ${bar}%`,
-            body: `You're at ${Math.round((attended / total) * 100)}%. Attend the next few to get back.`,
-            url: "/attendance",
-          });
-        }
+        const st = standing(subject.id, dataFor(subject.id), date, "00:00");
+        const adv = advise(st, bar);
+        if (st.held < 4 || !adv.under) continue;
+        msgs.push({
+          device_id: pin,
+          kind: "low_attendance",
+          ref: `low|${subject.id}|${date}`,
+          ...underMessage(labelOf(subject.id), adv, bar),
+          url: "/attendance",
+        });
       }
     }
 
@@ -330,64 +271,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 7) Morning verdict (08:00): can today actually be skipped?
-    if (ist.getHours() === 8 && dayOrder && todaySlots.length) {
-      const eff = effectiveMap(declared, semStart, semEnd);
-      const remaining = new Map<string, number>();
-      for (const [d, order] of Object.entries(eff)) {
-        if (d < date || d > semEnd) continue;
-        for (const slot of timetable ?? []) {
-          if (slot.day_order !== order) continue;
-          remaining.set(slot.subject_id, (remaining.get(slot.subject_id) ?? 0) + 1);
-        }
-      }
-
-      const codeById = new Map(
-        (subjects ?? []).map((s) => [s.id, (s.code as string | null) ?? null])
-      );
-
-      const spent = new Map<string, number>();
-      const mustAttend: string[] = [];
-      let firstBar = 75;
-      for (const slot of todaySlots) {
-        const { attended: p, total: t } = heldFor(
-          slot.subject_id,
-          codeById.get(slot.subject_id) ?? null
-        );
-        const rem = remaining.get(slot.subject_id) ?? 0;
-        const bar = barById.get(slot.subject_id) ?? 75;
-        const budget = Math.floor((100 * (p + rem) - bar * (t + rem)) / 100);
-        const used = (spent.get(slot.subject_id) ?? 0) + 1;
-        spent.set(slot.subject_id, used);
-        if (budget - used < 0) {
-          const name = subjName.get(slot.subject_id) ?? "A subject";
-          if (!mustAttend.length) firstBar = bar;
-          if (!mustAttend.includes(name)) mustAttend.push(name);
-        }
-      }
-
-      msgs.push(
-        mustAttend.length
-          ? {
-              device_id: pin,
-              kind: "verdict",
-              ref: `verdict|${date}`,
-              title: `Attend today: ${mustAttend[0]} has no classes to spare`,
-              body:
-                mustAttend.length > 1
-                  ? `${mustAttend.length} subjects today have no classes to spare.`
-                  : `Missing today takes you under ${firstBar}%.`,
-              url: "/",
-            }
-          : {
-              device_id: pin,
-              kind: "verdict",
-              ref: `verdict|${date}`,
-              title: `Today's ${todaySlots.length} class${todaySlots.length > 1 ? "es" : ""} can be skipped`,
-              body: "Every subject today has classes to spare.",
-              url: "/",
-            }
-      );
+    // 7) The day's plan, every class day before the first class (07:00): the day order, and
+    //    which of today's subjects can spare all of today's classes.
+    if (ist.getHours() === 7 && dayOrder && todaySlots.length) {
+      const ids = [...new Set(todaySlots.map((s) => s.subject_id))];
+      const plan = ids.map((id) => {
+        const mine = todaySlots.filter((s) => s.subject_id === id);
+        const adv = advise(standing(id, dataFor(id), date, mine[0].start_time.slice(0, 5)), barById.get(id) ?? 75);
+        return { label: labelOf(id), skippable: adv.spare >= mine.length };
+      });
+      msgs.push({
+        device_id: pin,
+        kind: "verdict",
+        ref: `verdict|${date}`,
+        ...dayMessage(dayOrder, todaySlots[0].start_time, todaySlots.length, plan),
+        url: "/attendance",
+      });
     }
   }
 

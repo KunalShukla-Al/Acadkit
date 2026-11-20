@@ -51,12 +51,15 @@ Open the **installed** PWA (iPhone: Share → Add to Home Screen first),
 then **Settings → Reminders → Turn on reminders** and allow notifications.
 
 ## What gets sent (IST)
-- **Class soon** — when a class on today's day order starts within 15 min.
-- **Mark attendance** — 6 PM nudge if today's classes are still unmarked.
-- **Deadline due** — 8 AM, for anything due within 24 h.
-- **Low attendance** — 8 AM, any subject under 75%.
+- **Today's plan**: 7 AM on every class day, with the day order and which subjects can be skipped.
+- **Under the bar**: 7 AM, for each subject under its bar (75%, or 65% on medical leave), with the
+  day attending every class brings it back.
+- **Each class**: 15–20 min before it, whether it can be skipped and how many are left to spare.
+- **Deadline due**: 8 AM, for anything due within 24 h.
+- **Mark attendance**: 6 PM, if any of today's classes are still unmarked.
 
-- **Skip verdict** — 8 AM, whether today's classes are safe to miss.
+The day order comes from `classes.ts`, which mirrors the app's calendar; `classes.test.ts` checks
+the two agree, holidays that cancel in place and class Saturdays included.
 
 Dedupe is handled by `sent_notifications`, so the 10-min cadence won't spam.
 

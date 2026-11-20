@@ -59,6 +59,11 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Changed
 
+- Reminders come before you'd leave for class. Each class's reminder arrives 15–20 min ahead and
+  says whether you can skip it and how many that leaves to spare, or why not. The day's plan (its
+  day order, what can be skipped and what can't) and any subject under its bar come at 7 AM on
+  every class day, before the first class, instead of at 8. The 6 PM nudge says unmarked classes
+  count as attended.
 - An attendance subject opens on a tap, with no arrow, to its total, attended, absent and remaining
   classes, and grows smoothly instead of jumping. Its skips and its reconciliation with the portal
   leave it: skips are the wallet's, and when the portal last synced is at the top of the page.
@@ -149,6 +154,10 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- Class reminders used the day before's day order after a holiday that cancels in place: from
+  10 Nov they followed 9 Nov's cancelled Day Order 3 onward, a day behind. The reminders now read
+  the calendar exactly as the app does, and a test keeps the two in step. The same lag made the
+  6 PM nudge check the wrong day's classes and say marked days were unmarked.
 - The Mac's sync no longer hangs when the network drops mid-request: every request now has a time
   limit, and the sync log shows each step as it runs.
 - The semester switch finds the next semester's folder beside the current one, wherever that is,
