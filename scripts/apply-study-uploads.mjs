@@ -1,11 +1,22 @@
-/** Save files uploaded from the app into the study folder (migration 033). */
-import { existsSync } from "node:fs";
+/**
+ * Save files uploaded from the app into the study folder (migration 033).
+ *
+ * Retry-safe: the inbox copy is removed only after the row is marked done, so a
+ * failed status update leaves the upload pending and still downloadable. The
+ * retry then finds the copy it already saved and reuses it.
+ */
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { freeName, resolveRequest } from "./lib/deletions.mjs";
 import { placeOf } from "./lib/roots.mjs";
 
 const BUCKET = "study-files";
+
+const sameBytes = (file, bytes) => {
+  const st = statSync(file);
+  return st.isFile() && st.size === bytes.length && readFileSync(file).equals(bytes);
+};
 
 export async function applyUploads({ supabase, pin, dir, extras = [], dryRun = false, log = console.log }) {
   const { data, error } = await supabase
@@ -22,14 +33,16 @@ export async function applyUploads({ supabase, pin, dir, extras = [], dryRun = f
   const bucket = supabase.storage.from(BUCKET);
   let saved = 0;
   for (const up of data ?? []) {
-    const finish = (status, note) =>
-      dryRun
-        ? Promise.resolve()
-        : supabase
-            .from("study_uploads")
-            .update({ status, note, done_at: new Date().toISOString() })
-            .eq("id", up.id)
-            .then(({ error: e }) => e && log(`  couldn't update upload ${up.path}: ${e.message}`));
+    /** Settle the row; false when the update failed, so the caller keeps the inbox copy. */
+    const finish = async (status, note) => {
+      if (dryRun) return true;
+      const { error: e } = await supabase
+        .from("study_uploads")
+        .update({ status, note, done_at: new Date().toISOString() })
+        .eq("id", up.id);
+      if (e) log(`  couldn't update upload ${up.path}: ${e.message}`);
+      return !e;
+    };
 
     // Into the next semester's folder when it was uploaded there ("SRM_Sem4/…").
     const at = placeOf(up.path, dir, extras);
@@ -49,17 +62,27 @@ export async function applyUploads({ supabase, pin, dir, extras = [], dryRun = f
       log(`  upload ${up.path} not ready yet (${dlErr?.message ?? "empty"})`);
       continue;
     }
+    const bytes = Buffer.from(await blob.arrayBuffer());
     const parent = path.dirname(target.full);
-    const name = freeName(path.basename(target.full), (n) => existsSync(path.join(parent, n)), " (%d)");
-    await mkdir(parent, { recursive: true });
-    await writeFile(path.join(parent, name), Buffer.from(await blob.arrayBuffer()), { flag: "wx" });
+
+    // The first free name, or one already holding these bytes (an earlier run's copy).
+    const name = freeName(
+      path.basename(target.full),
+      (n) => existsSync(path.join(parent, n)) && !sameBytes(path.join(parent, n), bytes),
+      " (%d)",
+    );
+    const again = existsSync(path.join(parent, name));
+    if (!again) {
+      await mkdir(parent, { recursive: true });
+      await writeFile(path.join(parent, name), bytes, { flag: "wx" });
+      saved++;
+    }
     const inside = path.relative(at.dir, path.join(parent, name)).split(path.sep).join("/");
     const rel = at.dir === dir ? inside : `${up.path.slice(0, up.path.length - at.rel.length)}${inside}`;
-    log(`  + ${rel} (from the app)`);
-    await finish("done", rel === up.path ? "saved" : `saved as ${rel}`);
+    log(again ? `  = ${rel} (already in the folder)` : `  + ${rel} (from the app)`);
+    if (!(await finish("done", rel === up.path ? "saved" : `saved as ${rel}`))) continue;
     const { error: rmErr } = await bucket.remove([up.key]);
     if (rmErr) log(`  couldn't clear the inbox copy of ${rel}: ${rmErr.message}`);
-    saved++;
   }
   if (saved) log(`Saved ${saved} from the app`);
   return saved;
