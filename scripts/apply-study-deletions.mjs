@@ -1,7 +1,13 @@
 #!/usr/bin/env node
-/** Act on files deleted from the app's Study screen (migration 032). */
+/**
+ * Act on files deleted from the app's Study screen (migration 032).
+ *
+ * Retry-safe: a request whose status update failed stays pending, and the
+ * retry finds the copy it already moved to the Trash (same bytes) and records
+ * that move. Only a file that is truly missing counts as gone.
+ */
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { readdir, readFile, rename, rmdir, stat, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -10,12 +16,19 @@ import { macClient } from "./lib/mac-client.mjs";
 import { dropFromPrep, resolveRequest, shaOfKey, sourceOf, trashName, webVersionOf } from "./lib/deletions.mjs";
 import { placeOf, studyRoots } from "./lib/roots.mjs";
 
-const TRASH = path.join(homedir(), ".Trash");
+const shaOf = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
 
-async function toTrash(full) {
-  const name = trashName(path.basename(full), (n) => existsSync(path.join(TRASH, n)));
-  await rename(full, path.join(TRASH, name));
+async function toTrash(full, trash) {
+  const name = trashName(path.basename(full), (n) => existsSync(path.join(trash, n)));
+  await rename(full, path.join(trash, name));
   return name;
+}
+
+/** The Trash name already holding these bytes ("a.pdf", "a (AcadKit 2).pdf", …), or null. */
+function inTrash(trash, base, sha) {
+  const holds = (n) => statSync(path.join(trash, n)).isFile() && shaOf(path.join(trash, n)) === sha;
+  const name = trashName(base, (n) => existsSync(path.join(trash, n)) && !holds(n));
+  return existsSync(path.join(trash, name)) ? name : null;
 }
 
 /**
@@ -37,7 +50,37 @@ async function pruneEmpty(dirPath, stop) {
   }
 }
 
-export async function applyDeletions({ supabase, pin, dir, extras = [], dryRun = false, log = console.log }) {
+/**
+ * A PDF's _src markdown and web version follow it to the Trash, or the next
+ * rebuild brings it back. Returns the note's "and its source …" part.
+ */
+async function trashCompanions(at, trash) {
+  const src = sourceOf(at.rel);
+  if (!src) return "";
+  let also = "";
+  const s = resolveRequest(path.join(at.dir, "_src"), src.slice("_src/".length));
+  if (s.full && existsSync(s.full)) {
+    also = ` and its source ${await toTrash(s.full, trash)}`;
+    await pruneEmpty(path.dirname(s.full), path.join(at.dir, "_src"));
+  }
+  const web = webVersionOf(at.rel);
+  const w = web && resolveRequest(path.join(at.dir, "_src", "_html"), web.slice("_src/_html/".length));
+  if (w?.full && existsSync(w.full)) {
+    await toTrash(w.full, trash);
+    await pruneEmpty(path.dirname(w.full), path.join(at.dir, "_src", "_html"));
+  }
+  return also;
+}
+
+export async function applyDeletions({
+  supabase,
+  pin,
+  dir,
+  extras = [],
+  trash = path.join(homedir(), ".Trash"),
+  dryRun = false,
+  log = console.log,
+}) {
   const { data, error } = await supabase
     .from("study_file_deletions")
     .select("id, path, key")
@@ -72,17 +115,30 @@ export async function applyDeletions({ supabase, pin, dir, extras = [], dryRun =
     let info;
     try {
       info = await stat(target.full);
-    } catch {
-      log(`  gone already: ${req.path}`);
-      await finish("done", "already gone from the Mac");
+    } catch (err) {
+      // Unreadable isn't gone: the request waits for the next sync.
+      if (err.code !== "ENOENT" && err.code !== "ENOTDIR") {
+        log(`  can't check ${req.path}: ${err.message}`);
+        continue;
+      }
+      // An earlier run may have moved it, then failed to say so.
+      const earlier = inTrash(trash, path.basename(target.full), shaOfKey(req.key));
+      if (!earlier) {
+        log(`  gone already: ${req.path}`);
+        await finish("done", "already gone from the Mac");
+        continue;
+      }
+      const also = dryRun ? "" : await trashCompanions(at, trash);
+      log(`  - ${req.path} already in the Trash as ${earlier}${also}`);
+      await finish("done", `moved to the Trash as ${earlier}${also}`);
+      if (!dryRun) gone.add(req.path);
       continue;
     }
     if (!info.isFile()) {
       await finish("skipped", "not a file");
       continue;
     }
-    const sha = createHash("sha256").update(await readFile(target.full)).digest("hex");
-    if (sha !== shaOfKey(req.key)) {
+    if (shaOf(target.full) !== shaOfKey(req.key)) {
       log(`  skip ${req.path}: changed on the Mac since you deleted it in the app`);
       await finish("skipped", "it changed on the Mac after you deleted it in the app");
       continue;
@@ -91,23 +147,8 @@ export async function applyDeletions({ supabase, pin, dir, extras = [], dryRun =
       log(`  - ${req.path} (would move to the Trash)`);
       continue;
     }
-    const name = await toTrash(target.full);
-    const src = sourceOf(at.rel);
-    let alsoSrc = "";
-    if (src) {
-      const s = resolveRequest(path.join(at.dir, "_src"), src.slice("_src/".length));
-      if (s.full && existsSync(s.full)) {
-        alsoSrc = ` and its source ${await toTrash(s.full)}`;
-        await pruneEmpty(path.dirname(s.full), path.join(at.dir, "_src"));
-      }
-      // Its web version too, or the next sync would still attach it to nothing.
-      const web = webVersionOf(at.rel);
-      const w = web && resolveRequest(path.join(at.dir, "_src", "_html"), web.slice("_src/_html/".length));
-      if (w?.full && existsSync(w.full)) {
-        await toTrash(w.full);
-        await pruneEmpty(path.dirname(w.full), path.join(at.dir, "_src", "_html"));
-      }
-    }
+    const name = await toTrash(target.full, trash);
+    const alsoSrc = await trashCompanions(at, trash);
     await pruneEmpty(path.dirname(target.full), at.dir);
     log(`  - ${req.path} → Trash as ${name}${alsoSrc}`);
     await finish("done", `moved to the Trash as ${name}${alsoSrc}`);
