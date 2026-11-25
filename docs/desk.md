@@ -94,8 +94,8 @@ and analysis, with the same progress on the phone and the Mac. It ships in 2.0
 - **Answers contain code and tables.** Rendering must never run HTML, so it's tested with hostile
   input.
 - **Two apps write progress.** One table, item-level last-write-wins, tested from both sides.
-- **Plan load.** Thirteen Desk PRs sit on top of the daily plan. The Mac split view and `⌘K`
-  prototypes are cut to make room (23–24 Dec become Desk buffer).
+- **Plan load.** Thirteen Desk PRs sit on top of the daily plan, as a second PR on their days.
+  Nothing else in the plan is cut.
 
 ## Not in the Desk
 
