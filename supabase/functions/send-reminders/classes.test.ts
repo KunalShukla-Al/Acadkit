@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildEffectiveMap } from "../../../packages/core/src/calendar.ts";
 import { OFFICIAL_HOLIDAYS as CORE_HOLIDAYS } from "../../../packages/core/src/semester.ts";
 import { subjectShort } from "../../../packages/core/src/subjectShort.ts";
+import { computeSubjectAttendance } from "../../../packages/core/src/attendance.ts";
+import type { AttendanceRecord, PortalSnapshot, Subject } from "../../../packages/core/src/types.ts";
+import { PORTAL_BASELINE } from "./fixtures/portal-baseline.ts";
 import { OFFICIAL_HOLIDAYS } from "./calendar.generated.ts";
 import {
   advise,
@@ -138,5 +141,24 @@ describe("the morning's plan", () => {
     ]);
     expect(msg).toEqual({ title: "Day Order 2: 6 classes, first at 9:45 AM", body: "Can skip: OS, FDS\nAttend: DSA" });
     expect(dayMessage(4, "12:30:00", 1, [{ label: "TBVP", skippable: false }]).body).toBe("Attend: TBVP");
+  });
+});
+
+describe("the portal baseline: a sync on a class day, before its classes", () => {
+  const c = PORTAL_BASELINE;
+
+  it("the app counts the classes marked after the sync", () => {
+    const records: AttendanceRecord[] = c.marks.map((m, i) => ({ ...m, id: `r${i}`, device_id: "1234", end_time: "" }));
+    const snapshot: PortalSnapshot = { ...c.snapshot, id: "snap", device_id: "1234" };
+    const app = computeSubjectAttendance(c.subject as Subject, records, snapshot);
+    expect([app.attended, app.total]).toEqual([c.expected.attended, c.expected.total]);
+  });
+
+  // Release blocker 8: the reminders drop the snapshot's whole day and read 42 of 60. The fix
+  // (29 Nov) makes this pass; then it becomes a plain `it`.
+  it.fails("the reminders start from the same count as the app", () => {
+    const data: AttendanceData = { slots: c.slots, marks: c.marks, snapshot: c.snapshot, eff: c.eff, semStart: c.semStart, semEnd: c.semEnd };
+    const now = standing(c.subject.id, data, c.asked.date, c.asked.start);
+    expect([now.attended, now.held]).toEqual([c.expected.attended, c.expected.total]);
   });
 });
