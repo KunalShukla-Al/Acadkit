@@ -14,6 +14,7 @@ import { useFreeDayWatch } from "@/hooks/useFreeDayWatch";
 import { useActiveDay } from "@/hooks/useActiveDay";
 import { usePushKeyMove } from "@/hooks/usePush";
 import { useTomorrowOffline } from "@/hooks/useTomorrowOffline";
+import { useViewportNudge } from "@/hooks/useViewportNudge";
 import { movedTo } from "@/lib/screens";
 
 // The chip reads the whole run-up plan, so it loads on its own, just after the page.
@@ -45,6 +46,7 @@ export function AppShell() {
   useActiveDay();
   usePushKeyMove();
   useTomorrowOffline();
+  useViewportNudge();
   const location = useLocation();
   const outlet = useOutlet();
 

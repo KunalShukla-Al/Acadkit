@@ -154,6 +154,10 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- The installed iPhone app no longer opens with the tab bar floating above the bottom edge over a
+  dark strip. iOS measures the screen short in home-screen mode until the page first scrolls, so
+  on a page too short to scroll, such as a four-class Timetable day, the gap stayed. The app now
+  scrolls one pixel and back when it opens and whenever it comes back to the front.
 - The installed app no longer crashes after an update that changes the file viewer. The precache
   left out a small file that Today and the Run-up chip import, so the old version fetched it from
   the server, where the update had replaced it. On 25 Nov the iPhone showed the crash screen until
