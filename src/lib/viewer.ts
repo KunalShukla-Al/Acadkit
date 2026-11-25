@@ -95,16 +95,51 @@ export function splitHighlighted(html: string): string[] {
 }
 
 /**
+ * A note's web version as its frame loads it: every link opens in a new
+ * tab, never inside the frame or over the app.
+ */
+export function noteDocument(html: string): string {
+  return html.replace("<head>", '<head><base target="_blank">');
+}
+
+/**
+ * What the note frame may do. Same-origin so the page counter can read its
+ * scroll; popups so its links open. Scripts, forms and navigating the app
+ * stay off, so a note can't run code or leave the viewer.
+ */
+export const NOTE_SANDBOX = "allow-same-origin allow-popups allow-popups-to-escape-sandbox";
+
+/** How much of a code or text file the viewer reads and colours. Past it, the start shows and the rest is a download. */
+export const TEXT_PREVIEW_BYTES = 256 * 1024;
+/** How much of a CSV or TSV the viewer reads. */
+export const SHEET_PREVIEW_BYTES = 2 * 1024 * 1024;
+/** A workbook has to be unzipped whole to read any of it, so past this it's download-only. */
+export const WORKBOOK_PREVIEW_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The start of a text file, at most `limit` bytes of it, and whether any
+ * was left out. A cut ends on the last whole line, so a half line or a
+ * half character never shows.
+ */
+export async function readTextHead(blob: Blob, limit: number): Promise<{ text: string; cut: boolean }> {
+  if (blob.size <= limit) return { text: await blob.text(), cut: false };
+  const head = await blob.slice(0, limit).text();
+  const end = head.lastIndexOf("\n");
+  return { text: end > 0 ? head.slice(0, end) : head, cut: true };
+}
+
+/**
  * A CSV (or, with `sep = "\t"`, TSV) as rows of cells. Quoted fields may
  * hold the separator, newlines and doubled quotes ("" is one "), which is
- * all Excel writes. Trailing empty lines are dropped.
+ * all Excel writes. Trailing empty lines are dropped. Parsing stops once
+ * `maxRows` rows are in.
  */
-export function parseDelimited(text: string, sep = ","): string[][] {
+export function parseDelimited(text: string, sep = ",", maxRows = Infinity): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
   let quoted = false;
-  for (let i = 0; i < text.length; i++) {
+  for (let i = 0; i < text.length && rows.length < maxRows; i++) {
     const ch = text[i];
     if (quoted) {
       if (ch === '"') {
@@ -125,7 +160,7 @@ export function parseDelimited(text: string, sep = ","): string[][] {
       cell = "";
     } else cell += ch;
   }
-  if (cell !== "" || row.length) {
+  if (rows.length < maxRows && (cell !== "" || row.length)) {
     row.push(cell);
     rows.push(row);
   }

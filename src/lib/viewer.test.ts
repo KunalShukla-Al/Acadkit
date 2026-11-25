@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { codeLanguage, columnName, parseDelimited, shownFile, splitHighlighted, trimSheet, viewerHref, viewerKind } from "@/lib/viewer";
+import {
+  codeLanguage,
+  columnName,
+  NOTE_SANDBOX,
+  noteDocument,
+  parseDelimited,
+  readTextHead,
+  shownFile,
+  splitHighlighted,
+  trimSheet,
+  viewerHref,
+  viewerKind,
+} from "@/lib/viewer";
 
 describe("viewerKind", () => {
   it("routes each format the viewer reads to its renderer", () => {
@@ -111,5 +123,57 @@ describe("shownFile", () => {
   });
   it("prefers a note's web version", () => {
     expect(shownFile(f("OS/Guide.pdf", { key: "g.html", ext: "html" }))).toMatchObject({ kind: "html", key: "g.html" });
+  });
+});
+
+describe("readTextHead", () => {
+  it("reads a small file whole", async () => {
+    expect(await readTextHead(new Blob(["int main() {}\n"]), 1024)).toEqual({ text: "int main() {}\n", cut: false });
+  });
+
+  it("reads only the start of a large file, ending on a whole line", async () => {
+    const big = new Blob([Array.from({ length: 1000 }, (_, i) => `line ${i}`).join("\n")]);
+    const { text, cut } = await readTextHead(big, 100);
+    expect(cut).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(100);
+    const lines = text.split("\n");
+    expect(lines[lines.length - 1]).toMatch(/^line \d+$/);
+    expect(text.startsWith("line 0\nline 1")).toBe(true);
+  });
+
+  it("never shows half a character where the cut splits one", async () => {
+    const { text } = await readTextHead(new Blob(["ok\n" + "é".repeat(50)]), 10);
+    expect(text).toBe("ok");
+    expect(text).not.toContain("\uFFFD");
+  });
+});
+
+describe("parseDelimited with a row limit", () => {
+  it("stops once it has the rows it was asked for", () => {
+    const csv = Array.from({ length: 50_000 }, (_, i) => `${i},x`).join("\n");
+    const rows = parseDelimited(csv, ",", 2001);
+    expect(rows).toHaveLength(2001);
+    expect(rows[2000]).toEqual(["2000", "x"]);
+  });
+
+  it("reads everything when the file is under the limit", () => {
+    expect(parseDelimited("a,b\n1,2", ",", 10)).toEqual([
+      ["a", "b"],
+      ["1", "2"],
+    ]);
+  });
+});
+
+describe("the note frame", () => {
+  it("opens every link in a new tab", () => {
+    expect(noteDocument("<html><head><title>OS</title></head><body><a href='https://x'>x</a></body></html>")).toContain(
+      '<head><base target="_blank"><title>OS</title>'
+    );
+  });
+
+  it("runs no scripts or forms and can't navigate the app", () => {
+    const allowed = NOTE_SANDBOX.split(" ");
+    expect(allowed).toContain("allow-popups");
+    for (const off of ["allow-scripts", "allow-forms", "allow-top-navigation", "allow-modals"]) expect(allowed).not.toContain(off);
   });
 });

@@ -2,20 +2,23 @@ import { useEffect, useState } from "react";
 import { WrapText } from "lucide-react";
 import { DocSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
-import { splitHighlighted } from "@/lib/viewer";
+import { readTextHead, splitHighlighted, TEXT_PREVIEW_BYTES } from "@/lib/viewer";
 
 /** A source file (C, C++, Python, Java, and a few more) with its syntax coloured in the app's own palette and line numbers down the side. */
 export default function CodeView({ blob, language }: { blob: Blob; language: string | null }) {
   const [lines, setLines] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cut, setCut] = useState(false);
   const [wrap, setWrap] = useState(() => window.innerWidth < 640);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
+        // A large file shows its start: colouring all of it would freeze a phone.
+        const head = await readTextHead(blob, TEXT_PREVIEW_BYTES);
         // A file's final newline ends its last line; it doesn't start another.
-        const text = (await blob.text()).replace(/\r\n?/g, "\n").replace(/\n$/, "");
+        const text = head.text.replace(/\r\n?/g, "\n").replace(/\n$/, "");
         let html: string;
         if (language) {
           const hljs = (await import("highlight.js/lib/core")).default;
@@ -36,7 +39,10 @@ export default function CodeView({ blob, language }: { blob: Blob; language: str
             hljs.registerLanguage(language, (await langs[language]()).default as Parameters<typeof hljs.registerLanguage>[1]);
           html = hljs.getLanguage(language) ? hljs.highlight(text, { language, ignoreIllegals: true }).value : escape(text);
         } else html = escape(text);
-        if (!cancelled) setLines(splitHighlighted(html));
+        if (!cancelled) {
+          setCut(head.cut);
+          setLines(splitHighlighted(html));
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
@@ -77,6 +83,11 @@ export default function CodeView({ blob, language }: { blob: Blob; language: str
           </tbody>
         </table>
       </div>
+      {cut && (
+        <p className="mt-2 text-center text-xs font-medium text-muted">
+          Showing the first {lines.length} lines ({TEXT_PREVIEW_BYTES / 1024} KB). Download it for the rest.
+        </p>
+      )}
     </div>
   );
 }

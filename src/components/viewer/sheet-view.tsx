@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { DocSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
 import { extOf } from "@/lib/studyFiles";
-import { columnName, parseDelimited, trimSheet } from "@/lib/viewer";
+import { columnName, parseDelimited, readTextHead, SHEET_PREVIEW_BYTES, trimSheet, WORKBOOK_PREVIEW_BYTES } from "@/lib/viewer";
 
 type Cell = string | number | boolean | Date | null | undefined | "";
 interface Sheet {
   name: string;
   rows: Cell[][];
+  /** Only the start of the file was read. */
+  cut?: boolean;
 }
 
 /** Past this, a sheet shows its first rows and says how many it left out. */
@@ -18,6 +20,7 @@ const MAX_COLS = 80;
 export default function SheetView({ blob, path }: { blob: Blob; path: string }) {
   const [sheets, setSheets] = useState<Sheet[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tooBig, setTooBig] = useState(false);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -27,7 +30,12 @@ export default function SheetView({ blob, path }: { blob: Blob; path: string }) 
         const ext = extOf(path);
         let out: Sheet[];
         if (ext === "csv" || ext === "tsv") {
-          out = [{ name: "", rows: trimSheet(parseDelimited(await blob.text(), ext === "tsv" ? "\t" : ",")) }];
+          // One row past the cap is enough to know there are more.
+          const { text, cut } = await readTextHead(blob, SHEET_PREVIEW_BYTES);
+          out = [{ name: "", rows: trimSheet(parseDelimited(text, ext === "tsv" ? "\t" : ",", MAX_ROWS + 1)), cut }];
+        } else if (blob.size > WORKBOOK_PREVIEW_BYTES) {
+          if (!cancelled) setTooBig(true);
+          return;
         } else {
           const readExcelFile = (await import("read-excel-file/browser")).default;
           const book = await readExcelFile(blob);
@@ -48,6 +56,12 @@ export default function SheetView({ blob, path }: { blob: Blob; path: string }) 
   const cols = shown.reduce((m, r) => Math.max(m, r.length), 0);
 
   if (error) return <p className="px-4 py-10 text-center text-sm font-medium text-muted">Couldn't read this spreadsheet: {error}</p>;
+  if (tooBig)
+    return (
+      <p className="px-4 py-10 text-center text-sm font-medium text-muted">
+        This workbook is {Math.round(blob.size / (1024 * 1024))} MB, too large to open here. Download it to see it.
+      </p>
+    );
   if (!sheets) return <DocSkeleton />;
   return (
     <div className="w-full">
@@ -101,7 +115,7 @@ export default function SheetView({ blob, path }: { blob: Blob; path: string }) 
           </table>
         </div>
       )}
-      {sheet && (sheet.rows.length > MAX_ROWS || sheet.rows.some((r) => r.length > MAX_COLS)) && (
+      {sheet && (sheet.cut || sheet.rows.length > MAX_ROWS || sheet.rows.some((r) => r.length > MAX_COLS)) && (
         <p className="mt-2 text-center text-xs font-medium text-muted">
           Showing the first {Math.min(sheet.rows.length, MAX_ROWS)} rows and {MAX_COLS} columns. Download it for the rest.
         </p>
