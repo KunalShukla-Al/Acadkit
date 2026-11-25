@@ -324,7 +324,9 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
   `node scripts/generate-icons.mjs`.
 - Form fields are 16px (iOS zooms smaller ones), overscroll is off, and safe areas come from
   `pt-safe-t` / `pb-safe-b`.
-- After a deploy, a missing lazy chunk reloads the page once (`src/lib/staleChunk.ts`).
+- After a deploy, a missing lazy chunk reloads the page once (`src/lib/staleChunk.ts`). The reload,
+  and the crash screen's Reload app, first hand over to a waiting update: a plain reload keeps the
+  old service worker, which serves the old build again.
 
 ## Study files
 

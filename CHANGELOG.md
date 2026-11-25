@@ -159,6 +159,8 @@ existing data or installs, a minor version for new features, a patch version for
   the server, where the update had replaced it. On 25 Nov the iPhone showed the crash screen until
   the app was closed. The file is precached now, and `npm run precache` fails a build whose
   precache misses anything a precached file imports.
+- Reload app on the crash screen, and the automatic reload after a missing file, now open the
+  waiting update. A plain reload kept the old version, which failed the same way again.
 
 - Class reminders used the day before's day order after a holiday that cancels in place: from
   10 Nov they followed 9 Nov's cancelled Day Order 3 onward, a day behind. The reminders now read
