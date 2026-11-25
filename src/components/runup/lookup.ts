@@ -1,16 +1,30 @@
 import { useMemo } from "react";
-import { useSubjects } from "@/hooks/useData";
-import { formatDate } from "@acadkit/core/dates";
-import { relativeDay, type RunupEvent } from "@/lib/runup";
+import { useDeadlines, useMarks, useSubjects } from "@/hooks/useData";
+import { useProjectionReport } from "@/hooks/useProjectionReport";
+import { formatDate, todayISO } from "@acadkit/core/dates";
+import { endSemAims, relativeDay, squashCode, type RunupEvent, type RunupTarget } from "@/lib/runup";
 import type { Subject } from "@acadkit/core/types";
-
-const squash = (s: string | null | undefined) => (s ?? "").replace(/\s/g, "").toUpperCase();
 
 /** Your subjects by course code, so the plan's codes find their names and colours. */
 export function useSubjectByCode(): (code: string | null | undefined) => Subject | null {
   const { data: subjects } = useSubjects();
-  const map = useMemo(() => new Map((subjects ?? []).map((s) => [squash(s.code), s])), [subjects]);
-  return (code) => (code ? (map.get(squash(code)) ?? null) : null);
+  const map = useMemo(() => new Map((subjects ?? []).map((s) => [squashCode(s.code), s])), [subjects]);
+  return (code) => (code ? (map.get(squashCode(code)) ?? null) : null);
+}
+
+/**
+ * An event's aim. An end-sem takes the one Marks → Targets shows; any
+ * other event, or an end-sem Marks can't solve, keeps the plan's target.
+ */
+export function useRunupTarget(): (event: RunupEvent) => RunupTarget | null {
+  const { report } = useProjectionReport();
+  const { data: marks } = useMarks();
+  const { data: deadlines } = useDeadlines();
+  const aims = useMemo(
+    () => endSemAims(report.gradeProjections, marks ?? [], deadlines ?? [], todayISO()),
+    [report.gradeProjections, marks, deadlines]
+  );
+  return (event) => (event.kind === "endsem" ? aims.get(squashCode(event.subject_code)) : undefined) ?? event.target;
 }
 
 /** When an event is: "Thu 29 Oct · in 17 days", or what's known about an undated one. */

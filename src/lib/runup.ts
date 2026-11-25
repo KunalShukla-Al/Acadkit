@@ -1,4 +1,8 @@
 import { addDays, diffDays, parseISODate, toISODate } from "@acadkit/core/dates";
+import { expectedOutlook } from "@acadkit/core/expected";
+import { groupMarksBySubject } from "@acadkit/core/grades";
+import { ceilHalf, floorHalf, floorMarks, type SolvedComponent } from "@acadkit/core/plan";
+import type { Deadline, Grade, Mark, Subject } from "@acadkit/core/types";
 import type { StudyFile } from "@/lib/studyFiles";
 
 /**
@@ -16,6 +20,52 @@ export interface RunupTarget {
   score: number;
   max: number;
   note: string | null;
+}
+
+/**
+ * An end-sem's aim as Marks → Targets shows it: the score you've said you
+ * expect, else what your target grade needs, rounded the same way. Null
+ * once the end-sem is scored or there is nothing to solve, so the plan's
+ * own target stands.
+ */
+export function endSemAim(
+  c: Pick<SolvedComponent, "max" | "obtained" | "required" | "assumed">,
+  grade: string
+): RunupTarget | null {
+  if (c.obtained !== null) return null;
+  const max = floorMarks(c.max);
+  if (c.assumed !== null) return { score: floorHalf(c.assumed), max, note: "the score you expect, from Marks → Targets" };
+  if (c.required === null) return null;
+  return { score: ceilHalf(c.required), max, note: `what ${grade} needs, from Marks → Targets` };
+}
+
+/** Course codes compare without spaces or case: "21CSC 202J" is 21CSC202J. */
+export const squashCode = (s: string | null | undefined) => (s ?? "").replace(/\s/g, "").toUpperCase();
+
+/**
+ * Every subject's end-sem aim, by course code, solved as Marks → Targets
+ * solves it: the same outlook, marks and deadlines, so the two can't
+ * disagree.
+ */
+export function endSemAims(
+  projections: { subject: Subject; targetGrade: Grade }[],
+  marks: Mark[],
+  deadlines: Deadline[],
+  today: string
+): Map<string, RunupTarget> {
+  const bySubject = groupMarksBySubject(marks);
+  const out = new Map<string, RunupTarget>();
+  for (const p of projections) {
+    const o = expectedOutlook(p.subject, bySubject.get(p.subject.id) ?? [], p.targetGrade, {
+      deadlines,
+      assumedExternalPct: null,
+      today,
+    });
+    const external = o.plan.components.find((c) => c.kind === "external");
+    const aim = external ? endSemAim(external, p.targetGrade) : null;
+    if (aim) out.set(squashCode(p.subject.code), aim);
+  }
+  return out;
 }
 
 export interface RunupPyq {

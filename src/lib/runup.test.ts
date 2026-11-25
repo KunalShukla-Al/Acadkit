@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   clampDay,
   dayProgress,
+  endSemAim,
+  endSemAims,
   eventProgress,
   eventsOn,
   eventTasks,
@@ -32,6 +34,8 @@ import {
   type RunupTask,
 } from "@/lib/runup";
 import type { StudyFile } from "@/lib/studyFiles";
+import { expectedOutlook } from "@acadkit/core/expected";
+import type { Mark, Subject } from "@acadkit/core/types";
 
 const task = (id: string, extra: Partial<RunupTask> = {}): RunupTask => ({
   id,
@@ -300,5 +304,81 @@ describe("a task's past questions", () => {
     expect(pyqProgress(task, new Set([task.id]))).toEqual({ done: 0, total: 2 });
     expect(pyqProgress(task, new Set(["2026-11-14#e2>may-2025-b25a"]))).toEqual({ done: 1, total: 2 });
     expect(pyqProgress({ ...task, pyqs: undefined }, new Set())).toEqual({ done: 0, total: 0 });
+  });
+});
+
+describe("an end-sem's aim from Marks → Targets", () => {
+  const external = { max: 40, obtained: null, required: 25.13, assumed: null };
+
+  it("is what the target grade needs, rounded up to the half mark", () => {
+    expect(endSemAim(external, "B+")).toEqual({ score: 25.5, max: 40, note: "what B+ needs, from Marks → Targets" });
+  });
+
+  it("is the score you said you expect, rounded down, when you've typed one", () => {
+    expect(endSemAim({ ...external, assumed: 31.7 }, "A")).toEqual({
+      score: 31.5,
+      max: 40,
+      note: "the score you expect, from Marks → Targets",
+    });
+  });
+
+  it("is out of reach rather than hidden when the grade needs more than the paper has", () => {
+    expect(endSemAim({ ...external, required: 41.2 }, "O")?.score).toBe(41.5);
+  });
+
+  it("gives way to the plan's target once the end-sem is scored, or when nothing was solved", () => {
+    expect(endSemAim({ ...external, obtained: 30 }, "A")).toBeNull();
+    expect(endSemAim({ ...external, required: null }, "A")).toBeNull();
+  });
+});
+
+describe("end-sem aims for the run-up", () => {
+  // 60 internal / 40 end-sem, every internal returned: 41 of 60.
+  const os: Subject = {
+    id: "os",
+    device_id: "",
+    code: "21CSC 202J",
+    name: "OS",
+    credits: 4,
+    type: "theory",
+    faculty: null,
+    color_hex: "#000",
+    assessment: {
+      internal: 60,
+      complete: true,
+      components: [
+        { key: "a", label: "FT-1", type: "CT", max: 15 },
+        { key: "b", label: "FT-2", type: "CT", max: 15 },
+        { key: "c", label: "FT-3", type: "CT", max: 15 },
+        { key: "d", label: "LLJ-I", type: "Lab", max: 7 },
+        { key: "e", label: "LLT-II", type: "Lab", max: 8 },
+      ],
+    },
+  };
+  const mark = (label: string, obtained: number, max: number): Mark =>
+    ({ id: label, subject_id: "os", component_type: "CT", label, marks_obtained: obtained, max_marks: max, is_external: false }) as Mark;
+  const marks = [mark("FT-1", 7.5, 15), mark("FT-2", 11.4, 15), mark("FT-3", 12.1, 15), mark("LLJ-I", 2.5, 7), mark("LLT-II", 7.5, 8)];
+
+  it("matches the end-sem row Marks → Targets solves for the target grade, keyed by the plan's code", () => {
+    const aims = endSemAims([{ subject: os, targetGrade: "A" }], marks, [], "2026-11-25");
+    const marksRow = expectedOutlook(os, marks, "A", { deadlines: [], assumedExternalPct: null, today: "2026-11-25" })
+      .plan.components.find((c) => c.kind === "external")!;
+    expect(marksRow.required).not.toBeNull();
+    expect(aims.get("21CSC202J")).toEqual(endSemAim(marksRow, "A"));
+    expect(aims.get("21CSC202J")?.max).toBe(40);
+  });
+
+  it("follows a new target grade: a higher grade asks more of the same paper", () => {
+    const a = endSemAims([{ subject: os, targetGrade: "A" }], marks, [], "2026-11-25").get("21CSC202J")!;
+    const aPlus = endSemAims([{ subject: os, targetGrade: "A+" }], marks, [], "2026-11-25").get("21CSC202J")!;
+    expect(aPlus.score).toBeGreaterThan(a.score);
+  });
+
+  it("uses the score you typed in on Marks when there is one", () => {
+    const typed: Subject = { ...os, assessment: { ...os.assessment!, assumedExternalPct: 80 } };
+    expect(endSemAims([{ subject: typed, targetGrade: "A" }], marks, [], "2026-11-25").get("21CSC202J")).toMatchObject({
+      score: 32,
+      max: 40,
+    });
   });
 });

@@ -5,7 +5,7 @@ import { DayStrip } from "@/components/runup/day-strip";
 import { DayView } from "@/components/runup/day-view";
 import { PlanCalendar } from "@/components/runup/plan-calendar";
 import { caption, EventRow } from "@/components/runup/shared";
-import { useSubjectByCode } from "@/components/runup/lookup";
+import { useRunupTarget, useSubjectByCode } from "@/components/runup/lookup";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { useSetPlanTick } from "@/hooks/useData";
 import { useRunup, useTodayISO } from "@/hooks/useRunup";
@@ -26,6 +26,7 @@ export default function Runup() {
   const { plan, done } = useRunup();
   const tick = useSetPlanTick();
   const subjectByCode = useSubjectByCode();
+  const targetFor = useRunupTarget();
 
   const data = plan.data ?? null;
   const parsed = parseDay(param);
@@ -92,7 +93,7 @@ export default function Runup() {
             <section className="card divide-y overflow-hidden p-0" aria-label="Coming up">
               <p className={cn(caption, "px-4 py-3")}>Coming up</p>
               {[...coming, ...undated].map((e) => (
-                <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} />
+                <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} target={targetFor(e)} />
               ))}
             </section>
           )}

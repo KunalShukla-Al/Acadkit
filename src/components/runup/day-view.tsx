@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, BookOpenCheck, CalendarOff, ChevronLeft, ChevronRight, Sunrise, Trophy } from "lucide-react";
 import { TaskRow } from "@/components/runup/task-row";
 import { caption, EventRow, SubjectTag, TargetText } from "@/components/runup/shared";
-import { useSubjectByCode } from "@/components/runup/lookup";
+import { useRunupTarget, useSubjectByCode } from "@/components/runup/lookup";
 import { useSettings, useSubjects, useTimetable } from "@/hooks/useData";
 import { useSurvivalPlan } from "@/hooks/useSurvivalPlan";
 import { getDayInfo, semesterWindow } from "@acadkit/core/calendar";
@@ -72,6 +72,7 @@ export function DayView({
   next: string | null;
 }) {
   const subjectByCode = useSubjectByCode();
+  const targetFor = useRunupTarget();
   const { info, classes } = useDayClasses(date);
   const day = plan.days.find((d) => d.date === date);
   const { planned, carried } = itemsFor(plan, date, done, today);
@@ -142,7 +143,7 @@ export function DayView({
               {e.weight && <span>{e.weight}</span>}
             </span>
           </span>
-          <TargetText event={e} className="shrink-0 text-sm" />
+          <TargetText target={targetFor(e)} className="shrink-0 text-sm" />
         </Link>
       ))}
 
@@ -222,10 +223,10 @@ export function DayView({
             Coming up
           </h2>
           {coming.map((e) => (
-            <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} />
+            <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} target={targetFor(e)} />
           ))}
           {undated.map((e) => (
-            <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} />
+            <EventRow key={e.id} event={e} today={today} subject={subjectByCode(e.subject_code)} target={targetFor(e)} />
           ))}
         </section>
       )}
