@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BarChart3, BookOpen, FileText, Lightbulb, ListChecks, ScrollText } from "lucide-react";
 import { TaskRow } from "@/components/runup/task-row";
 import { caption, SubjectTag } from "@/components/runup/shared";
-import { eventWhen, useSubjectByCode } from "@/components/runup/lookup";
+import { eventWhen, useRunupTarget, useSubjectByCode } from "@/components/runup/lookup";
 import { FileRow } from "@/components/study/file-row";
 import { UnitList } from "@/components/study/unit-list";
 import { Segmented } from "@/components/ui/segmented";
@@ -44,6 +44,7 @@ export default function RunupEvent() {
   const { plan, done, files } = useRunup();
   const tick = useSetPlanTick();
   const subjectByCode = useSubjectByCode();
+  const targetFor = useRunupTarget();
   const units = useQuery({ queryKey: ["units", pin], queryFn: () => fetchUnits(pin), staleTime: 5 * 60_000 });
   const [tab, setTab] = useState<Tab>("plan");
   const [unit, setUnit] = useState<number | null>(null);
@@ -79,6 +80,7 @@ export default function RunupEvent() {
 
   const data = plan.data;
   const subject = subjectByCode(event.subject_code);
+  const target = targetFor(event);
   const progress = eventProgress(data, event.id, done);
   const tasks = eventTasks(data, event.id, done);
   const course = event.subject_code ? (units.data?.courses[squash(event.subject_code)] ?? null) : null;
@@ -98,14 +100,14 @@ export default function RunupEvent() {
         </div>
         <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">{event.title}</h1>
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          {event.target && (
+          {target && (
             <div>
               <p className={caption}>Your target</p>
               <p className="text-4xl font-extrabold tabular leading-none text-accent-deep">
-                {event.target.score}
-                <span className="text-xl text-muted"> / {event.target.max}</span>
+                {target.score}
+                <span className="text-xl text-muted"> / {target.max}</span>
               </p>
-              {event.target.note && <p className="mt-1 text-xs font-medium text-muted">{event.target.note}</p>}
+              {target.note && <p className="mt-1 text-xs font-medium text-muted">{target.note}</p>}
             </div>
           )}
           {event.weight && (

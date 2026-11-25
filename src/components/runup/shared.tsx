@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { CalendarClock, Target } from "lucide-react";
 import { Dot } from "@/components/ui/misc";
 import { eventWhen } from "@/components/runup/lookup";
-import type { RunupEvent } from "@/lib/runup";
+import type { RunupEvent, RunupTarget } from "@/lib/runup";
 import { subjectShort } from "@acadkit/core/subjectShort";
 import { cn } from "@/lib/utils";
 import type { Subject } from "@acadkit/core/types";
@@ -21,18 +21,28 @@ export function SubjectTag({ subject, className }: { subject: Subject | null; cl
 }
 
 /** "aim 11 / 15". */
-export function TargetText({ event, className }: { event: RunupEvent; className?: string }) {
-  if (!event.target) return null;
+export function TargetText({ target, className }: { target: RunupTarget | null; className?: string }) {
+  if (!target) return null;
   return (
     <span className={cn("inline-flex items-center gap-1 font-semibold tabular", className)}>
       <Target className="h-3.5 w-3.5 text-accent" aria-hidden />
-      aim {event.target.score} / {event.target.max}
+      aim {target.score} / {target.max}
     </span>
   );
 }
 
 /** One row per event: subject, title, when, and the target. Opens the event. */
-export function EventRow({ event, today, subject }: { event: RunupEvent; today: string; subject: Subject | null }) {
+export function EventRow({
+  event,
+  today,
+  subject,
+  target,
+}: {
+  event: RunupEvent;
+  today: string;
+  subject: Subject | null;
+  target: RunupTarget | null;
+}) {
   return (
     <Link
       to={`/runup/event/${encodeURIComponent(event.id)}`}
@@ -46,7 +56,7 @@ export function EventRow({ event, today, subject }: { event: RunupEvent; today: 
           <span>{eventWhen(event, today)}</span>
         </span>
       </span>
-      <TargetText event={event} className="shrink-0 text-xs" />
+      <TargetText target={target} className="shrink-0 text-xs" />
     </Link>
   );
 }
