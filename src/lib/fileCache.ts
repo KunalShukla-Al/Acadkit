@@ -1,5 +1,7 @@
 /** Study files kept on this device, so opening one you've opened before costs no download at all - and works with no signal. */
 
+import { accountEpoch, stillCurrent } from "@/lib/account";
+
 const CACHE = "acadkit-files-v1";
 const INDEX = "acadkit:file-cache";
 /** What the cache may hold before the least recently opened files go. */
@@ -72,12 +74,22 @@ export async function isCached(key: string): Promise<boolean> {
   }
 }
 
-/** Keep `blob` under `key`, then trim the cache to size. Never throws. */
-export async function storeFile(key: string, blob: Blob): Promise<void> {
-  if (!available() || blob.size > CAP_BYTES / 4) return;
+/**
+ * Keep `blob` under `key`, then trim the cache to size. Never throws.
+ * Writes nothing for an account that has signed out since `epoch`
+ * (src/lib/account.ts), so a slow download can't refill a cleared cache.
+ */
+export async function storeFile(key: string, blob: Blob, epoch = accountEpoch()): Promise<void> {
+  if (!available() || blob.size > CAP_BYTES / 4 || !stillCurrent(epoch)) return;
   try {
     const cache = await caches.open(CACHE);
+    if (!stillCurrent(epoch)) return;
     await cache.put(urlFor(key), new Response(blob, { headers: { "content-type": blob.type || "application/octet-stream" } }));
+    // Signed out while that was writing: the clear may have run first, so take the copy back out.
+    if (!stillCurrent(epoch)) {
+      await (await caches.open(CACHE)).delete(urlFor(key));
+      return;
+    }
     const index = readIndex();
     index[key] = { size: blob.size, used: Date.now() };
     for (const gone of evictionPlan(index)) {
