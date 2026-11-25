@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { accountEpoch } from "@/lib/account";
 import { cachedFile, isCached, storeFile } from "@/lib/fileCache";
 import { MAX_UPLOAD_BYTES, safeUploadName } from "@acadkit/core/uploads";
 import { baseName, type StorageData, type StudyFile, type StudyHit, type StudyManifest } from "@/lib/studyFiles";
@@ -271,22 +272,25 @@ export async function fetchStudyBlob(file: StudyFile, key: string = file.key): P
   // Opened before on this device: no download (src/lib/fileCache.ts).
   const hit = await cachedFile(key);
   if (hit) return hit;
+  // Whose file this is is fixed when the download starts, not when it lands.
+  const epoch = accountEpoch();
   const { data, error } = await supabase.storage.from(BUCKET).download(key);
   if (error) throw error;
-  void storeFile(key, data);
+  void storeFile(key, data, epoch);
   return data;
 }
 
 /**
  * Put what the viewer would show for `file` on this device ahead of time
- * (Tomorrow offline). True once it's there; false when it couldn't be.
+ * (Tomorrow offline). True once it's there; false when it couldn't be,
+ * including once the account the run began under (`epoch`) has signed out.
  */
-export async function keepStudyFile(file: StudyFile): Promise<boolean> {
+export async function keepStudyFile(file: StudyFile, epoch = accountEpoch()): Promise<boolean> {
   const { key } = shownFile(file);
   if (await isCached(key)) return true;
   const { data, error } = await supabase.storage.from(BUCKET).download(key);
   if (error) return false;
-  await storeFile(key, data);
+  await storeFile(key, data, epoch);
   return isCached(key);
 }
 

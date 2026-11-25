@@ -40,6 +40,15 @@ export function parseTomorrow(saved: string | null): TomorrowState | null {
   }
 }
 
+/** Forget the last run (sign-out): it described the old account's files. */
+export function clearTomorrow() {
+  try {
+    localStorage.removeItem(STATE);
+  } catch {
+    // Storage off: nothing was saved.
+  }
+}
+
 export function writeTomorrow(state: TomorrowState) {
   try {
     localStorage.setItem(STATE, JSON.stringify(state));
