@@ -88,6 +88,20 @@ function touchIcon() {
   };
 }
 
+/**
+ * The file viewer's libraries (PDF, Word, PowerPoint, code, sheets), each
+ * in a chunk of its own. They're ~2 MB and only ever run with a file in
+ * hand, which needs the network anyway, so the service worker fetches
+ * them when a file is first opened instead of precaching them.
+ */
+const RENDERERS = [
+  { name: "viewer-pdf", test: /pdfjs-dist/ },
+  { name: "viewer-docx", test: /docx-preview/ },
+  { name: "viewer-zip", test: /jszip|pako/ },
+  { name: "viewer-code", test: /highlight\.js/ },
+  { name: "viewer-sheet", test: /read-excel-file|fflate|saxen|unzipper-esm|worker-f/ },
+];
+
 export default defineConfig({
   define: {
     __APP_RELEASE__: JSON.stringify(release()),
@@ -137,11 +151,11 @@ export default defineConfig({
         // Safari loads launch screens itself, straight from the network,
         // at install time. Precaching 22 of them would add ~600 KB to
         // every install to serve images the SW is never asked for.
-        // The file viewer's libraries (PDF, Word, PowerPoint, code) are
-        // ~2 MB and only ever run with a file in hand, which needs the
-        // network anyway. Fetched when a file is first opened, not on
-        // every install.
-        globIgnores: ["**/splash/**", "**/viewer-*", "**/pdf.worker*", "**/pdfjs-wasm/**"],
+        // The file viewer's libraries are left out too, by their chunk
+        // names: a looser "viewer-*" also caught the chunk of
+        // src/lib/viewer.ts, which Today imports, and a deploy that changed
+        // it broke every installed app. `npm run precache` checks this.
+        globIgnores: ["**/splash/**", ...RENDERERS.map(({ name }) => `**/${name}-*`), "**/pdf.worker*", "**/pdfjs-wasm/**"],
         // Custom Web Push handlers, loaded into the generated SW
         importScripts: ["push-sw.js"],
         // No runtime caching. Supabase responses used to be cached here,
@@ -171,12 +185,7 @@ export default defineConfig({
             { name: "vendor-supabase", test: /[\\/]node_modules[\\/]@supabase[\\/]/, priority: 2 },
             { name: "vendor-motion", test: /[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 2 },
             { name: "vendor-query", test: /[\\/]node_modules[\\/]@tanstack[\\/]/, priority: 2 },
-            // The file viewer's renderers, named so the precache can skip them.
-            { name: "viewer-pdf", test: /pdfjs-dist/, priority: 1 },
-            { name: "viewer-docx", test: /docx-preview/, priority: 1 },
-            { name: "viewer-zip", test: /jszip|pako/, priority: 1 },
-            { name: "viewer-code", test: /highlight\.js/, priority: 1 },
-            { name: "viewer-sheet", test: /read-excel-file|fflate|saxen|unzipper-esm|worker-f/, priority: 1 },
+            ...RENDERERS.map((group) => ({ ...group, priority: 1 })),
             // No catch-all group: a generic "vendor" chunk ends up in a
             // cycle with vendor-react. Everything else stays where the
             // bundler puts it.

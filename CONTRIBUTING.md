@@ -65,6 +65,7 @@ CI runs all of these on every pull request, and a PR merges only when they pass.
 | `npm run test:e2e`                     | The app in a browser against `dev:mock` (Playwright), as a phone |
 | `npm run db:test`                      | Row-level security (pgTAP on a local Supabase; CI runs it when `supabase/` changes) |
 | `npx vite build && npm run size`       | Bundle size against `bundle-budget.json`            |
+| `npx vite build && npm run precache`   | The installed app can start from its precache: everything it imports is in it |
 | `npx vite build && npx @lhci/cli@0.15.1 autorun` | Lighthouse against `lighthouserc.json` |
 
 These run on a Mac only, so CI skips them. Run them when a change touches what they cover.

@@ -41,6 +41,7 @@
     "connected": "node scripts/connected.mjs",
     "connected:judge": "node scripts/connected-judge.mjs",
     "size": "node scripts/check-bundle-size.mjs",
+    "precache": "node scripts/check-precache.mjs",
     "perf:screens": "node scripts/lighthouse-screens.mjs",
     "demo:record": "node scripts/record-demo.mjs",
     "dev:mock": "node scripts/dev-mock/server.mjs"

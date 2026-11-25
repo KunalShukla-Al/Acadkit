@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { buildReport, fileReport } from "@/lib/crashLog";
-import { isStaleChunkError, recoverFromStaleChunk } from "@/lib/staleChunk";
+import { isStaleChunkError, recoverFromStaleChunk, reloadApp } from "@/lib/staleChunk";
 import { RELEASE } from "@/lib/release";
 
 interface Props {
@@ -10,6 +10,8 @@ interface State {
   /** React's component stack, kept so the screen can show it. */
   componentStack?: string;
   error: Error | null;
+  /** A stale chunk, while the new build takes over: not a crash to show. */
+  updating?: boolean;
 }
 
 /**
@@ -27,7 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
     // A chunk that 404s after a deploy is not a crash, it is a stale
     // document. Reload rather than blaming the screen. See staleChunk.ts.
-    if (isStaleChunkError(error) && recoverFromStaleChunk()) return;
+    if (isStaleChunkError(error) && recoverFromStaleChunk()) {
+      this.setState({ updating: true });
+      return;
+    }
     this.setState({ componentStack: info.componentStack ?? "" });
     void fileReport(buildReport(error, info.componentStack));
   }
@@ -48,6 +53,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) return this.props.children;
+    if (this.state.updating) {
+      return (
+        <div role="status" className="flex min-h-dvh items-center justify-center text-sm font-semibold text-muted">
+          Updating AcadKit…
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-bad/15 text-3xl">
@@ -83,7 +95,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Try again
           </button>
           <button
-            onClick={() => location.reload()}
+            onClick={() => void reloadApp()}
             className="h-11 rounded-2xl bg-brand px-5 text-sm font-semibold text-brand-ink"
           >
             Reload app

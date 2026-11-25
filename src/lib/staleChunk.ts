@@ -36,7 +36,7 @@ export function isStaleChunkError(reason: unknown): boolean {
  * Reload to pick up the new build. Returns false when it has already
  * tried recently, so the caller can fall back to showing the crash.
  */
-export function recoverFromStaleChunk(reload: () => void = () => location.reload()): boolean {
+export function recoverFromStaleChunk(reload: () => void = () => void reloadApp()): boolean {
   // Already reloading this page: the other chunks that fail in the same
   // moment are the same stale document, not crashes. After a deploy the
   // Study page's prefetches used to log ten of them in three seconds.
@@ -62,6 +62,52 @@ export function recoverFromStaleChunk(reload: () => void = () => location.reload
   reload();
   return true;
 }
+
+/** How long the new build gets to take over before the reload goes ahead anyway. */
+const HANDOVER_MS = 8_000;
+
+/**
+ * Reload into the newest build. A plain reload keeps the old service
+ * worker serving the old shell while the new one waits, and that shell is
+ * the build that just failed: only closing the app swapped them. So the
+ * waiting worker takes over first, found by an update check if the app
+ * hasn't run one yet.
+ */
+export async function reloadApp(reload: () => void = () => location.reload()): Promise<void> {
+  try {
+    const registration = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
+    if (registration) await Promise.race([takeOver(registration), wait(HANDOVER_MS)]);
+  } catch {
+    // Offline, or the check failed: the reload may still work.
+  }
+  reload();
+}
+
+async function takeOver(registration: ServiceWorkerRegistration): Promise<void> {
+  if (!registration.waiting && !registration.installing) await registration.update();
+  const next = registration.waiting ?? registration.installing;
+  if (!next || !(await installed(next))) return;
+  const controlled = new Promise<void>((resolve) =>
+    navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true }),
+  );
+  // What vite-plugin-pwa's generated worker listens for.
+  next.postMessage({ type: "SKIP_WAITING" });
+  await controlled;
+}
+
+/** True once the worker has installed, false if it never will. */
+function installed(worker: ServiceWorker): Promise<boolean> {
+  return new Promise((resolve) => {
+    const settle = () => {
+      if (worker.state === "redundant") resolve(false);
+      else if (worker.state !== "parsed" && worker.state !== "installing") resolve(true);
+    };
+    worker.addEventListener("statechange", settle);
+    settle();
+  });
+}
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 let reloading = false;
 let leaving = false;
