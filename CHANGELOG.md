@@ -154,6 +154,12 @@ existing data or installs, a minor version for new features, a patch version for
 
 ### Fixed
 
+- The installed app no longer crashes after an update that changes the file viewer. The precache
+  left out a small file that Today and the Run-up chip import, so the old version fetched it from
+  the server, where the update had replaced it. On 25 Nov the iPhone showed the crash screen until
+  the app was closed. The file is precached now, and `npm run precache` fails a build whose
+  precache misses anything a precached file imports.
+
 - Class reminders used the day before's day order after a holiday that cancels in place: from
   10 Nov they followed 9 Nov's cancelled Day Order 3 onward, a day behind. The reminders now read
   the calendar exactly as the app does, and a test keeps the two in step. The same lag made the

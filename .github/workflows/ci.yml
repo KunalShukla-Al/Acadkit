@@ -41,6 +41,9 @@ jobs:
       - name: Bundle size
         run: npm run size
 
+      - name: Precache
+        run: npm run precache
+
   e2e:
     # Playwright against `npm run dev:mock`: sign in, mark attendance, add
     # marks, and replay a write made offline. No real Supabase involved.

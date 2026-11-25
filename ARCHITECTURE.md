@@ -317,7 +317,9 @@ What you're reading on one device, picked up on the other (`src/lib/reading.ts`,
 
 ## PWA and iOS
 
-- Precache only; the viewer's chunks aren't precached.
+- Precache only. The file viewer's libraries (`RENDERERS` in `vite.config.ts`) stay out and load
+  when a file opens; everything else is in, and `npm run precache` fails the build if a precached
+  chunk imports a file that isn't.
 - Launch screens for each iPhone size (`node scripts/generate-splash.mjs`); icons from
   `node scripts/generate-icons.mjs`.
 - Form fields are 16px (iOS zooms smaller ones), overscroll is off, and safe areas come from
