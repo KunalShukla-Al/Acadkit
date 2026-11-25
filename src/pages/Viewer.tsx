@@ -6,7 +6,7 @@ import { usePin } from "@/hooks/useData";
 import { fetchStudyBlob, fetchStudyManifest, studyDownloadUrl } from "@/api/studyFiles";
 import { saveFile } from "@/lib/saveFile";
 import { baseName, formatSize, prettyName, type StudyFile } from "@/lib/studyFiles";
-import { codeLanguage, isRenderable, shownFile, viewerKind, type ViewerKind } from "@/lib/viewer";
+import { codeLanguage, isRenderable, NOTE_SANDBOX, noteDocument, shownFile, viewerKind, type ViewerKind } from "@/lib/viewer";
 import { ZoomPane } from "@/components/viewer/zoom-pane";
 import { DocSkeleton, PdfSkeleton } from "@/components/viewer/skeleton";
 import { cn } from "@/lib/utils";
@@ -277,7 +277,7 @@ function HtmlView({ blob, title }: { blob: Blob; title: string }) {
   const [pager, setPager] = useState<Pager | null>(null);
   useEffect(() => {
     let alive = true;
-    void blob.text().then((t) => alive && setDoc(t.replace("<head>", '<head><base target="_blank">')));
+    void blob.text().then((t) => alive && setDoc(noteDocument(t)));
     return () => {
       alive = false;
     };
@@ -302,7 +302,7 @@ function HtmlView({ blob, title }: { blob: Blob; title: string }) {
         title={title}
         srcDoc={doc}
         onLoad={() => setLoaded((n) => n + 1)}
-        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        sandbox={NOTE_SANDBOX}
         className="min-h-0 w-full flex-1 border-0 bg-[#0E1116]"
       />
       {pager && pager.total > 1 && (
