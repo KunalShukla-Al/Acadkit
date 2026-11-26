@@ -59,7 +59,7 @@ function Panel({ onClose, onPick }: Props) {
         className="card absolute w-60 p-1.5"
         style={{
           right: CORNER_INSET,
-          bottom: `calc(var(--nav-h, 0px) + ${CORNER_INSET + CORNER + GAP}px)`,
+          bottom: `calc(var(--nav-h, 0px) - var(--viewport-gap, 0px) + ${CORNER_INSET + CORNER + GAP}px)`,
           borderRadius: cornerRadius(26),
           transformOrigin: "bottom right",
         }}
