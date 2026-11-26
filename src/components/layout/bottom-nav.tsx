@@ -46,7 +46,7 @@ export function BottomNav() {
       ref={bar}
       aria-label="Primary"
       /* The safe-area inset is a clearance requirement, not a margin. */
-      className="glass fixed inset-x-0 bottom-0 z-30 border-t pb-[max(0.25rem,calc(env(safe-area-inset-bottom)-0.6rem))] lg:hidden"
+      className="glass fixed inset-x-0 bottom-screen z-30 border-t pb-[max(0.25rem,calc(env(safe-area-inset-bottom)-0.6rem))] lg:hidden"
       data-swipe
       {...swipe}
     >
