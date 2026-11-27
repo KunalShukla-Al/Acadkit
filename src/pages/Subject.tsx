@@ -14,7 +14,7 @@ import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { Dot, EmptyState, Skeleton } from "@/components/ui/misc";
 import {
   useAttendance,
-  useListedDeadlines,
+  useDeadlines,
   useMarks,
   usePin,
   usePortalSnapshots,
@@ -60,7 +60,7 @@ function SubjectInner() {
   const { data: attendance } = useAttendance();
   const { data: snapshots } = usePortalSnapshots();
   const { data: marks } = useMarks();
-  const { data: deadlines } = useListedDeadlines();
+  const { data: deadlines } = useDeadlines();
   const { manifest, files: allFiles } = useStudyManifest();
   const { data: pastTopics } = useSubjectTopics(code);
   const unitsData = useQuery({ queryKey: ["units", pin], queryFn: () => fetchUnits(pin), staleTime: 5 * 60_000 });

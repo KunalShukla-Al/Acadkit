@@ -1,4 +1,3 @@
-import { isExternalLabel } from "@acadkit/core/plan";
 import type { Deadline, DeadlineType, Subject } from "@acadkit/core/types";
 
 /** Deadlines are named by what they are, not by a typed-in title. */
@@ -42,9 +41,3 @@ export function upcomingDeadlines(deadlines: Deadline[] | undefined, now: number
     .slice(0, limit);
 }
 
-/** An end-sem paper, not a deadline. */
-export function isEndSemDeadline(d: Pick<Deadline, "title" | "type" | "due_date">, semEnd?: string | null): boolean {
-  if (isExternalLabel(d.title)) return true;
-  if (d.type !== "exam" || !semEnd || !d.due_date) return false;
-  return new Date(d.due_date).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) > semEnd;
-}

@@ -1,5 +1,5 @@
 import { labelMatchKey } from "@acadkit/core/componentLabel";
-import { derivedTitle, isEndSemDeadline } from "@/lib/deadlines";
+import { derivedTitle } from "@/lib/deadlines";
 import type { Assessment, Deadline, DeadlineType, MarkComponentType, Subject } from "@acadkit/core/types";
 
 /**
@@ -74,9 +74,7 @@ export function deadlineOffers(
   suggestions: Suggestion[] | undefined,
   deadlines: Deadline[] | undefined,
   subjects: Subject[] | undefined,
-  now: number,
-  /** The last teaching day: an exam after it is the end-sem, which is never offered. */
-  semEnd: string | null = null
+  now: number
 ): DeadlineOffer[] {
   const byCode = new Map((subjects ?? []).map((s) => [norm(s.code), s]));
   return (suggestions ?? [])
@@ -102,7 +100,6 @@ export function deadlineOffers(
         },
       };
     })
-    .filter((o) => !isEndSemDeadline(o.deadline, semEnd))
     .filter((o) => !alreadyHave(o, deadlines ?? []))
     .map((o) => ({ ...o, moves: movedFrom(o, deadlines ?? []) }))
     .sort((a, b) => a.deadline.due_date.localeCompare(b.deadline.due_date));
