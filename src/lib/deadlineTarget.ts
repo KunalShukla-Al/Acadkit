@@ -6,7 +6,9 @@ import {
   solveSubjectPlan,
   type SolveOptions,
 } from "@acadkit/core/plan";
+import { expectedOutlook } from "@acadkit/core/expected";
 import type { Deadline, Mark, Subject } from "@acadkit/core/types";
+import { isEndSem } from "@/lib/deadlines";
 
 /** What an upcoming test has to return. */
 export interface DeadlineNeed {
@@ -20,15 +22,19 @@ export interface DeadlineNeed {
   reachable: boolean;
   /** True when nothing is needed - the grade holds regardless. */
   secured: boolean;
+  /** The score you said you expect (Marks → Targets), not one the grade asks for. */
+  expected?: boolean;
 }
 
 export interface DeadlineNeedOptions extends SolveOptions {
   /** Falls back to the semester target when the subject has no view. */
   targetSgpa?: number;
+  /** The last teaching day: an exam after it is the end-sem. */
+  semEnd?: string | null;
 }
 
 export function deadlineNeed(
-  deadline: Pick<Deadline, "id" | "title" | "max_marks">,
+  deadline: Pick<Deadline, "id" | "title" | "max_marks" | "type" | "due_date">,
   subject: Subject,
   subjectMarks: Mark[],
   options: DeadlineNeedOptions = {}
@@ -37,6 +43,7 @@ export function deadlineNeed(
   if (!Number.isFinite(max) || max <= 0) return null;
 
   const grade = subject.target_grade ?? gradeForTargetSgpa(options.targetSgpa ?? 8.5);
+  if (isEndSem(deadline, options.semEnd ?? null)) return endSemNeed(max, subject, subjectMarks, grade, options);
   const plan = solveSubjectPlan(subject, subjectMarks, grade, options);
 
   // The component this deadline became, or the planned one it named.
@@ -65,8 +72,32 @@ export function deadlineNeed(
   };
 }
 
+/**
+ * The end-sem's ask, solved as Marks → Targets solves it (the same outlook
+ * the Run-up uses), so the three can't disagree. A paper out of 75 scales
+ * to the external weight it carries.
+ */
+function endSemNeed(max: number, subject: Subject, subjectMarks: Mark[], grade: Grade, options: SolveOptions): DeadlineNeed | null {
+  const outlook = expectedOutlook(subject, subjectMarks, grade, options);
+  const external = outlook.plan.components.find((c) => c.kind === "external");
+  if (!external || external.obtained !== null || external.max <= 1e-9) return null;
+  const expected = external.assumed !== null;
+  const ask = external.assumed ?? external.required;
+  if (ask === null) return null;
+  const needed = (ask * max) / external.max;
+  return {
+    required: ceilHalf(needed),
+    max,
+    grade,
+    reachable: ask <= external.max + 1e-9,
+    secured: !expected && needed <= 1e-9,
+    expected,
+  };
+}
+
 /** One line for a deadline row: the shortest true thing to say. */
 export function describeNeed(need: DeadlineNeed): string {
+  if (need.expected) return `you expect ${need.required}/${Math.round(need.max)}`;
   if (need.secured) return `${need.grade} is safe`;
   if (!need.reachable) return `${need.grade} needs more than this test`;
   return `${need.required}/${Math.round(need.max)} for ${need.grade}`;

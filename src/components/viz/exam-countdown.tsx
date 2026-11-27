@@ -5,7 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { Dot } from "@/components/ui/misc";
 import { countdownLabel, examUrgency, nextMarked } from "@/lib/examCountdown";
 import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
-import { deadlineLabel } from "@/lib/deadlines";
+import { deadlineName } from "@/lib/deadlines";
+import { semesterWindow } from "@acadkit/core/calendar";
 import { formatDate } from "@acadkit/core/dates";
 import { testTitle } from "@acadkit/core/subjectShort";
 import { say, VOICE } from "@/lib/voice";
@@ -34,9 +35,9 @@ export function ExamCountdown() {
   const { deadline, daysAway } = upcoming;
   const subject = subjects?.find((s) => s.id === deadline.subject_id);
   const urgency = examUrgency(daysAway);
-  // Which test it is, with its subject: "DSA FT-III". A title that is only a course code says nothing, so the type stands in.
-  const named = deadline.title.replace(/^\s*\d{2}[A-Z]{3}\d{3}[A-Z]\b\s*/, "").trim();
-  const title = testTitle(named || deadlineLabel(deadline, null), subject);
+  // Which test it is, with its subject: "DSA FT-III", "OS End Sem".
+  const semEnd = semesterWindow(settings).end;
+  const title = testTitle(deadlineName(deadline, semEnd), subject);
 
   const need = subject
     ? deadlineNeed(
@@ -47,6 +48,7 @@ export function ExamCountdown() {
           deadlines: (deadlines ?? []).filter((d) => d.subject_id === deadline.subject_id),
           targetSgpa: settings?.target_sgpa ?? 8.5,
           assumedExternalPct: null,
+          semEnd,
         }
       )
     : null;

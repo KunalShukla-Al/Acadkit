@@ -13,14 +13,25 @@ import {
   useUpdateDeadline,
 } from "@/hooks/useData";
 import { useResetOn } from "@/hooks/useResetOn";
-import { derivedTitle } from "@/lib/deadlines";
+import { derivedTitle, isEndSem } from "@/lib/deadlines";
 import { labelMatchKey } from "@acadkit/core/componentLabel";
 import { assessmentFor } from "@acadkit/core/plan";
 import { getDayInfo, semesterWindow } from "@acadkit/core/calendar";
 import { DEFAULT_DUE_TIME, describeDueTime, suggestDueTime } from "@acadkit/core/dueTime";
 import { formatPrep, prepWindows } from "@/lib/prep";
 import { formatDate, formatTime, todayISO } from "@acadkit/core/dates";
-import type { Deadline, DeadlinePriority, DeadlineType } from "@acadkit/core/types";
+import type { Deadline, DeadlinePriority, DeadlineType, Subject } from "@acadkit/core/types";
+
+/** The end-sem, offered beside the internal components of every subject that has one. */
+const END_SEM = "end-sem";
+
+/** What a deadline can be: the subject's planned components, then its end-sem, out of the external weight. */
+function componentChoices(subject: Subject | undefined): { key: string; label: string; max: number }[] {
+  if (!subject) return [];
+  const plan = assessmentFor(subject);
+  const external = subject.internal_only ? 0 : 100 - plan.internal;
+  return [...plan.components, ...(external > 0 ? [{ key: END_SEM, label: "End Sem", max: external }] : [])];
+}
 
 interface DeadlineSheetProps {
   open: boolean;
@@ -68,11 +79,10 @@ export function DeadlineSheet({ open, onClose, deadline, defaultDate }: Deadline
       // Re-select the component this deadline names, so editing doesn't
       // silently demote it back to a free-standing test.
       const owner = (subjects ?? []).find((s) => s.id === deadline.subject_id);
-      const match = owner
-        ? assessmentFor(owner).components.find(
-            (c) => labelMatchKey(c.label) === labelMatchKey(deadline.title)
-          )
-        : undefined;
+      const choices = componentChoices(owner);
+      const match = isEndSem(deadline, semesterWindow(settings).end)
+        ? choices.find((c) => c.key === END_SEM)
+        : choices.find((c) => labelMatchKey(c.label) === labelMatchKey(deadline.title));
       setComponentKey(match?.key ?? "");
     } else {
       setSubjectId("");
@@ -87,7 +97,7 @@ export function DeadlineSheet({ open, onClose, deadline, defaultDate }: Deadline
   });
 
   const subject = (subjects ?? []).find((s) => s.id === subjectId);
-  const components = subject ? assessmentFor(subject).components : [];
+  const components = componentChoices(subject);
   const picked = components.find((c) => c.key === componentKey);
 
   /** The due time the timetable implies, refreshed as you pick a subject, a type or a date. */
@@ -125,6 +135,7 @@ export function DeadlineSheet({ open, onClose, deadline, defaultDate }: Deadline
     setComponentKey(key);
     const c = components.find((x) => x.key === key);
     if (c) setMaxMarks(String(c.max));
+    if (key === END_SEM) setType("exam");
   }
 
   function save() {

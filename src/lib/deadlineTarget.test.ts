@@ -199,3 +199,43 @@ describe("a component assessed in more than one sitting", () => {
     expect(p.reachable).toBe(false);
   });
 });
+
+describe("the end-sem's need", () => {
+  // OS this semester: 60 internal, 40 external, end-sem on 30 Nov after teaching ended on 20 Nov.
+  const plan: Assessment = {
+    internal: 60,
+    complete: true,
+    components: [
+      { key: "ft1", label: "FT-1", type: "CT", max: 30 },
+      { key: "ft2", label: "FT-2", type: "CT", max: 30 },
+    ],
+  };
+  const os = sub({ target_grade: "A" }, plan);
+  const marks = [mark("FT-1", 24, 30), mark("FT-2", 21, 30)];
+  const endSem = (title: string, max = 40): Deadline => ({ ...dl(title, max, "es"), due_date: "2026-11-30T08:30:00.000Z" });
+
+  it("asks what the grade needs from the paper, whatever the paper is called", () => {
+    // 45 banked; an A needs 71, so the end-sem's 40 must return 26.
+    for (const title of ["T-EXT", "End Sem", "21CSC202J Exam"]) {
+      const d = endSem(title);
+      const need = deadlineNeed(d, os, marks, { deadlines: [d], semEnd: "2026-11-20" })!;
+      expect(need, title).not.toBeNull();
+      expect(need.required).toBe(26);
+      expect(need.max).toBe(40);
+      expect(describeNeed(need)).toBe("26/40 for A");
+    }
+  });
+
+  it("scales to a paper marked out of 75", () => {
+    const d = endSem("End Sem", 75);
+    expect(deadlineNeed(d, os, marks, { deadlines: [d], semEnd: "2026-11-20" })!.required).toBe(ceilHalf((26 * 75) / 40));
+  });
+
+  it("reads an expected score as what you expect, not an ask", () => {
+    const d = endSem("End Sem");
+    const expecting = sub({ target_grade: "A" }, { ...plan, assumedExternalPct: 75 });
+    const need = deadlineNeed(d, expecting, marks, { deadlines: [d], semEnd: "2026-11-20" })!;
+    expect(describeNeed(need)).toBe("you expect 30/40");
+  });
+});
+

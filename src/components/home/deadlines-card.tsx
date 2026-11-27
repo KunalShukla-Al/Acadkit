@@ -11,6 +11,7 @@ import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { diffDays, istParts } from "@acadkit/core/dates";
+import { semesterWindow } from "@acadkit/core/calendar";
 import { cn, haptic } from "@/lib/utils";
 import type { Deadline } from "@acadkit/core/types";
 
@@ -104,6 +105,7 @@ export function DeadlinesCard({ preview = false }: { preview?: boolean }) {
                       deadlines: (deadlines ?? []).filter((x) => x.subject_id === d.subject_id),
                       targetSgpa: settings?.target_sgpa ?? 8.5,
                       assumedExternalPct: null,
+                      semEnd: semesterWindow(settings).end,
                     }
                   )
                 : null;

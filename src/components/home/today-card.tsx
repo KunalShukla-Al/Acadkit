@@ -12,6 +12,7 @@ import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { LiveClassCard } from "@/components/viz/live-class";
 import { nextExam } from "@/lib/examCountdown";
+import { deadlineName } from "@/lib/deadlines";
 import { subjectShort } from "@acadkit/core/subjectShort";
 import { cn } from "@/lib/utils";
 import type { TimetableSlot } from "@acadkit/core/types";
@@ -50,8 +51,9 @@ export function TodayCard() {
     if (!next) return null;
     const subject = subjects?.find((s) => s.id === next.deadline.subject_id);
     const when = next.daysAway === 0 ? "today" : next.daysAway === 1 ? "tomorrow" : `in ${next.daysAway} days`;
-    return `${subject ? `${subjectShort(subject)} ` : ""}${next.deadline.title} is ${when}`;
-  }, [deadlines, subjects, now]);
+    const name = deadlineName(next.deadline, semesterWindow(settings).end);
+    return `${subject ? `${subjectShort(subject)} ` : ""}${name} is ${when}`;
+  }, [deadlines, subjects, settings, now]);
   /** What attendance says about one of today's slots, if anything. */
   const statusOfSlot = (slot: TimetableSlot) =>
     attendance?.find(

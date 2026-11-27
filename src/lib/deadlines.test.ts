@@ -81,3 +81,25 @@ describe("upcomingDeadlines", () => {
   });
 });
 
+describe("isEndSem and deadlineName", async () => {
+  const { isEndSem, deadlineName } = await import("./deadlines");
+  const d = (title: string, type: "exam" | "lab", due: string) => ({ title, type, due_date: due }) as never;
+  const semEnd = "2026-11-20";
+  it("catches the end-sem papers, by name or by date", () => {
+    expect(isEndSem(d("T-EXT", "exam", "2026-11-26T02:30:00Z"), semEnd)).toBe(true);
+    expect(isEndSem(d("21CSC202J Exam", "exam", "2026-11-30T08:30:00Z"), semEnd)).toBe(true);
+    expect(isEndSem(d("End Sem", "exam", "2026-10-01T02:30:00Z"), null)).toBe(true);
+  });
+  it("leaves term-time tests and labs alone", () => {
+    expect(isEndSem(d("FT-3", "exam", "2026-10-06T02:30:00Z"), semEnd)).toBe(false);
+    expect(isEndSem(d("21MAB201T Exam", "exam", "2026-09-03T18:29:00Z"), semEnd)).toBe(false);
+    expect(isEndSem(d("LLJ-I", "lab", "2026-11-25T02:30:00Z"), semEnd)).toBe(false);
+  });
+  it("names them for the screen", () => {
+    expect(deadlineName(d("21CSC202J Exam", "exam", "2026-11-30T08:30:00Z"), semEnd)).toBe("End Sem");
+    expect(deadlineName(d("T-EXT", "exam", "2026-11-30T08:30:00Z"), semEnd)).toBe("End Sem");
+    expect(deadlineName(d("21CSC202J FT-3", "exam", "2026-10-06T02:30:00Z"), semEnd)).toBe("FT-3");
+    expect(deadlineName(d("21CSC202J", "lab", "2026-10-06T02:30:00Z"), semEnd)).toBe("Lab");
+  });
+});
+
