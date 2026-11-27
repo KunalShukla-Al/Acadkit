@@ -45,3 +45,6 @@ public/pdfjs-wasm/
 
 # Local notes for Claude sessions on this Mac: commands, rules, deploy steps
 CLAUDE.local.md
+
+# PersonaOS engines (Python)
+__pycache__/

@@ -7,6 +7,7 @@ PersonaOS is AcadKit's Mac side grown into one system. It reads everything my de
 | Part | State |
 |---|---|
 | Orchestrator (`scripts/persona.mjs`) | Built |
+| WhatsApp collector (`persona/whatsapp.py`) | Built; its first run on the Mac checks WhatsApp's columns |
 | Collectors, engines, phone surfaces | Planned, one PR a day until 16 Dec 2026 |
 
 ## Rules
@@ -43,13 +44,24 @@ State lives in `~/Library/Application Support/AcadKit/persona/`: one record per 
 
 A job is `{ name, every | at, window?, timeoutMin?, alertAfter?, graceMin?, run(ctx) }`. `run` gets `{ signal, now, log, spendClaude }`, may return a short note, and should stop when `signal` aborts.
 
+## WhatsApp collector
+
+The `whatsapp` job runs every 10 minutes (`persona/whatsapp.py`).
+
+- It opens the Mac app's `ChatStorage.sqlite` read-only and runs one short query per group, so WhatsApp's file is never written.
+- It watches the groups in the semester pack, `<STUDY_DIR>/_src/semester.json` (`whatsapp.groups`). `PERSONA_WHATSAPP_GROUPS` overrides the pack. Names match ignoring case.
+- Each group keeps its own cursor. A group's first run reads back `PERSONA_WHATSAPP_DAYS` (60) days and moves the cursor past older rows too, because WhatsApp's row numbers don't follow message dates.
+- New messages go to `persona.sqlite` on the Mac with sender, time, text and any file's path. Rows with neither text nor a file are dropped.
+- It checks the columns it reads before each run and stops, naming them, if WhatsApp's schema changes. `python3 -m persona.whatsapp schema` lists what it found without any message content, and `chats` lists group names for the pack.
+- `npm run test:persona` runs the engines' tests; CI runs them too.
+
 ## Sources (planned)
 
 | Source | Holds | How | Login |
 |---|---|---|---|
 | Student Portal | Attendance, marks, timetable, results | Playwright with its own profile; a light request every 10 min may keep the session open, if the portal's timeout counts idle time | ID and password from Keychain; I answer the CAPTCHA on my phone |
 | Academia | Subjects, faculty, semester calendar | Playwright | ID and password from Keychain |
-| WhatsApp | Notices, relays, files | A read-only copy of the Mac app's database | Full Disk Access |
+| WhatsApp | Notices, relays, files | A read-only connection to the Mac app's database (built) | Full Disk Access |
 | Gmail | Course, GitHub, freelance and job-alert mail | IMAP with sender filters | App passwords in Keychain |
 | GitHub | CI, pull requests, commits | `gh` | `gh auth` |
 

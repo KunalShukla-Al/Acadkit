@@ -457,6 +457,11 @@ The Mac's orchestrator for every background job that reads my sources and acts o
   `spendClaude(n)` before calling Claude, under a daily cap (`PERSONA_CLAUDE_CAP`, 20).
 - State is one record per job in `~/Library/Application Support/AcadKit/persona/`; the log is
   `~/Library/Logs/AcadKit/persona.log`. `PERSONA=off` turns it off.
+- The engines are Python, standard library only, in `persona/`; a job runs one as
+  `python3 -m persona.<module>` (`scripts/lib/persona/python.mjs`) and keeps its last line as the
+  note. `npm run test:persona` tests them.
+- `whatsapp` (every 10 minutes) reads the semester pack's groups (`<STUDY_DIR>/_src/semester.json`)
+  from WhatsApp's database, opened read-only, into `persona.sqlite` on the Mac. Raw text stays there.
 
 ## Everything connected
 

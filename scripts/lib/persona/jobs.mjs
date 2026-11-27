@@ -8,6 +8,7 @@
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { runPython } from "./python.mjs";
 import { PERSONA_DIR } from "./store.mjs";
 
 export const HEARTBEAT = path.join(PERSONA_DIR, "heartbeat");
@@ -22,5 +23,12 @@ export const JOBS = [
       await mkdir(PERSONA_DIR, { recursive: true });
       await writeFile(HEARTBEAT, now().toISOString());
     },
+  },
+  {
+    // New messages from the semester pack's WhatsApp groups into persona.sqlite (persona/whatsapp.py).
+    name: "whatsapp",
+    every: 10,
+    timeoutMin: 3,
+    run: ({ signal }) => runPython(["persona.whatsapp", "collect"], { signal }),
   },
 ];
