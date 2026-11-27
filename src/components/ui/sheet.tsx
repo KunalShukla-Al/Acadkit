@@ -18,7 +18,7 @@ export function Sheet({ open, onOpenChange, title, description, children, classN
         <Drawer.Overlay className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px]" />
         <Drawer.Content
           className={cn(
-            "fixed inset-x-0 bottom-screen z-50 mx-auto flex max-h-[92dvh] w-full max-w-lg flex-col",
+            "fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-lg flex-col",
             "rounded-t-[28px] border border-b-0 bg-surface outline-hidden",
             className
           )}
