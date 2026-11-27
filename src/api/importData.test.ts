@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Assessment, Subject } from "@acadkit/core/types";
+import { IMPORT_PARTIAL_FAILURE } from "./fixtures/import-partial-failure";
 
 /** Import is where a backup either restores you or costs you data, so it runs here against an in-memory stand-in for the Supabase client that understands just the calls queries.ts makes. */
 
@@ -7,6 +8,9 @@ type Row = Record<string, unknown>;
 let db: Record<string, Row[]> = {};
 let log: string[] = [];
 let seq = 0;
+/** One call ("op:table") the database rejects, as a constraint would. */
+let failAt: string | null = null;
+let failError: { code?: string; message: string } | null = null;
 
 function query(table: string) {
   let op: "select" | "insert" | "upsert" | "delete" | "update" = "select";
@@ -19,6 +23,7 @@ function query(table: string) {
   function run() {
     const rows = (db[table] ??= []);
     log.push(`${op}:${table}`);
+    if (failAt === `${op}:${table}`) return { data: null, error: failError };
     const match = (r: Row) => filters.every((f) => f(r));
     if (op === "select") {
       const data = rows.filter(match);
@@ -122,6 +127,8 @@ const subject = (id: string, code: string, extra: Partial<Subject> = {}): Subjec
 beforeEach(() => {
   seq = 0;
   log = [];
+  failAt = null;
+  failError = null;
   db = {
     subjects: [{ ...subject("here-dsa", "21CSC201J") }],
     timetable_slots: [
@@ -240,6 +247,28 @@ describe("importData restores attendance, marks and archives by merging", () => 
     );
     expect(res.archives).toBe(1);
     expect(db.semester_archives.map((a) => a.label).sort()).toEqual(["Semester 1", "Semester 2"]);
+  });
+});
+
+describe("an import that fails partway (release blocker 9)", () => {
+  const c = IMPORT_PARTIAL_FAILURE;
+
+  beforeEach(() => {
+    db = structuredClone(c.account);
+    failAt = c.failsAt;
+    failError = c.error;
+  });
+
+  it("tells you the import failed", async () => {
+    await expect(importData(c.pin, c.backup, c.options)).rejects.toThrow();
+  });
+
+  // The subject, timetable and attendance steps have already written when the marks insert
+  // fails. The fix (30 Nov) makes this pass; then it becomes a plain `it`.
+  it.fails("leaves the account as it was", async () => {
+    const before = structuredClone(db);
+    await importData(c.pin, c.backup, c.options).catch(() => undefined);
+    expect(db).toEqual(before);
   });
 });
 
