@@ -49,7 +49,6 @@ export default function Priorities() {
           <p className="text-xs font-medium text-muted">
             {c.code}
             {c.endsems ? ` · ${c.endsems} end-sem papers` : ""}
-            {c.floor != null ? ` · ${c.floor}% of marks needed to pass` : ""}
           </p>
         </div>
         <Segmented
@@ -60,6 +59,7 @@ export default function Priorities() {
           value={view}
           onChange={(v) => set("view", v === "unit" ? "unit" : null)}
           layoutId="desk-priorities-view"
+          size="sm"
           className="w-full sm:w-56"
         />
       </div>
