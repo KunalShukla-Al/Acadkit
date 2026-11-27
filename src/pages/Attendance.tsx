@@ -30,7 +30,7 @@ import {
 import { buildEffectiveMap, semesterWindow } from "@acadkit/core/calendar";
 import { formatDate, relativeDay, todayISO } from "@acadkit/core/dates";
 import { attendanceTrend, type SubjectProjection } from "@acadkit/core/projections";
-import { syncHealth } from "@/lib/syncHealth";
+import { lastClassDay, syncHealth } from "@/lib/syncHealth";
 import { ShareImageButton } from "@/components/share-image-button";
 import { buildAttendanceShare, renderAttendanceCard } from "@/lib/shareCard";
 import { say, VOICE } from "@/lib/voice";
@@ -163,16 +163,18 @@ function AttendanceInner() {
     () => semesterWindow({ sem_start: semStart, sem_end: semEnd }),
     [semStart, semEnd]
   );
-  // Working days only, declared holidays already shifted out - the
-  // heatmap draws the days that actually happened, in sequence.
-  const health = useMemo(() => syncHealth(snapshots ?? []), [snapshots]);
   // Which way the number is moving. Insights has said this all along,
   // two taps away; it belongs beside the number it describes.
   const trend = useMemo(() => attendanceTrend(attendance ?? []), [attendance]);
+  // Working days only, declared holidays already shifted out - the
+  // heatmap draws the days that actually happened, in sequence.
   const effMap = useMemo(
     () => buildEffectiveMap(settings?.declared_holidays ?? [], semWindow),
     [settings?.declared_holidays, semWindow]
   );
+  // Read on or after the last class day, the portal is final: no nudge to sync again.
+  const lastClass = useMemo(() => lastClassDay(effMap), [effMap]);
+  const health = useMemo(() => syncHealth(snapshots ?? [], new Date(), lastClass), [snapshots, lastClass]);
 
   // The rest of the semester, each day carrying its day order's class
   // count - what a pencilled-in skip actually costs.

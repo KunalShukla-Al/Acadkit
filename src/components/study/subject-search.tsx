@@ -17,7 +17,7 @@ const MIN_DEEP = 3;
  */
 export function SubjectSearch({ files, name }: { files: StudyFile[]; name: string }) {
   const pin = usePin();
-  const { pendingByPath, available: canDelete, askDelete, undo } = useStudyDeletions();
+  const { available: canDelete, askDelete } = useStudyDeletions();
   const [query, setQuery] = useState("");
   const [deep, setDeep] = useState<string | null>(null);
   const trimmed = query.trim();
@@ -108,9 +108,7 @@ export function SubjectSearch({ files, name }: { files: StudyFile[]; name: strin
               key={f.path}
               file={f}
               showFolder
-              deleting={pendingByPath.has(f.path)}
               onDelete={canDelete ? () => askDelete(f) : undefined}
-              onUndo={() => undo(f.path)}
               swipeToDelete
             />
           ))}

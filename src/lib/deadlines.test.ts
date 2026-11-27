@@ -81,19 +81,3 @@ describe("upcomingDeadlines", () => {
   });
 });
 
-describe("isEndSemDeadline", async () => {
-  const { isEndSemDeadline } = await import("./deadlines");
-  const d = (title: string, type: "exam" | "lab", due: string) => ({ title, type, due_date: due }) as never;
-  const semEnd = "2026-11-20";
-  it("catches the end-sem papers the scan adds", () => {
-    // The four on the account: named T-EXT, or an exam after the last teaching day.
-    expect(isEndSemDeadline(d("T-EXT", "exam", "2026-11-26T02:30:00Z"), semEnd)).toBe(true);
-    expect(isEndSemDeadline(d("21MAB201T Exam", "exam", "2026-11-25T02:30:00Z"), semEnd)).toBe(true);
-    expect(isEndSemDeadline(d("End Sem", "exam", "2026-10-01T02:30:00Z"), null)).toBe(true);
-  });
-  it("leaves term-time tests and labs alone", () => {
-    expect(isEndSemDeadline(d("FT-3", "exam", "2026-10-06T02:30:00Z"), semEnd)).toBe(false);
-    expect(isEndSemDeadline(d("21MAB201T Exam", "exam", "2026-09-03T18:29:00Z"), semEnd)).toBe(false);
-    expect(isEndSemDeadline(d("LLJ-I", "lab", "2026-11-25T02:30:00Z"), semEnd)).toBe(false);
-  });
-});

@@ -5,7 +5,7 @@ import { ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Dot, Skeleton } from "@/components/ui/misc";
 import { DeadlineSheet } from "@/components/sheets/deadline-sheet";
-import { useListedDeadlines, useMarks, useSettings, useSubjects, useUpdateDeadline } from "@/hooks/useData";
+import { useDeadlines, useMarks, useSettings, useSubjects, useUpdateDeadline } from "@/hooks/useData";
 import { deadlineLabel, upcomingDeadlines } from "@/lib/deadlines";
 import { deadlineNeed, describeNeed } from "@/lib/deadlineTarget";
 import { say, VOICE } from "@/lib/voice";
@@ -22,7 +22,7 @@ import type { Deadline } from "@acadkit/core/types";
 export function DeadlinesCard({ preview = false }: { preview?: boolean }) {
   const tone = useTone();
   const { data: marks } = useMarks();
-  const { data: deadlines, isLoading } = useListedDeadlines();
+  const { data: deadlines, isLoading } = useDeadlines();
   const { data: subjects } = useSubjects();
   const { data: settings } = useSettings();
   const updateDeadline = useUpdateDeadline();

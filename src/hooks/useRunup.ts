@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { fetchPart, fetchRunup, fetchStudyManifest } from "@/api/studyFiles";
+import { fetchPart, fetchRunup } from "@/api/studyFiles";
 import { usePin, usePlanTicks } from "@/hooks/useData";
+import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { toISODate } from "@acadkit/core/dates";
 import { assemble, fromV1, type RunupData, type RunupEvent, type RunupMonth, type RunupPyq } from "@/lib/runup";
 
@@ -61,13 +62,9 @@ export function useRunup() {
   const plan = { data, isLoading: index.isLoading || months.isLoading, isError: index.isError || months.isError };
 
   const ticks = usePlanTicks();
-  const manifest = useQuery({
-    queryKey: ["study-files", pin],
-    queryFn: () => fetchStudyManifest(pin),
-    staleTime: 5 * 60_000,
-  });
+  const { files } = useStudyManifest();
   const done = useMemo(() => new Set((ticks.data ?? []).map((t) => t.task_id)), [ticks.data]);
-  return { plan, ticks, done, files: manifest.data?.files ?? [] };
+  return { plan, ticks, done, files };
 }
 
 /** An event's past-paper questions: its own file, loaded with its page, or inline in a plan from before the split. */

@@ -144,22 +144,25 @@ export async function searchStudyFiles(pin: string, query: string): Promise<{ hi
 export interface StudyDeletion {
   id: string;
   path: string;
+  /** The content deleted: a new file saved under the same name has another key. */
+  key: string;
   status: "pending" | "done" | "skipped";
   note: string | null;
   done_at: string | null;
 }
 
 /**
- * Open delete requests, plus any the Mac turned down in the last day, so
- * the page can say why a file you deleted is still there.
+ * Open delete requests, plus any the Mac handled in the last day: those it
+ * did keep their file hidden while a phone's manifest is older than the
+ * delete, and those it turned down say why a file you deleted is still there.
  */
 export async function fetchStudyDeletions(pin: string): Promise<StudyDeletion[]> {
   const since = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
   const { data, error } = await supabase
     .from("study_file_deletions")
-    .select("id, path, status, note, done_at")
+    .select("id, path, key, status, note, done_at")
     .eq("device_id", pin)
-    .or(`status.eq.pending,and(status.eq.skipped,done_at.gte.${since})`)
+    .or(`status.eq.pending,and(status.in.(done,skipped),done_at.gte.${since})`)
     .order("requested_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -169,7 +172,7 @@ export async function fetchStudyDeletions(pin: string): Promise<StudyDeletion[]>
  * Ask the Mac to delete a file. It moves it to its Trash at the next sync,
  * but only if the file still has this content (`key`).
  */
-export async function requestStudyDeletion(pin: string, file: StudyFile): Promise<void> {
+export async function requestStudyDeletion(pin: string, file: Pick<StudyFile, "path" | "key">): Promise<void> {
   const { error } = await supabase
     .from("study_file_deletions")
     .insert({ device_id: pin, path: file.path, key: file.key });
@@ -188,9 +191,14 @@ export async function requestStudyDeletions(pin: string, files: StudyFile[], alr
   if (error && error.code !== "23505") throw error;
 }
 
-/** Take back a request the Mac hasn't acted on yet. */
-export async function cancelStudyDeletion(id: string): Promise<void> {
-  const { error } = await supabase.from("study_file_deletions").delete().eq("id", id).eq("status", "pending");
+/** Take back requests the Mac hasn't acted on yet. */
+export async function cancelStudyDeletions(pin: string, paths: string[]): Promise<void> {
+  const { error } = await supabase
+    .from("study_file_deletions")
+    .delete()
+    .eq("device_id", pin)
+    .in("path", paths)
+    .eq("status", "pending");
   if (error) throw error;
 }
 

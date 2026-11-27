@@ -8,7 +8,6 @@ import {
   useAddDeadline,
   useDecideSuggestion,
   useDeadlines,
-  useSettings,
   useSubjects,
   useSuggestionHistory,
   useSuggestions,
@@ -54,7 +53,6 @@ export function SuggestionsCard() {
   const { data: suggestions } = useSuggestions();
   const { data: deadlines } = useDeadlines();
   const { data: subjects } = useSubjects();
-  const { data: settings } = useSettings();
   const { data: history } = useSuggestionHistory();
   const add = useAddDeadline();
   const updateSubject = useUpdateSubject();
@@ -70,8 +68,8 @@ export function SuggestionsCard() {
   }, []);
 
   const offers = useMemo(
-    () => deadlineOffers(suggestions, deadlines, subjects, now, settings?.sem_end ?? null),
-    [suggestions, deadlines, subjects, now, settings?.sem_end]
+    () => deadlineOffers(suggestions, deadlines, subjects, now),
+    [suggestions, deadlines, subjects, now]
   );
   const plans = useMemo(() => planOffers(suggestions, subjects), [suggestions, subjects]);
 

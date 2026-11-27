@@ -5,8 +5,6 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useMemo } from "react";
-import { isEndSemDeadline } from "@/lib/deadlines";
 import { type MutationEnvelope, type MutationName } from "@/api/mutations";
 import { broadcastInvalidate } from "@/lib/broadcast";
 import { useAppStore } from "@/store/app";
@@ -362,19 +360,6 @@ export function useDeadlines() {
     queryKey: ["deadlines", pin],
     queryFn: () => fetchDeadlines(pin),
   });
-}
-
-/**
- * Deadlines as the lists show them: without the end-sem papers
- * (`isEndSemDeadline`). The grade plan reads `useDeadlines` itself, so the
- * End semester row keeps its date.
- */
-export function useListedDeadlines() {
-  const q = useDeadlines();
-  const { data: settings } = useSettings();
-  const semEnd = settings?.sem_end ?? null;
-  const data = useMemo(() => q.data?.filter((d) => !isEndSemDeadline(d, semEnd)), [q.data, semEnd]);
-  return { ...q, data };
 }
 
 // ---------- semester archives ----------

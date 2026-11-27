@@ -3,7 +3,7 @@ import { warmViewer } from "@/components/viewer/loaders";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, ChevronLeft, ChevronRight, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Undo2, Upload, X } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Upload, X } from "lucide-react";
 import { FileRow, SearchHitRow, SwipeToDelete } from "@/components/study/file-row";
 import { StorageMeter } from "@/components/study/storage-meter";
 import { ProjectsCard } from "@/components/study/projects-card";
@@ -18,7 +18,6 @@ import {
   fetchPendingSemesterSwitch,
   fetchPendingUploads,
   fetchSemesterSwitch,
-  fetchStudyManifest,
   fetchStudyStorage,
   uploadStudyFile,
   searchStudyFiles,
@@ -28,8 +27,8 @@ import { MAX_UPLOAD_BYTES } from "@acadkit/core/uploads";
 import type { SemesterSwitchStatus } from "@/api/studyFiles";
 import { cn } from "@/lib/utils";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
+import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { useMacStatus } from "@/hooks/useMacStatus";
-import type { MacState } from "@/lib/mac";
 import { courseNames, titleCase } from "@/lib/curriculum";
 import { baseName, formatSize, groupHits, listFolder, prettyName, isHiddenFolder, isReferenceFolder, isSyllabusFile, searchFiles, type StudyFile } from "@/lib/studyFiles";
 
@@ -58,9 +57,6 @@ function subjectOfFolder(top: string, files: StudyFile[]): string | null {
 
 /** A query this short matches everything and nothing by meaning. */
 const MIN_DEEP = 3;
-
-/** The Mac's state, live (useMacStatus). */
-const MAC_SAYS: Record<MacState, string> = { awake: "Mac awake", syncing: "Mac syncing…", asleep: "Mac asleep" };
 
 /** What to say when a search inside files fails, by why it failed. */
 function deepError(err: unknown): string {
@@ -91,12 +87,7 @@ function FilesInner() {
   // The query last sent for a search inside files; results show while the box still says it.
   const [deep, setDeep] = useState<string | null>(null);
 
-  const manifest = useQuery({
-    queryKey: ["study-files", pin],
-    queryFn: () => fetchStudyManifest(pin),
-    staleTime: 5 * 60_000,
-  });
-  const files = useMemo(() => manifest.data?.files ?? [], [manifest.data]);
+  const { manifest, files } = useStudyManifest();
   // Written by each sync, beside the manifest (scripts/lib/storage.mjs).
   const storage = useQuery({
     queryKey: ["study-storage", pin, manifest.data?.syncedAt],
@@ -121,7 +112,7 @@ function FilesInner() {
 
   // Deleting (migration 032): shared with a subject's overview.
   const qc = useQueryClient();
-  const { deletions, pendingByPath, available: canDelete, askDelete, askDeleteFolder, undo: undoDelete, undoFolder } = useStudyDeletions();
+  const { deletions, pendingByPath, available: canDelete, askDelete, askDeleteFolder } = useStudyDeletions();
   const kept = useMemo(
     () => (deletions.data ?? []).filter((d) => d.status === "skipped" && files.some((f) => f.path === d.path)),
     [deletions.data, files]
@@ -258,42 +249,22 @@ function FilesInner() {
   const crumbs = dir ? dir.split("/") : [];
   // Inside a subject's folder: its code, for the overview link.
   const folderSubject = dir ? subjectOfFolder(crumbs[0], files) : null;
-  const totalSize = files.reduce((s, f) => s + f.size, 0);
 
   // A subject's own folder ("Operating_Systems", "OS_21CSC202J") opens its
   // overview, which has everything the folder does and more; the folder is
   // one tap away from there. See subjectOfFolder for how it is recognised.
   const folderRow = (folder: { name: string; path: string; count: number }) => {
     const code = !dir ? subjectOfFolder(folder.name, files) : null;
-    const inside = files.filter((f) => f.path.startsWith(`${folder.path}/`));
-    // Every file in it is waiting for the Mac: the folder reads as going.
-    const deleting = inside.length > 0 && inside.every((f) => pendingByPath.has(f.path));
     const Icon = code ? BookOpen : Folder;
     const body = (
       <>
         <Icon className="h-5 w-5 shrink-0 text-accent" strokeWidth={1.8} />
         <span className="min-w-0 flex-1">
           <span className="block wrap-break-word text-sm font-bold">{prettyName(folder.name)}</span>
-          {deleting && <span className="block truncate text-xs font-medium text-muted">Deleting on your Mac at the next sync…</span>}
         </span>
         <span className="shrink-0 text-xs font-semibold text-muted tabular">{folder.count}</span>
       </>
     );
-    if (deleting) {
-      return (
-        <div key={folder.path} className="flex w-full items-center gap-3 py-3.5 pl-4 pr-2">
-          <span className="flex min-w-0 flex-1 items-center gap-3 opacity-60">{body}</span>
-          <button
-            type="button"
-            onClick={() => undoFolder(folder.path)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted hover:text-ink"
-            aria-label={`Keep ${prettyName(folder.name)}`}
-          >
-            <Undo2 className="h-4 w-4" />
-          </button>
-        </div>
-      );
-    }
     const row = (
       <button
         type="button"
@@ -318,10 +289,6 @@ function FilesInner() {
       <div className="flex items-start gap-3 px-1">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">Study</h1>
-          <p className="mt-1 text-sm font-medium text-muted">
-            {manifest.data.root} · {files.length} files · {formatSize(totalSize)} · synced {synced(manifest.data.syncedAt)}
-            {mac && <> · <span className={cn(mac === "syncing" && "font-semibold text-accent")}>{MAC_SAYS[mac]}</span></>}
-          </p>
         </div>
         <button
           type="button"
@@ -376,7 +343,7 @@ function FilesInner() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && trimmed.length >= MIN_DEEP) setDeep(trimmed);
           }}
-          placeholder="Search, e.g. os unit 1"
+          placeholder="Search"
           className="pl-11 pr-11"
           aria-label="Search files"
         />
@@ -510,9 +477,7 @@ function FilesInner() {
             showFolder={searching}
             course={courseLinkFor(f, folderSubject)}
             {...syllabusLabel(f)}
-            deleting={pendingByPath.has(f.path)}
             onDelete={canDelete ? () => askDelete(f) : undefined}
-            onUndo={() => undoDelete(f.path)}
             swipeToDelete
           />
         ))}

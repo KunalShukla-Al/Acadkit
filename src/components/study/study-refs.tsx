@@ -1,9 +1,7 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { BookOpen } from "lucide-react";
-import { usePin } from "@/hooks/useData";
 import { Link } from "react-router-dom";
-import { fetchStudyManifest } from "@/api/studyFiles";
+import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { viewerHref } from "@/lib/viewer";
 import { usePrefetchFile } from "@/hooks/usePrefetchFile";
 import { useViewerLinkState } from "@/hooks/useViewerLink";
@@ -21,21 +19,16 @@ export interface StudyRef {
  * are dropped rather than shown dead.
  */
 export function StudyRefs({ refs, className }: { refs: StudyRef[]; className?: string }) {
-  const pin = usePin();
   const prefetch = usePrefetchFile();
   const viewerState = useViewerLinkState();
-  const manifest = useQuery({
-    queryKey: ["study-files", pin],
-    queryFn: () => fetchStudyManifest(pin),
-    staleTime: 5 * 60_000,
-  });
+  const { files: listed } = useStudyManifest();
   const files = useMemo(() => {
-    const byPath = new Map((manifest.data?.files ?? []).map((f) => [f.path, f]));
+    const byPath = new Map(listed.map((f) => [f.path, f]));
     return refs.flatMap((r) => {
       const f = byPath.get(r.path);
       return f ? [{ ref: r, file: f }] : [];
     });
-  }, [manifest.data, refs]);
+  }, [listed, refs]);
   if (files.length === 0) return null;
   return (
     <ul className={cn("space-y-1", className)}>

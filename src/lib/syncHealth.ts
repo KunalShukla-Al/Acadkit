@@ -1,9 +1,13 @@
 import { parseISODate, toISODate } from "@acadkit/core/dates";
 import type { PortalSnapshot } from "@acadkit/core/types";
 
-/** Whether the portal sync is still keeping up. */
+/**
+ * Whether the portal sync is still keeping up. "final" means the portal
+ * last read on or after the semester's last class day, so no later sync can
+ * change its numbers, however long ago that was.
+ */
 
-export type SyncState = "fresh" | "aging" | "stale" | "never";
+export type SyncState = "fresh" | "aging" | "stale" | "final" | "never";
 
 export interface SyncHealth {
   state: SyncState;
@@ -16,9 +20,16 @@ export interface SyncHealth {
 const AGING_DAYS = 3;
 const STALE_DAYS = 7;
 
+/** The semester's last day with a day order (core's buildEffectiveMap): after it, attendance can't change. */
+export function lastClassDay(effective: Record<string, number>): string | null {
+  const days = Object.keys(effective);
+  return days.length ? days.reduce((a, b) => (b > a ? b : a)) : null;
+}
+
 export function syncHealth(
   snapshots: PortalSnapshot[],
-  today: Date = new Date()
+  today: Date = new Date(),
+  lastClass: string | null = null
 ): SyncHealth {
   if (!snapshots.length) return { state: "never", days: null, asOf: null };
 
@@ -38,6 +49,6 @@ export function syncHealth(
   );
 
   const state: SyncState =
-    days >= STALE_DAYS ? "stale" : days >= AGING_DAYS ? "aging" : "fresh";
+    lastClass && asOf >= lastClass ? "final" : days >= STALE_DAYS ? "stale" : days >= AGING_DAYS ? "aging" : "fresh";
   return { state, days, asOf };
 }

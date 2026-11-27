@@ -13,7 +13,6 @@ import {
   FileText,
   Presentation,
   Trash2,
-  Undo2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -44,17 +43,11 @@ const ICONS: Record<string, LucideIcon> = {
   html: FileCode,
 };
 
-/**
- * One file. With `onDelete`, a trash button sits beside it; while a
- * delete is waiting for the Mac (`deleting`), the row dims, says so, and
- * offers `onUndo` instead.
- */
+/** One file. With `onDelete`, a trash button sits beside it (or a swipe deletes it). */
 export function FileRow({
   file,
   showFolder,
   onDelete,
-  deleting,
-  onUndo,
   course,
   title,
   note,
@@ -63,8 +56,6 @@ export function FileRow({
   file: StudyFile;
   showFolder: boolean;
   onDelete?: () => void;
-  deleting?: boolean;
-  onUndo?: () => void;
   /** A course code: a button beside the file opens that course's page (a syllabus filed away from its subject). */
   course?: string | null;
   /** Shown instead of the file name - a syllabus reads as its course's name. */
@@ -83,15 +74,13 @@ export function FileRow({
       <Icon className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.8} />
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block wrap-break-word text-sm font-semibold">{title || baseName(file.path)}</span>
-        {deleting ? (
-          <span className="block truncate text-xs font-medium text-muted">Deleting on your Mac at the next sync…</span>
-        ) : note ? (
+        {note ? (
           <span className="block truncate text-xs font-medium text-muted">{note}</span>
         ) : (
           showFolder &&
           folder && <span className="block truncate text-xs font-medium text-muted">{prettyName(folder)}</span>
         )}
-        {!deleting && pyqLabel(file) && (
+        {pyqLabel(file) && (
           <span className="block truncate text-[11px] font-bold text-warn-deep">{pyqLabel(file)}</span>
         )}
       </span>
@@ -101,23 +90,19 @@ export function FileRow({
     </>
   );
   const row = "flex min-w-0 flex-1 items-center gap-3 py-3.5 pl-4 text-left";
-  const main = !deleting ? (
-      // Opens in the app's viewer. Not natively draggable: a browser's own
-      // link drag would swallow the swipe.
-      <Link to={viewerHref(file.path)} state={viewerState} draggable={false} {...prefetch(file)} className={row}>
-        {body}
-      </Link>
-    ) : (
-      <div className={`${row} opacity-60`} aria-busy={!deleting || undefined}>
-        {body}
-      </div>
-    );
+  // Opens in the app's viewer. Not natively draggable: a browser's own
+  // link drag would swallow the swipe.
+  const main = (
+    <Link to={viewerHref(file.path)} state={viewerState} draggable={false} {...prefetch(file)} className={row}>
+      {body}
+    </Link>
+  );
   const side = "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted hover:text-ink";
-  const swipe = swipeToDelete && !!onDelete && !deleting;
+  const swipe = swipeToDelete && !!onDelete;
   const content = (
     <div className="flex w-full items-center gap-1 bg-surface pr-2 hover:rounded-2xl hover:outline-solid hover:outline-1 hover:outline-white/80 hover:outline-offset-[-6px]">
       {main}
-      {course && !deleting && (
+      {course && (
         <Link
           to={`/subject/${course}`}
           className={`${side} text-accent hover:text-accent`}
@@ -127,25 +112,17 @@ export function FileRow({
           <GraduationCap className="h-4 w-4" />
         </Link>
       )}
-      {deleting && onUndo ? (
-        <button type="button" onClick={onUndo} className={side} aria-label={`Keep ${baseName(file.path)}`}>
-          <Undo2 className="h-4 w-4" />
+      {onDelete && !swipe && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className={`${side} hover:text-bad-deep`}
+          aria-label={`Delete ${baseName(file.path)}`}
+        >
+          <Trash2 className="h-4 w-4" />
         </button>
-      ) : (
-        onDelete &&
-        !deleting &&
-        !swipe && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className={`${side} hover:text-bad-deep`}
-            aria-label={`Delete ${baseName(file.path)}`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )
       )}
-      {!onDelete && !onUndo && <span className="w-2" />}
+      {!onDelete && <span className="w-2" />}
     </div>
   );
   if (!swipe) return content;

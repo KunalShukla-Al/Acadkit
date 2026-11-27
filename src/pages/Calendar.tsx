@@ -19,7 +19,7 @@ import { Badge, Dot } from "@/components/ui/misc";
 import { MarkDaySheet } from "@/components/sheets/mark-day-sheet";
 import { MarkRangeSheet } from "@/components/sheets/mark-range-sheet";
 import { DeadlineSheet } from "@/components/sheets/deadline-sheet";
-import { useListedDeadlines, useSettings, useSubjects, useUpdateSettings } from "@/hooks/useData";
+import { useDeadlines, useSettings, useSubjects, useUpdateSettings } from "@/hooks/useData";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { deadlineLabel } from "@/lib/deadlines";
@@ -63,7 +63,7 @@ export default function Calendar() {
   const [rangeOpen, setRangeOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
 
-  const { data: deadlines } = useListedDeadlines();
+  const { data: deadlines } = useDeadlines();
   const { data: subjects } = useSubjects();
   const updateSettings = useUpdateSettings();
 

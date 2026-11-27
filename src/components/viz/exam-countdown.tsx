@@ -10,13 +10,13 @@ import { formatDate } from "@acadkit/core/dates";
 import { testTitle } from "@acadkit/core/subjectShort";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
-import { useListedDeadlines, useMarks, useSettings, useSubjects } from "@/hooks/useData";
+import { useDeadlines, useMarks, useSettings, useSubjects } from "@/hooks/useData";
 import { cn } from "@/lib/utils";
 
 /** A countdown to the next thing that carries marks, and the score that would move your grade. */
 export function ExamCountdown() {
   const tone = useTone();
-  const { data: deadlines } = useListedDeadlines();
+  const { data: deadlines } = useDeadlines();
   const { data: subjects } = useSubjects();
   const { data: marks } = useMarks();
   const { data: settings } = useSettings();
