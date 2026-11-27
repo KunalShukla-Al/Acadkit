@@ -26,6 +26,7 @@
     "desk:ask": "node --env-file-if-exists=.env.local scripts/desk-ask.mjs",
     "desk:bridge": "node --env-file-if-exists=.env.local scripts/desk-bridge.mjs",
     "night:shift": "node --env-file-if-exists=.env.local scripts/night-shift.mjs",
+    "persona": "node --env-file-if-exists=.env.local scripts/persona.mjs",
     "send:phone": "node --env-file-if-exists=.env.local scripts/mac/send-to-phone.mjs",
     "mac:install": "bash scripts/mac/install.sh",
     "db:start": "bash scripts/local-db.sh start",

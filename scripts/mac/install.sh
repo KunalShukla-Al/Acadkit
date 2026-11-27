@@ -1,7 +1,7 @@
 #!/bin/bash
 # The Mac side of the study sync: the auto-sync tick, the launch agent that keeps the folder
-# watcher running (scripts/mac/watch.mjs), the night shift's, the Desk's Ask listener, and the
-# Finder's Quick Action. Run
+# watcher running (scripts/mac/watch.mjs), the night shift's, the Desk's Ask listener, PersonaOS's
+# orchestrator, and the Finder's Quick Action. Run
 # from the repo the Mac syncs from, after pulling:
 #   npm run mac:install
 set -euo pipefail
@@ -44,6 +44,14 @@ plutil -lint "$ASK" >/dev/null
 launchctl bootout "gui/$(id -u)/com.acadkit.deskask" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$ASK"
 echo "Desk: questions asked on the phone are answered here. Log: ~/Library/Logs/AcadKit/desk-ask.log"
+
+# PersonaOS: a tick a minute runs every job that's due (scripts/persona.mjs, docs/persona.md).
+PERSONA="$HOME/Library/LaunchAgents/com.acadkit.persona.plist"
+sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$REPO|g" "$REPO/scripts/mac/com.acadkit.persona.plist" > "$PERSONA"
+plutil -lint "$PERSONA" >/dev/null
+launchctl bootout "gui/$(id -u)/com.acadkit.persona" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$PERSONA"
+echo "PersonaOS: runs its jobs on schedule. Log: ~/Library/Logs/AcadKit/persona.log"
 
 # Continue from the Mac: "Send to AcadKit phone" in the Finder's Quick Actions (scripts/mac/send-to-phone.mjs).
 SERVICE="$HOME/Library/Services/Send to AcadKit phone.workflow"
