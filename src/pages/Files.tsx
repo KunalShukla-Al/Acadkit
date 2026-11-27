@@ -29,7 +29,6 @@ import { cn } from "@/lib/utils";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
 import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { useMacStatus } from "@/hooks/useMacStatus";
-import type { MacState } from "@/lib/mac";
 import { courseNames, titleCase } from "@/lib/curriculum";
 import { baseName, formatSize, groupHits, listFolder, prettyName, isHiddenFolder, isReferenceFolder, isSyllabusFile, searchFiles, type StudyFile } from "@/lib/studyFiles";
 
@@ -58,9 +57,6 @@ function subjectOfFolder(top: string, files: StudyFile[]): string | null {
 
 /** A query this short matches everything and nothing by meaning. */
 const MIN_DEEP = 3;
-
-/** The Mac's state, live (useMacStatus). */
-const MAC_SAYS: Record<MacState, string> = { awake: "Mac awake", syncing: "Mac syncing…", asleep: "Mac asleep" };
 
 /** What to say when a search inside files fails, by why it failed. */
 function deepError(err: unknown): string {
@@ -253,7 +249,6 @@ function FilesInner() {
   const crumbs = dir ? dir.split("/") : [];
   // Inside a subject's folder: its code, for the overview link.
   const folderSubject = dir ? subjectOfFolder(crumbs[0], files) : null;
-  const totalSize = files.reduce((s, f) => s + f.size, 0);
 
   // A subject's own folder ("Operating_Systems", "OS_21CSC202J") opens its
   // overview, which has everything the folder does and more; the folder is
@@ -294,10 +289,6 @@ function FilesInner() {
       <div className="flex items-start gap-3 px-1">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">Study</h1>
-          <p className="mt-1 text-sm font-medium text-muted">
-            {manifest.data.root} · {files.length} files · {formatSize(totalSize)} · synced {synced(manifest.data.syncedAt)}
-            {mac && <> · <span className={cn(mac === "syncing" && "font-semibold text-accent")}>{MAC_SAYS[mac]}</span></>}
-          </p>
         </div>
         <button
           type="button"
@@ -352,7 +343,7 @@ function FilesInner() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && trimmed.length >= MIN_DEEP) setDeep(trimmed);
           }}
-          placeholder="Search, e.g. os unit 1"
+          placeholder="Search"
           className="pl-11 pr-11"
           aria-label="Search files"
         />
