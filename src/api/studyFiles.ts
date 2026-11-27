@@ -4,7 +4,6 @@ import { cachedFile, isCached, storeFile } from "@/lib/fileCache";
 import { MAX_UPLOAD_BYTES, safeUploadName } from "@acadkit/core/uploads";
 import { baseName, type StorageData, type StudyFile, type StudyHit, type StudyManifest } from "@/lib/studyFiles";
 import type { PrepData, TopicsData, TopicsIndex } from "@/lib/examPrep";
-import type { ProjectsData } from "@/lib/projects";
 import { shownFile } from "@/lib/viewer";
 
 const BUCKET = "study-files";
@@ -120,11 +119,6 @@ export async function fetchPart<T>(pin: string, name: string): Promise<T> {
   const part = await storedJson<T>(`${pin}/${name}`);
   if (!part) throw new Error(`${name} isn't there`);
   return part;
-}
-
-/** Where my projects stand and my to-dos (scripts/lib/weekly.mjs), or null before any sync has sent them. */
-export async function fetchStudyProjects(pin: string): Promise<ProjectsData | null> {
-  return storedJson<ProjectsData>(`${pin}/projects.json`);
 }
 
 /**
