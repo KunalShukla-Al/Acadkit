@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MoreHorizontal, Star } from "lucide-react";
 import { useToday } from "@/hooks/useToday";
 import { CornerMark } from "@/components/layout/corner-mark";
@@ -24,9 +24,12 @@ const HOLD_MS = 450;
  * calendar, the page I open most. Held, or from More in the Mac's sidebar,
  * it grows into a card of the pages used now and then (Skips, History,
  * Settings; `corner-menu.tsx`), and it turns into that card's close button.
+ * The Desk hides it, since its own controls sit in that corner; the menu
+ * still opens there from the Mac's More.
  */
 export function Corner() {
   const navigate = useNavigate();
+  const onDesk = useLocation().pathname.startsWith("/desk");
   const { today } = useToday();
   const dayOrder = today.kind === "working" ? today.dayOrder : null;
   const [open, setOpen] = useState(false);
@@ -100,7 +103,8 @@ export function Corner() {
         style={cornerBox}
         className={cn(
           "fixed z-40 touch-manipulation select-none bg-brand text-brand-ink transition-[transform,opacity] [-webkit-touch-callout:none] active:scale-95",
-          open && "pointer-events-none opacity-0"
+          open && "pointer-events-none opacity-0",
+          onDesk && "hidden"
         )}
       >
         <CornerMark>

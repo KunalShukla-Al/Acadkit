@@ -240,6 +240,15 @@ test("a written question opens its worked answer and its paper on their pages", 
   await expect(page.getByRole("button", { name: "Attempted" })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("the corner steps aside on the Desk, whose controls sit there", async ({ signedIn: page }) => {
+  const corner = page.getByRole("button", { name: /Calendar\. Hold for/ });
+  await page.goto("/desk/practice");
+  await expect(page.getByText("Which algorithm can starve a long process?")).toBeVisible();
+  await expect(corner).toBeHidden();
+  await page.goto("/");
+  await expect(corner).toBeVisible();
+});
+
 test("Ask Claude offers Claude on the web when the Mac is away", async ({ signedIn: page }) => {
   await page.goto("/desk/practice");
   await page.getByRole("button", { name: "Ask Claude" }).click();

@@ -9,6 +9,8 @@ export type DeskKind = "ct" | "end" | "sister" | "old";
 export type DeskPart = "A" | "B" | "C" | "D";
 export type DeskStatus = "new" | "learning" | "done" | "revise";
 export type DeskResult = "correct" | "wrong" | "unreviewed";
+/** Whose answer a solution is: this question's, the same question's elsewhere, the closest on its topic, or the topic's model answer. */
+export type DeskAnswerKind = "worked" | "repeat" | "similar" | "topic";
 
 export interface DeskFile {
   path: string;
@@ -36,7 +38,7 @@ export interface DeskItem {
   page: number | null;
   date: string | null;
   repeats: number;
-  solution: { file: string; page: number | null } | null;
+  solution: { file: string; page: number | null; kind: DeskAnswerKind; from: string | null } | null;
 }
 
 export interface DeskTestRow {
@@ -296,8 +298,44 @@ export function coverage(items: DeskItem[], progress: Map<string, DeskProgress>)
     mcqs: mcqs.length,
     keyed: mcqs.filter((i) => i.answer).length,
     written: items.length - mcqs.length,
-    solved: items.filter((i) => !i.mcq && i.solution).length,
+    solved: items.filter((i) => !i.mcq && ownAnswer(i)).length,
+    related: items.filter((i) => !i.mcq && i.solution && !ownAnswer(i)).length,
   };
+}
+
+/** True when the item's solution answers this very question (a part cached before kinds existed counts). */
+export function ownAnswer(item: Pick<DeskItem, "solution">): boolean {
+  return !!item.solution && item.solution.kind !== "similar" && item.solution.kind !== "topic";
+}
+
+/** What the answer link says, by whose answer it is. */
+export function answerLabel(solution: NonNullable<DeskItem["solution"]>): string {
+  const page = solution.page ? `, page ${solution.page}` : "";
+  const from = solution.from ? ` (${solution.from})` : "";
+  switch (solution.kind) {
+    case "repeat":
+      return `Open the worked answer${from}${page}`;
+    case "similar":
+      return `Open the closest worked answer${from}${page}`;
+    case "topic":
+      return `Open the model answer for this topic${page}`;
+    default:
+      return `Open the worked answer${page}`;
+  }
+}
+
+/** The line under a borrowed answer, so it isn't mistaken for this question's own. */
+export function answerCaveat(solution: NonNullable<DeskItem["solution"]>): string | null {
+  switch (solution.kind) {
+    case "repeat":
+      return "The same question, asked again and worked there.";
+    case "similar":
+      return "A close question on the same topic: its data or wording may differ.";
+    case "topic":
+      return "This explains the topic. It isn't this question's own answer.";
+    default:
+      return null;
+  }
 }
 
 /** The topics the items cover, with names, by unit then first appearance. */
@@ -361,7 +399,7 @@ export function askPrompt(course: Pick<DeskCourse, "key" | "name" | "folder">, i
   ];
   if (item.options.length) lines.push(`Options: ${item.options.map((o, i) => `${LETTERS[i]}. ${o}`).join(" | ")}`);
   if (item.file) lines.push(`Paper: ${item.file}${item.page ? `, page ${item.page}` : ""}`);
-  if (item.solution) lines.push(`Worked answer: ${item.solution.file}${item.solution.page ? `, page ${item.solution.page}` : ""}`);
+  if (item.solution) lines.push(`${ownAnswer(item) ? "Worked answer" : "Related answer"}: ${item.solution.file}${item.solution.page ? `, page ${item.solution.page}` : ""}`);
   lines.push("", question.trim() || "Write an exam-ready answer.");
   return lines.join("\n");
 }

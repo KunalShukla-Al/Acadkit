@@ -14,8 +14,12 @@
  *               units: [{ n, title, topics: [{ n, title, videos }], pyq, questions, ctQuestions, notes }],
  *               notes, papers,
  *               items: [{ key, unit, topic, topicName, kind, paper, slot, part, marks, mcq, text, options,
- *                         answer, note, file, page, date, repeats, solution: { file, page } }] }]
+ *                         answer, note, file, page, date, repeats, solution: { file, page, kind, from } }] }]
  * }
+ *
+ * A solution's kind says whose answer it is: `worked` (this question's own),
+ * `repeat` (the same question, worked in the paper `from`), `similar` (the
+ * closest worked question on its topic) or `topic` (the topic's model answer).
  *
  * An item's key is what its progress is stored under (migration 065), so a
  * repeated key is dropped. A file the folder doesn't have is cleared with one
@@ -30,6 +34,7 @@ const ITEM = /^[A-Z][A-Z0-9]{0,7}\/[A-Za-z0-9][A-Za-z0-9._/-]{0,119}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const KINDS = new Set(["ct", "end", "sister", "old"]);
 const PARTS = new Set(["A", "B", "C", "D"]);
+const ANSWERS = new Set(["worked", "repeat", "similar", "topic"]);
 
 const text = (s) => (typeof s === "string" ? s.trim() : "");
 const num = (n) => (typeof n === "number" && Number.isFinite(n) ? n : null);
@@ -88,7 +93,15 @@ export function checkDesk(data, known, prefix = "", moved) {
       keys.add(k);
       const options = list(it.options).map(text).filter(Boolean).slice(0, 6);
       const answer = typeof it.answer === "string" && /^[A-F]$/.test(it.answer) && "ABCDEF".indexOf(it.answer) < options.length ? it.answer : null;
-      const sol = it.solution && typeof it.solution === "object" ? { file: file(it.solution.file), page: num(it.solution.page) } : null;
+      const sol =
+        it.solution && typeof it.solution === "object"
+          ? {
+              file: file(it.solution.file),
+              page: num(it.solution.page),
+              kind: ANSWERS.has(it.solution.kind) ? it.solution.kind : "worked",
+              from: text(it.solution.from).slice(0, 80) || null,
+            }
+          : null;
       items.push({
         key: k,
         unit: num(it.unit),
@@ -201,7 +214,7 @@ export function splitDesk(body) {
       showUntil: c.showUntil,
       items: c.items.length,
       keyed: c.items.filter((i) => i.answer).length,
-      solved: c.items.filter((i) => i.solution).length,
+      solved: c.items.filter((i) => i.solution && (i.solution.kind === "worked" || i.solution.kind === "repeat")).length,
       tests: c.tests.map(({ id, name, units, start, end, date, weight, provisional }) => ({ id, name, units, start, end, date, weight, provisional })),
       file: p.name,
     };

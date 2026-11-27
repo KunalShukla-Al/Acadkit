@@ -10,6 +10,8 @@ import { useSetDeskProgress } from "@/hooks/useData";
 import { useDeskCourse, useDeskIndex, useDeskProgressMap } from "@/hooks/useDesk";
 import { useViewerLinkState } from "@/hooks/useViewerLink";
 import {
+  answerCaveat,
+  answerLabel,
   coverage,
   filterFrom,
   filterItems,
@@ -85,6 +87,7 @@ export default function Practice() {
         {c.name}: {cov.attempted}/{cov.total} attempted
         {cov.graded ? ` · ${cov.correct}/${cov.graded} MCQs right` : ""}
         {cov.flagged ? ` · ${cov.flagged} to revise` : ""} · keys for {cov.keyed}/{cov.mcqs} MCQs · worked answers for {cov.solved}/{cov.written} written
+        {cov.related ? ` (${cov.related} more with a related answer)` : ""}
       </p>
       {item ? (
         <>
@@ -231,7 +234,7 @@ function QuestionCard({ course, item, progress }: { course: DeskCourse; item: De
           {item.solution &&
             (reveal ? (
               <Link to={viewerHref(item.solution.file, item.solution.page)} state={state} className="flex items-center gap-1.5 rounded-xl bg-accent/15 px-3 py-2 text-xs font-bold text-accent-deep">
-                <FileText className="h-3.5 w-3.5" /> Open the worked answer{item.solution.page ? `, page ${item.solution.page}` : ""}
+                <FileText className="h-3.5 w-3.5" /> {answerLabel(item.solution)}
               </Link>
             ) : (
               <button type="button" onClick={() => setReveal(true)} className="rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold hover:bg-surface-2/70">
@@ -246,6 +249,7 @@ function QuestionCard({ course, item, progress }: { course: DeskCourse; item: De
           >
             {progress?.attempted_at ? "Attempted" : "Mark attempted"}
           </button>
+          {reveal && item.solution && answerCaveat(item.solution) && <p className="basis-full text-xs font-medium text-muted">{answerCaveat(item.solution)}</p>}
         </div>
       )}
 
