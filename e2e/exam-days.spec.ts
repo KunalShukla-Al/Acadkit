@@ -71,10 +71,10 @@ test("Today names each end-sem on its day, and moves on once it's sat", async ({
     await page.goto("/");
     await expect(page.getByText(line, { exact: true }), `${day} ${time}`).toBeVisible();
   };
-  await says("2026-11-24", "19:00", "TBVP End-sem is tomorrow");
-  await says("2026-11-25", "07:30", "TBVP End-sem is today");
-  await says("2026-11-25", "19:00", "FDS End-sem is tomorrow");
-  await says("2026-11-27", "19:00", "OS End-sem is in 3 days");
-  await says("2026-11-30", "07:30", "OS End-sem is today");
+  await says("2026-11-24", "19:00", "TBVP End Sem is tomorrow");
+  await says("2026-11-25", "07:30", "TBVP End Sem is today");
+  await says("2026-11-25", "19:00", "FDS End Sem is tomorrow");
+  await says("2026-11-27", "19:00", "OS End Sem is in 3 days");
+  await says("2026-11-30", "07:30", "OS End Sem is today");
   await says("2026-11-30", "19:00", "See you next term.");
 });

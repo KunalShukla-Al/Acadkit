@@ -1,3 +1,4 @@
+import { isExternalLabel } from "@acadkit/core/plan";
 import type { Deadline, DeadlineType, Subject } from "@acadkit/core/types";
 
 /** Deadlines are named by what they are, not by a typed-in title. */
@@ -31,6 +32,19 @@ export function derivedTitle(
   const label = DEADLINE_TYPE_LABEL[type];
   const code = subject?.code?.trim();
   return code ? `${code} ${label}` : label;
+}
+
+/** Whether a deadline is its subject's end-sem: named like one (T-EXT, End Sem), or an exam after the last teaching day. */
+export function isEndSem(d: Pick<Deadline, "title" | "type" | "due_date">, semEnd: string | null): boolean {
+  if (isExternalLabel(d.title)) return true;
+  if (d.type !== "exam" || !semEnd || !d.due_date) return false;
+  return new Date(d.due_date).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) > semEnd;
+}
+
+/** What a test is called on screen: "End Sem", "FT-3", or its type when the title is only a course code. */
+export function deadlineName(d: Pick<Deadline, "title" | "type" | "due_date">, semEnd: string | null): string {
+  if (isEndSem(d, semEnd)) return "End Sem";
+  return d.title.replace(/^\s*\d{2}[A-Z]{3}\d{3}[A-Z]\b\s*/, "").trim() || DEADLINE_TYPE_LABEL[d.type];
 }
 
 /** The deadlines still ahead of you, soonest first. */

@@ -6,7 +6,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { BookOpen, ChevronLeft, ChevronRight, CloudOff, Folder, FolderSync, Info, Loader2, Search, Sparkles, Upload, X } from "lucide-react";
 import { FileRow, SearchHitRow, SwipeToDelete } from "@/components/study/file-row";
 import { StorageMeter } from "@/components/study/storage-meter";
-import { ProjectsCard } from "@/components/study/projects-card";
 import { MacLine } from "@/components/mac-line";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
@@ -286,7 +285,7 @@ function FilesInner() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div className="flex items-start gap-3 px-1">
+      <div className="-mt-2 flex items-center gap-3 px-1 pb-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">Study</h1>
         </div>
@@ -294,7 +293,7 @@ function FilesInner() {
           type="button"
           onClick={() => fileInput.current?.click()}
           disabled={sendFiles.isPending || uploads.isError}
-          className="mt-1 flex h-10 shrink-0 items-center gap-2 rounded-xl bg-surface-2 px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-2/70 disabled:opacity-45"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-surface-2 px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-2/70 disabled:opacity-45"
           aria-label={`Upload to ${dir ? prettyName(dir.split("/").pop()!) : manifest.data.root}`}
         >
           <Upload className="h-4 w-4" />
@@ -443,7 +442,6 @@ function FilesInner() {
       )}
 
       {/* Above the folders: the projects. */}
-      {!dir && !searching && <ProjectsCard now={now} />}
 
       <section className="card divide-y overflow-hidden p-0">
         {!searching && view.folders.filter((x) => !isReferenceFolder(dir, x.name) && !isHiddenFolder(dir, x.name)).map(folderRow)}
