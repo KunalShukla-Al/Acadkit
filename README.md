@@ -31,8 +31,9 @@ papers that are about the same thing.
   PDF, Word, PowerPoint, spreadsheets and code, and on each page what links to it: a moment in
   class, a past paper's question, another set of notes ([how a link is chosen](docs/connected.md)).
 
-The **Run-up**, a day-by-day plan to the end-sems, is a chip in the top bar that counts the day's
-targets. The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the
+The **Desk** is a chip in the top bar that counts the day's targets. It opens the day-by-day plan
+to the exams, the topics each test is likely to ask, and practice from every past paper, with
+Claude on the Mac a tap away ([docs/desk.md](docs/desk.md)). The **corner**, a lime quarter-disc above the tab bar showing today's Day Order, opens the
 calendar in one tap; held, or from More in the top bar, it opens the days I can skip, past semesters
 and settings. Today leads with the next thing that carries marks.
 

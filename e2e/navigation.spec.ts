@@ -49,11 +49,11 @@ test.describe("on a phone", () => {
     await expect(lit(page)).toHaveText("Today");
   });
 
-  test("the Run-up sits in the top bar, beside the name", async ({ signedIn: page }) => {
+  test("the Desk sits in the top bar, beside the name", async ({ signedIn: page }) => {
     const top = page.getByRole("banner");
-    await expect(top.getByRole("link", { name: /^Run-up/ })).toBeVisible();
-    await top.getByRole("link", { name: /^Run-up/ }).click();
-    await expect(page).toHaveURL("/runup");
+    await expect(top.getByRole("link", { name: /^Desk/ })).toBeVisible();
+    await top.getByRole("link", { name: /^Desk/ }).click();
+    await expect(page).toHaveURL("/desk");
     await expect(lit(page)).toHaveCount(0);
   });
 
@@ -75,12 +75,12 @@ test.describe("on a phone", () => {
 test.describe("on a Mac", () => {
   test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false });
 
-  test("the sidebar is the five tabs under the day order and the Run-up, with no bar at the bottom", async ({ signedIn: page }) => {
+  test("the sidebar is the five tabs under the day order and the Desk, with no bar at the bottom", async ({ signedIn: page }) => {
     const sidebar = bar(page);
     await expect(sidebar.getByRole("link")).toHaveText(["Today", "Timetable", "Attendance", "Marks", "Study"]);
     const aside = page.getByRole("complementary");
     await expect(aside.getByText(/^Day Order \d$/)).toBeVisible();
-    await expect(aside.getByRole("link", { name: /^Run-up/ })).toBeVisible();
+    await expect(aside.getByRole("link", { name: /^Desk/ })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(1);
     await page.goto("/marks");
     await expect(lit(page)).toHaveText("Marks");

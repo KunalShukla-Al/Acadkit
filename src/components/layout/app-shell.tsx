@@ -17,7 +17,7 @@ import { useTomorrowOffline } from "@/hooks/useTomorrowOffline";
 import { movedTo } from "@/lib/screens";
 
 // The chip reads the whole run-up plan, so it loads on its own, just after the page.
-const RunupChip = lazy(() => import("@/components/layout/runup-chip").then((m) => ({ default: m.RunupChip })));
+const DeskChip = lazy(() => import("@/components/layout/desk-chip").then((m) => ({ default: m.DeskChip })));
 
 function PageFallback() {
   return (
@@ -32,7 +32,7 @@ function PageFallback() {
 
 /**
  * Every signed-in page sits in this: the sidebar on a Mac; on a phone the
- * name and the Run-up above, the five tabs below, and the corner on top
+ * name and the Desk above, the five tabs below, and the corner on top
  * of them. A new page simply replaces the last; things move only when
  * something on the page changes.
  */
@@ -57,7 +57,7 @@ export function AppShell() {
       <Sidebar />
 
       <div className="flex min-w-0 flex-col">
-        {/* The phone's top bar: the name and the Run-up; the five tabs are below, and the corner opens the calendar (held, its menu). */}
+        {/* The phone's top bar: the name and the Desk; the five tabs are below, and the corner opens the calendar (held, its menu). */}
         <header className="glass sticky top-0 z-30 border-b pt-safe-t lg:hidden">
           <div className="flex items-center justify-between px-4 py-2">
               <Link to="/" className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function AppShell() {
               </Link>
             <div className="flex items-center gap-2">
               <Suspense fallback={null}>
-                <RunupChip />
+                <DeskChip />
               </Suspense>
             </div>
           </div>

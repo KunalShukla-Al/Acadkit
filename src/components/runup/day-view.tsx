@@ -110,7 +110,7 @@ export function DayView({
             <ChevronLeft className="h-5 w-5" />
           </DayButton>
           {date !== today && where === "during" && (
-            <Link to="/runup" className="rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold hover:bg-surface-2/70">
+            <Link to="/desk" className="rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold hover:bg-surface-2/70">
               Today
             </Link>
           )}
@@ -130,7 +130,7 @@ export function DayView({
       {events.map((e) => (
         <Link
           key={e.id}
-          to={`/runup/event/${encodeURIComponent(e.id)}`}
+          to={`/desk/event/${encodeURIComponent(e.id)}`}
           className="card flex items-center gap-3 border-accent/40 bg-accent/10 px-4 py-3"
         >
           <AlertTriangle className="h-5 w-5 shrink-0 text-accent" aria-hidden />
@@ -242,7 +242,7 @@ function DayButton({ to, label, children }: { to: string | null; label: string; 
       </span>
     );
   return (
-    <Link to={`/runup/${to}`} replace aria-label={label} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 hover:bg-surface-2/70">
+    <Link to={`/desk/${to}`} replace aria-label={label} className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 hover:bg-surface-2/70">
       {children}
     </Link>
   );

@@ -8,8 +8,8 @@ import { expect, MOCK_API, openSignIn, test, waitForLaunch } from "./fixtures";
  */
 /** The five tabs (src/lib/screens.ts), what the corner and the top bar open, and the pages opened from inside them. */
 const PAGES = [
-  "/", "/timetable", "/attendance", "/marks", "/study", "/runup", "/deadlines", "/calendar", "/skips", "/settings", "/history",
-  "/runup/2026-10-08", "/runup/event/os-ft2", "/log", "/wrapped", "/electives",
+  "/", "/timetable", "/attendance", "/marks", "/study", "/desk", "/deadlines", "/calendar", "/skips", "/settings", "/history",
+  "/desk/2026-10-08", "/desk/event/os-ft2", "/desk/priorities", "/desk/practice", "/log", "/wrapped", "/electives",
 ];
 
 async function audit(page: Page) {

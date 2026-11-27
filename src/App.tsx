@@ -39,8 +39,11 @@ const Subject = lazy(() => import("@/pages/Subject"));
 const Practice = lazy(() => import("@/pages/Practice"));
 const Electives = lazy(() => import("@/pages/Electives"));
 const Viewer = lazy(() => import("@/pages/Viewer"));
-const Runup = lazy(() => import("@/pages/Runup"));
-const RunupEvent = lazy(() => import("@/pages/RunupEvent"));
+const Desk = lazy(() => import("@/pages/desk/Desk"));
+const DeskToday = lazy(() => import("@/pages/desk/Today"));
+const DeskEvent = lazy(() => import("@/pages/desk/Event"));
+const DeskPriorities = lazy(() => import("@/pages/desk/Priorities"));
+const DeskPractice = lazy(() => import("@/pages/desk/Practice"));
 const Design = lazy(() => import("@/pages/Design"));
 
 /** Query roots kept in memory only (see dehydrateOptions below). */
@@ -115,7 +118,14 @@ function AppRoutes() {
           <Route path="/marks" element={<Marks />} />
           <Route path="/study" element={<Files />} />
           <Route path="/deadlines" element={<Deadlines />} />
-          <Route path="/runup" element={<Runup />} />
+          {/* The Desk: Today's plan (the Run-up's, whose old links the shell sends here), Priorities and Practice. */}
+          <Route path="/desk" element={<Desk />}>
+            <Route index element={<DeskToday />} />
+            <Route path="priorities" element={<DeskPriorities />} />
+            <Route path="practice" element={<DeskPractice />} />
+            <Route path="event/:id" element={<DeskEvent />} />
+            <Route path=":date" element={<DeskToday />} />
+          </Route>
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/skips" element={<Skips />} />
           <Route path="/settings" element={<Settings />} />
@@ -126,8 +136,6 @@ function AppRoutes() {
           <Route path="/subject/:code" element={<Subject />} />
           <Route path="/practice/:code" element={<Practice />} />
           <Route path="/electives" element={<Electives />} />
-          <Route path="/runup/event/:id" element={<RunupEvent />} />
-          <Route path="/runup/:date" element={<Runup />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -45,7 +45,7 @@ export function EventRow({
 }) {
   return (
     <Link
-      to={`/runup/event/${encodeURIComponent(event.id)}`}
+      to={`/desk/event/${encodeURIComponent(event.id)}`}
       className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/60"
     >
       <CalendarClock className="h-4 w-4 shrink-0 text-accent" aria-hidden />

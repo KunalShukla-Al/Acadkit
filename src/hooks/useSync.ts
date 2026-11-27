@@ -19,6 +19,8 @@ const TABLE_TO_KEY: Record<string, string> = {
   suggestions: "suggestions",
   // run-up ticks (migration 043): ticked on the phone, shown on the Mac
   plan_ticks: "plan-ticks",
+  // the Desk's picks, flags and topic status (migration 065)
+  desk_progress: "desk-progress",
   // where you're reading (migration 062), for Continue on the other device
   reading_now: "reading",
 };

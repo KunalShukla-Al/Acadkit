@@ -21,7 +21,8 @@ export async function fetchStudyManifest(pin: string): Promise<StudyManifest | n
 }
 
 /** A JSON object in this PIN's storage, or null when it isn't there. */
-async function storedJson<T>(key: string): Promise<T | null> {
+/** A JSON file in the bucket, or null when it isn't there. */
+export async function storedJson<T>(key: string): Promise<T | null> {
   const { data, error } = await supabase.storage.from(BUCKET).download(key);
   if (error) {
     if (/not.?found|does not exist/i.test(error.message)) return null;
