@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Installed by npm run mac:install, which fills in __HOME__ and __REPO__. PersonaOS's orchestrator (scripts/persona.mjs). -->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.acadkit.persona</string>
+    <!-- bash stays the parent: it holds Full Disk Access, and node and the jobs inherit it. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd "__REPO__" &amp;&amp; node --env-file-if-exists=.env.local scripts/persona.mjs</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict><key>PATH</key><string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+    <!-- A tick a minute, and one at login. launchd never starts a tick while the last still runs; asleep, the next comes at wake. -->
+    <key>StartInterval</key><integer>60</integer>
+    <key>RunAtLoad</key><true/>
+    <key>StandardOutPath</key><string>__HOME__/Library/Logs/AcadKit/persona.log</string>
+    <key>StandardErrorPath</key><string>__HOME__/Library/Logs/AcadKit/persona.log</string>
+    <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

@@ -27,7 +27,7 @@ Where each part is described:
 - Foundations: Core, Accounts and data, Data flow.
 - The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Desk,
   File viewer, Continue, PWA and iOS.
-- The Mac: Study files (the sync), Night shift,
+- The Mac: Study files (the sync), Night shift, PersonaOS,
   Everything connected; the Quick Action is under Continue.
 - Outside the app: Portal sync.
 
@@ -51,6 +51,7 @@ npm run size           # the bundle against bundle-budget.json, after a build
 npm run perf:screens   # Lighthouse on the five tabs, signed in to the mock
 npm run db:test        # pgTAP row-level security tests on a local Supabase (db:start first)
 npm run mac:install    # the Mac's launch agents and Quick Action
+npm run persona        # one PersonaOS tick; `-- list` for each job, `-- run <job>` for one now
 ```
 
 `@/` maps to `src/`.
@@ -441,6 +442,21 @@ The Mac's heavy work waits for the night (`scripts/night-shift.mjs`, `scripts/li
   ("12 files indexed, 96 MB saved by shrinking.") and the steps that
   failed. `send-reminders` pushes it at 07:00, once a night; a night it skipped, or one with
   nothing to do, sends nothing.
+
+## PersonaOS
+
+The Mac's orchestrator for every background job that reads my sources and acts on them
+(`scripts/persona.mjs`, `scripts/lib/persona/`). The plan and its rules are in
+[docs/persona.md](docs/persona.md).
+
+- A launch agent (`com.acadkit.persona`) starts a tick every minute. The tick runs each due job in
+  `scripts/lib/persona/jobs.mjs` side by side, then exits; launchd never overlaps two.
+- A job runs `every` N minutes or `at` times of day, inside an optional `window`. Failures retry
+  on a doubling backoff, and the third in a row sends one macOS notification.
+- Each job has a lock file with its pid and a time limit with an abort signal. Jobs ask
+  `spendClaude(n)` before calling Claude, under a daily cap (`PERSONA_CLAUDE_CAP`, 20).
+- State is one record per job in `~/Library/Application Support/AcadKit/persona/`; the log is
+  `~/Library/Logs/AcadKit/persona.log`. `PERSONA=off` turns it off.
 
 ## Everything connected
 
