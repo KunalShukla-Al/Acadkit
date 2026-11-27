@@ -10,6 +10,7 @@ import { UnitList } from "@/components/study/unit-list";
 import { fetchTicks, fetchUnits } from "@/api/units";
 import { SubjectSearch } from "@/components/study/subject-search";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
+import { useStudyManifest } from "@/hooks/useStudyManifest";
 import { Dot, EmptyState, Skeleton } from "@/components/ui/misc";
 import {
   useAttendance,
@@ -19,7 +20,7 @@ import {
   usePortalSnapshots,
   useSubjects,
 } from "@/hooks/useData";
-import { fetchPrereqs, fetchStudyManifest } from "@/api/studyFiles";
+import { fetchPrereqs } from "@/api/studyFiles";
 import { useSubjectTopics } from "@/hooks/useSubjectTopics";
 import { prereqsFor, type PrereqLink } from "@/lib/prereqs";
 import { computeSubjectAttendance, snapshotsByCode } from "@acadkit/core/attendance";
@@ -60,7 +61,7 @@ function SubjectInner() {
   const { data: snapshots } = usePortalSnapshots();
   const { data: marks } = useMarks();
   const { data: deadlines } = useListedDeadlines();
-  const manifest = useQuery({ queryKey: ["study-files", pin], queryFn: () => fetchStudyManifest(pin), staleTime: 5 * 60_000 });
+  const { manifest, files: allFiles } = useStudyManifest();
   const { data: pastTopics } = useSubjectTopics(code);
   const unitsData = useQuery({ queryKey: ["units", pin], queryFn: () => fetchUnits(pin), staleTime: 5 * 60_000 });
   const prereqs = useQuery({ queryKey: ["prereqs", pin], queryFn: () => fetchPrereqs(pin), staleTime: 30 * 60_000 });
@@ -68,8 +69,8 @@ function SubjectInner() {
 
   const subject = subjects?.find((s) => norm(s.code) === code);
   const files = useMemo(
-    () => (manifest.data?.files ?? []).filter((f) => f.subject_code && norm(f.subject_code) === code),
-    [manifest.data, code]
+    () => allFiles.filter((f) => f.subject_code && norm(f.subject_code) === code),
+    [allFiles, code]
   );
   const att = useMemo(() => {
     if (!subject) return null;
@@ -361,11 +362,9 @@ function PastTopics({ topics, showUnit, code }: { topics: SubjectTopics; showUni
 /** The subject's files by kind; notes further split by unit. Every group starts folded. */
 function FileGroups({ files }: { files: StudyFile[] }) {
   // Same deletes as the Study page's folders: swipe a row right.
-  const { pendingByPath, available: canDelete, askDelete, undo } = useStudyDeletions();
+  const { available: canDelete, askDelete } = useStudyDeletions();
   const rowProps = (f: StudyFile) => ({
-    deleting: pendingByPath.has(f.path),
     onDelete: canDelete ? () => askDelete(f) : undefined,
-    onUndo: () => undo(f.path),
     swipeToDelete: true,
   });
   const [open, setOpen] = useState<string | null>(null);

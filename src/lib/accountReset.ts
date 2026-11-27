@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { endAccount } from "@/lib/account";
+import { clearDeletedFiles } from "@/lib/deletedFiles";
 import { clearFileCache } from "@/lib/fileCache";
 import { appStore, type AsyncStore } from "@/lib/offlineStore";
 import { clearTomorrow } from "@/lib/tomorrow";
@@ -19,6 +20,7 @@ export function resetAfterSignOut(qc: QueryClient, store: AsyncStore = appStore(
   const cancelled = qc.cancelQueries();
   qc.clear();
   clearTomorrow();
+  clearDeletedFiles();
   return Promise.all([
     cancelled,
     store.removeItem(RQ_CACHE_KEY).catch(() => {}),
