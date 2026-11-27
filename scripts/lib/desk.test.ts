@@ -49,6 +49,16 @@ describe("checkDesk", () => {
     expect(body.courses[0].items.map((i) => i.answer)).toEqual([null, null]);
   });
 
+  it("keeps a solution's kind and source, and counts only own answers as solved", () => {
+    const sol = (kind, from) => ({ file: "Probability/CT.pdf", page: 3, kind, from });
+    const { body } = checkDesk(
+      desk([course({ items: [item({ solution: sol("repeat", "End-sem Nov 2025") }), item({ key: "PS/x/B2", solution: sol("topic", null) }), item({ key: "PS/x/B3", solution: sol("bogus", 7) })] })]),
+      new Set(["Probability/CT.pdf"])
+    );
+    expect(body.courses[0].items.map((i) => i.solution)).toEqual([sol("repeat", "End-sem Nov 2025"), sol("topic", null), sol("worked", null)]);
+    expect(splitDesk(body).index.courses[0].solved).toBe(2);
+  });
+
   it("follows a file moved since the last sync", () => {
     const moved = new Map([["Probability/CT.pdf", "Probability/CTs/CT.pdf"]]);
     const { body, follows } = checkDesk(desk([course()]), new Set(["Probability/CTs/CT.pdf"]), "", moved);

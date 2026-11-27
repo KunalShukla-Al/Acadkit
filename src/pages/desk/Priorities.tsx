@@ -42,13 +42,13 @@ export default function Priorities() {
         value={entry.key}
         onChange={(k) => setParams({ course: k, ...(view === "unit" ? { view } : {}) }, { replace: true })}
       />
+      {/* On a phone the course takes its own line, so its name is never cut short. */}
       <div className="flex flex-wrap items-center gap-3 px-1">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{c.name}</p>
+        <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+          <p className="wrap-break-word text-sm font-bold">{c.name}</p>
           <p className="text-xs font-medium text-muted">
             {c.code}
             {c.endsems ? ` · ${c.endsems} end-sem papers` : ""}
-            {c.floor != null ? ` · ${c.floor}% of marks needed to pass` : ""}
           </p>
         </div>
         <Segmented
@@ -59,7 +59,8 @@ export default function Priorities() {
           value={view}
           onChange={(v) => set("view", v === "unit" ? "unit" : null)}
           layoutId="desk-priorities-view"
-          className="w-56"
+          size="sm"
+          className="w-full sm:w-56"
         />
       </div>
       <Reports course={c} />

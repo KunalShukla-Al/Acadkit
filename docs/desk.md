@@ -56,7 +56,8 @@ Subject page. It is part of 2.0 ([v2.md](v2.md)).
 | Practice | `/desk/practice` | One question at a time, filtered by unit, topic, source, part, status and text. Options graded where keyed, the worked answer's page, attempted and revision flags, the paper on its page, Ask Claude |
 
 Each screen keeps its course, test, unit and filters in the URL, so a link or a reload lands on
-the same view. The top-bar chip and the sidebar open the Desk.
+the same view. The top-bar chip and the sidebar open the Desk. The corner button hides on the
+Desk, whose next and shuffle buttons sit where it floats.
 
 | Moved | To | Shows |
 | --- | --- | --- |
@@ -74,7 +75,18 @@ the same view. The top-bar chip and the sidebar open the Desk.
   - A bad or repeated item is dropped with a warning.
   - A link the folder doesn't have is cleared, never hiding its item.
 - The sync merges the two folders (this semester first) and uploads `<pin>/desk.json`, an index with each course's counts and tests, plus one content-named part per course under `<pin>/desk/`. The phone loads one course at a time and keeps every part it has fetched.
-- A question carries its paper's path and page, and its worked answer's, and the viewer opens either there.
+- A question carries its paper's path and page, and its answer's, and the viewer opens either there.
+- Every written question gets the closest answer the folders have, and the screen says which kind it is:
+
+  | Kind | Answer | Link |
+  | --- | --- | --- |
+  | worked | This question's own, from a solved paper | Open the worked answer |
+  | repeat | The same question, worked in another paper | Open the worked answer (paper) |
+  | similar | The closest worked question on the same topic | Open the closest worked answer (paper) |
+  | topic | The topic's section of the model answers | Open the model answer for this topic |
+
+  Coverage counts only worked and repeat as answered. A similar or topic answer carries a line saying it isn't the question's own.
+- A keyed MCQ shows the Mac app's one-line explanation under the graded pick.
 - Answers are links to solved PDFs, so the app renders no answer HTML. Ask Claude's replies show as text, with code blocks, and never as HTML.
 
 ## Progress

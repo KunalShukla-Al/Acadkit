@@ -10,6 +10,8 @@ import { useSetDeskProgress } from "@/hooks/useData";
 import { useDeskCourse, useDeskIndex, useDeskProgressMap } from "@/hooks/useDesk";
 import { useViewerLinkState } from "@/hooks/useViewerLink";
 import {
+  answerCaveat,
+  answerLabel,
   coverage,
   filterFrom,
   filterItems,
@@ -25,6 +27,9 @@ import { viewerHref } from "@/lib/viewer";
 import { cn } from "@/lib/utils";
 
 const FILTER_KEYS = ["unit", "topic", "kind", "part", "status", "q"];
+
+/** Filters shorter than the default fields, so the question stays in view on a phone. Their text stays 16 px, or iOS zooms on focus. */
+const FILTER = "h-10 rounded-xl px-3";
 
 /**
  * Every past-paper question of a course, one at a time: pick an option
@@ -85,6 +90,7 @@ export default function Practice() {
         {c.name}: {cov.attempted}/{cov.total} attempted
         {cov.graded ? ` · ${cov.correct}/${cov.graded} MCQs right` : ""}
         {cov.flagged ? ` · ${cov.flagged} to revise` : ""} · keys for {cov.keyed}/{cov.mcqs} MCQs · worked answers for {cov.solved}/{cov.written} written
+        {cov.related ? ` (${cov.related} more with a related answer)` : ""}
       </p>
       {item ? (
         <>
@@ -120,7 +126,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
   const kinds = [...new Set(course.items.map((i) => i.kind))];
   return (
     <div className="grid grid-cols-2 gap-2 px-1 sm:grid-cols-3">
-      <Select aria-label="Unit" value={unit ?? ""} onChange={(e) => set({ unit: e.target.value, topic: null })}>
+      <Select className={FILTER} aria-label="Unit" value={unit ?? ""} onChange={(e) => set({ unit: e.target.value, topic: null })}>
         <option value="">All units</option>
         {units.map((u) => (
           <option key={u} value={u}>
@@ -128,7 +134,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
           </option>
         ))}
       </Select>
-      <Select aria-label="Topic" value={params.get("topic") ?? ""} onChange={(e) => set({ topic: e.target.value })}>
+      <Select className={FILTER} aria-label="Topic" value={params.get("topic") ?? ""} onChange={(e) => set({ topic: e.target.value })}>
         <option value="">All topics</option>
         {topics.map((t) => (
           <option key={t.topic} value={t.topic}>
@@ -136,7 +142,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
           </option>
         ))}
       </Select>
-      <Select aria-label="Source" value={params.get("kind") ?? ""} onChange={(e) => set({ kind: e.target.value })}>
+      <Select className={FILTER} aria-label="Source" value={params.get("kind") ?? ""} onChange={(e) => set({ kind: e.target.value })}>
         <option value="">Every source</option>
         {kinds.map((k) => (
           <option key={k} value={k}>
@@ -144,7 +150,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
           </option>
         ))}
       </Select>
-      <Select aria-label="Part" value={params.get("part") ?? ""} onChange={(e) => set({ part: e.target.value })}>
+      <Select className={FILTER} aria-label="Part" value={params.get("part") ?? ""} onChange={(e) => set({ part: e.target.value })}>
         <option value="">Every part</option>
         {parts.map((p) => (
           <option key={p} value={p}>
@@ -152,7 +158,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
           </option>
         ))}
       </Select>
-      <Select aria-label="Status" value={params.get("status") ?? ""} onChange={(e) => set({ status: e.target.value })}>
+      <Select className={FILTER} aria-label="Status" value={params.get("status") ?? ""} onChange={(e) => set({ status: e.target.value })}>
         <option value="">Any status</option>
         <option value="new">Not attempted</option>
         <option value="attempted">Attempted</option>
@@ -161,7 +167,7 @@ function Filters({ course, params, set }: { course: DeskCourse; params: URLSearc
       </Select>
       <label className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-        <Input aria-label="Search questions" defaultValue={params.get("q") ?? ""} onChange={(e) => set({ q: e.target.value })} placeholder="Search" className="pl-9" />
+        <Input aria-label="Search questions" defaultValue={params.get("q") ?? ""} onChange={(e) => set({ q: e.target.value })} placeholder="Search" className={cn(FILTER, "pl-9")} />
       </label>
     </div>
   );
@@ -231,7 +237,7 @@ function QuestionCard({ course, item, progress }: { course: DeskCourse; item: De
           {item.solution &&
             (reveal ? (
               <Link to={viewerHref(item.solution.file, item.solution.page)} state={state} className="flex items-center gap-1.5 rounded-xl bg-accent/15 px-3 py-2 text-xs font-bold text-accent-deep">
-                <FileText className="h-3.5 w-3.5" /> Open the worked answer{item.solution.page ? `, page ${item.solution.page}` : ""}
+                <FileText className="h-3.5 w-3.5" /> {answerLabel(item.solution)}
               </Link>
             ) : (
               <button type="button" onClick={() => setReveal(true)} className="rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold hover:bg-surface-2/70">
@@ -246,6 +252,7 @@ function QuestionCard({ course, item, progress }: { course: DeskCourse; item: De
           >
             {progress?.attempted_at ? "Attempted" : "Mark attempted"}
           </button>
+          {reveal && item.solution && answerCaveat(item.solution) && <p className="basis-full text-xs font-medium text-muted">{answerCaveat(item.solution)}</p>}
         </div>
       )}
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  answerCaveat,
+  answerLabel,
   askPrompt,
   blankProgress,
   claudeUrl,
@@ -47,7 +49,7 @@ const row = (item_key: string, over: Partial<DeskProgress>): DeskProgress => ({ 
 const ITEMS = [
   item({ key: "OS/p/A1" }),
   item({ key: "OS/p/A2", unit: 2, topic: "t2", topicName: "Topic two", answer: null }),
-  item({ key: "OS/c/B21", kind: "ct", part: "B", mcq: false, options: [], answer: null, text: "Explain paging", solution: { file: "x.pdf", page: 3 } }),
+  item({ key: "OS/c/B21", kind: "ct", part: "B", mcq: false, options: [], answer: null, text: "Explain paging", solution: { file: "x.pdf", page: 3, kind: "worked", from: null } }),
 ];
 
 describe("the Desk's courses", () => {
@@ -98,8 +100,31 @@ describe("coverage", () => {
       row("OS/p/A2", { attempted_at: "x", result: "unreviewed", flag: true }),
     ]);
     expect(coverage(ITEMS, progress)).toEqual({
-      total: 3, attempted: 2, correct: 1, graded: 1, flagged: 1, mcqs: 2, keyed: 1, written: 1, solved: 1,
+      total: 3, attempted: 2, correct: 1, graded: 1, flagged: 1, mcqs: 2, keyed: 1, written: 1, solved: 1, related: 0,
     });
+  });
+
+  it("counts a repeat's answer as worked and a topic's as related", () => {
+    const written = (key: string, kind: "repeat" | "similar" | "topic") =>
+      item({ key, part: "B", mcq: false, options: [], answer: null, solution: { file: "x.pdf", page: 1, kind, from: "Nov 2025" } });
+    const c = coverage([...ITEMS, written("OS/c/B22", "repeat"), written("OS/c/B23", "similar"), written("OS/c/B24", "topic")], new Map());
+    expect([c.written, c.solved, c.related]).toEqual([4, 2, 2]);
+  });
+});
+
+describe("answer links", () => {
+  const sol = (kind: "worked" | "repeat" | "similar" | "topic") => ({ file: "x.pdf", page: 4, kind, from: kind === "topic" ? null : "End-sem Nov 2025" });
+
+  it("say whose answer opens", () => {
+    expect(answerLabel(sol("worked"))).toBe("Open the worked answer, page 4");
+    expect(answerLabel(sol("repeat"))).toBe("Open the worked answer (End-sem Nov 2025), page 4");
+    expect(answerLabel(sol("similar"))).toBe("Open the closest worked answer (End-sem Nov 2025), page 4");
+    expect(answerLabel(sol("topic"))).toBe("Open the model answer for this topic, page 4");
+  });
+
+  it("warn only when the answer is borrowed", () => {
+    expect(answerCaveat(sol("worked"))).toBeNull();
+    expect(answerCaveat(sol("topic"))).toMatch(/isn't this question's own answer/);
   });
 });
 

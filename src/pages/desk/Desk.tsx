@@ -36,6 +36,7 @@ export default function Desk() {
           value={screen}
           onChange={(v) => navigate(SCREENS.find((s) => s.value === v)!.to)}
           layoutId="desk-screen"
+          size="sm"
           className="sm:ml-auto sm:w-96"
         />
       </div>
