@@ -333,7 +333,7 @@ export function ZoomPane({
         </div>
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-screen z-10 flex justify-center pb-safe-b">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center pb-safe-b">
         <div className="pointer-events-auto mb-4 flex items-center gap-1 rounded-full border bg-surface/95 px-2 py-1.5 text-sm font-bold shadow-lg backdrop-blur-sm">
           <button
             type="button"

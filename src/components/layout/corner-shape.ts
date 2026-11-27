@@ -17,6 +17,6 @@ export const cornerBox: CSSProperties = {
   width: CORNER,
   height: CORNER,
   right: CORNER_INSET,
-  bottom: `calc(var(--nav-h, 0px) - var(--viewport-gap, 0px) + ${CORNER_INSET}px)`,
+  bottom: `calc(var(--nav-h, 0px) + ${CORNER_INSET}px)`,
   borderRadius: cornerRadius(22),
 };

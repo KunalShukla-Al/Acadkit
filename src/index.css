@@ -80,11 +80,6 @@
   background: hsl(var(--bg));
 }
 
-@utility bottom-screen {
-  /* bottom: 0 on the screen's foot, below a viewport that stops short of it (lib/viewportGap.ts). */
-  bottom: calc(-1 * var(--viewport-gap, 0px));
-}
-
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -166,6 +161,17 @@
   html {
     -webkit-text-size-adjust: 100%;
     background-color: hsl(var(--bg));
+  }
+
+  /* iOS 26 opens the installed app with a viewport one status bar short
+     of the screen while the page is shorter than the screen, and draws
+     nothing below that edge, so the tab bar floats (WebKit 301108). A
+     page at least screen-tall gets the full viewport. 100lvh caps it at
+     the screen, so nothing scrolls once the viewport is right. */
+  @media (display-mode: standalone) {
+    html {
+      min-height: min(100lvh, calc(100% + env(safe-area-inset-top)));
+    }
   }
   body {
     @apply text-ink font-sans antialiased;
