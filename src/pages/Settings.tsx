@@ -32,11 +32,11 @@ import { signOut } from "@/lib/auth";
 import { describePending } from "@/lib/autoMark";
 import { COMMIT, notesFor, VERSION } from "@/lib/release";
 import { formatSize } from "@/lib/studyFiles";
-import { syncHealth } from "@/lib/syncHealth";
+import { lastClassDay, syncHealth } from "@/lib/syncHealth";
 import { parseTomorrow, savedTomorrow, TOMORROW_EVENT, tomorrowLine } from "@/lib/tomorrow";
 import type { ThemeName } from "@/lib/themes";
 import { cn, haptic } from "@/lib/utils";
-import { semesterWindow } from "@acadkit/core/calendar";
+import { buildEffectiveMap, semesterWindow } from "@acadkit/core/calendar";
 import { relativeDay, formatDate } from "@acadkit/core/dates";
 import { useAppStore, type ColorMode } from "@/store/app";
 import type { Subject } from "@acadkit/core/types";
@@ -160,9 +160,11 @@ function SignedInRow() {
 function PortalGroup() {
   const qc = useQueryClient();
   const { data: snapshots } = usePortalSnapshots();
+  const { data: settings } = useSettings();
   const [busy, setBusy] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const health = syncHealth(snapshots ?? []);
+  const lastClass = lastClassDay(buildEffectiveMap(settings?.declared_holidays ?? [], semesterWindow(settings)));
+  const health = syncHealth(snapshots ?? [], new Date(), lastClass);
 
   async function refresh() {
     setBusy(true);
