@@ -8,6 +8,7 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { runPython } from "./python.mjs";
 import { PERSONA_DIR } from "./store.mjs";
 
 export const HEARTBEAT = path.join(PERSONA_DIR, "heartbeat");
@@ -43,5 +44,12 @@ export const JOBS = [
     every: 10,
     timeoutMin: 1,
     run: ({ now }) => readerStatus(WHATSAPP_STATUS, now()),
+  },
+  {
+    // Dated items in those messages → _src/persona_suggestions.json, offered in the app by the sync (persona/deadlines).
+    name: "deadlines",
+    every: 15,
+    timeoutMin: 3,
+    run: ({ signal }) => runPython(["persona.deadlines", "run"], { signal }),
   },
 ];

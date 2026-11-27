@@ -1,0 +1,203 @@
+"""Messages → claims, by rules: who said it, which course, what kind, and when.
+
+The prefilter keeps only messages with an assessment word and a date cue,
+generously, since a message dropped here is never seen again. The rules then
+read one claim per message: the first course the pack's cues name, the
+dominant kind, and the first date resolvable against the day it was sent.
+A bare ordinal like "11th experiment" is not read as a date.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from datetime import date, timedelta
+
+from .model import IST, Claim, Message, Trust
+
+_ASSESS = re.compile(
+    r"\b(ft|ct|llt|llj|fj|cla|exam|test|quiz|viva|lab|worksheet|assignment"
+    r"|submit|submission|due|deadline|portion|syllabus|review|imposition"
+    r"|retest|assessment|practical|record|experiment|exercise)\b",
+    re.IGNORECASE,
+)
+_DATE_CUE = re.compile(
+    r"(\d{1,2}[/.-]\d{1,2}([/.-]\d{2,4})?"
+    r"|\b\d{1,2}\s?(st|nd|rd|th)?\s?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+    r"|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}"
+    r"|\b\d{1,2}(st|nd|rd|th)\b"
+    r"|\b(mon|tue|wed|thu|fri|sat|sun)(day)?\b"
+    r"|\b(today|tomorrow|tmrw|tonight|next week|this week)\b)",
+    re.IGNORECASE,
+)
+
+
+def is_candidate(text: str) -> bool:
+    return bool(text and _ASSESS.search(text) and _DATE_CUE.search(text))
+
+
+# --- who said it -------------------------------------------------------------
+
+_TITLED = re.compile(r"^\s*(dr|prof|professor)\b\.?", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class Roles:
+    """Faculty and CRs by contact name or WhatsApp id, from the semester pack."""
+
+    faculty: frozenset[str] = frozenset()
+    cr: frozenset[str] = frozenset()
+
+    @classmethod
+    def from_pack(cls, pack: dict) -> "Roles":
+        wa = pack.get("whatsapp", {})
+        norm = lambda xs: frozenset(x.strip().lower() for x in xs or [] if x.strip())  # noqa: E731
+        return cls(norm(wa.get("faculty")), norm(wa.get("cr")))
+
+    def trust(self, sender: str | None, sender_id: str | None = None) -> Trust:
+        if sender == "me":
+            return Trust.ME
+        keys = {(sender or "").strip().lower(), (sender_id or "").strip().lower()} - {""}
+        if keys & self.faculty or _TITLED.match(sender or ""):
+            return Trust.FACULTY
+        if keys & self.cr:
+            return Trust.CR
+        return Trust.RELAY
+
+
+# --- which course ------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Course:
+    code: str
+    cues: tuple[re.Pattern, ...]
+
+
+def courses_from_pack(pack: dict) -> list[Course]:
+    """Each course's cues: its code, its full name, its short name when 3+ letters, and any listed."""
+
+    out = []
+    for c in pack.get("courses", []):
+        words = [c["code"], c.get("name", ""), *(c.get("cues") or [])]
+        if len(c.get("short", "")) >= 3:
+            words.append(c["short"])
+        cues = tuple(re.compile(rf"(?<![a-z0-9]){re.escape(w.lower())}(?![a-z0-9])") for w in words if w.strip())
+        out.append(Course(c["code"], cues))
+    return out
+
+
+def course_of(text: str, courses: list[Course]) -> str | None:
+    low = text.lower()
+    hits = [(m.start(), c.code) for c in courses for cue in c.cues if (m := cue.search(low))]
+    return min(hits)[1] if hits else None
+
+
+# --- what kind ---------------------------------------------------------------
+
+# Top to bottom; "lab" sits above "exam" so "FJ lab test" reads as lab work.
+_KINDS = (
+    ("worksheet", ("worksheet",)),
+    ("review", ("review",)),
+    ("viva", ("viva",)),
+    ("lab", ("lab", "experiment", "exercise", "practical", "record", "llj")),
+    ("submission", ("submit", "submission", "due", "assignment", "imposition")),
+    ("exam", ("ft", "ct", "llt", "cla", "fj", "exam", "test", "quiz", "retest", "assessment")),
+)
+
+
+def kind_of(text: str) -> str:
+    low = text.lower()
+    for kind, cues in _KINDS:
+        if any(re.search(rf"\b{re.escape(c)}\b", low) for c in cues):
+            return kind
+    return "deadline"
+
+
+def portion_of(text: str) -> str | None:
+    m = re.search(r"\bunits?\s+(?:[ivx]+|\d)(?:\s*(?:&|and|,|-|to)\s*(?:[ivx]+|\d))*", text, re.IGNORECASE)
+    return m.group(0).strip() if m else None
+
+
+# --- when --------------------------------------------------------------------
+
+_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+_WEEKDAYS = {d: i for i, d in enumerate(("mon", "tue", "wed", "thu", "fri", "sat", "sun"))}
+
+
+def _assemble(d: int, mo: int, y: str | None, ref: date) -> str | None:
+    """An ISO date, its year from the message's own day when missing. A December
+    message naming January means next January."""
+
+    year = int(y) + (2000 if y and int(y) < 100 else 0) if y else ref.year
+    try:
+        cand = date(year, mo, d)
+    except ValueError:
+        return None
+    if not y and (cand - ref).days < -180:
+        cand = date(year + 1, mo, d)
+    return cand.isoformat()
+
+
+def date_of(text: str, ref: date) -> tuple[str | None, float]:
+    """(ISO date or None, confidence), relative forms read against `ref`."""
+
+    low = text.lower()
+    mon = "(" + "|".join(_MONTHS) + ")"
+    m = re.search(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{mon}[a-z]*\.?(?:\s*,?\s*(\d{{4}}|\d{{2}}(?!\d|:)))?", low)
+    if m:
+        return _assemble(int(m.group(1)), _MONTHS[m.group(2)], m.group(3), ref), 0.9 if m.group(3) else 0.85
+    m = re.search(rf"\b{mon}[a-z]*\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?\b(?:\s*,?\s*(\d{{4}}))?", low)
+    if m:
+        return _assemble(int(m.group(2)), _MONTHS[m.group(1)], m.group(3), ref), 0.9 if m.group(3) else 0.85
+    m = re.search(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", low)
+    if m and not re.match(r"\s*(am|pm)\b", low[m.end():]):
+        d, mo = int(m.group(1)), int(m.group(2))
+        if 1 <= mo <= 12 and 1 <= d <= 31:
+            return _assemble(d, mo, m.group(3), ref), 0.9 if m.group(3) else 0.85
+    m = re.search(r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b", low)
+    if m:
+        ahead = (_WEEKDAYS[m.group(1)[:3]] - ref.weekday()) % 7
+        return (ref + timedelta(days=ahead)).isoformat(), 0.7
+    if re.search(r"\b(today|tonight)\b", low):
+        return ref.isoformat(), 0.7
+    if re.search(r"\b(tomorrow|tmrw)\b", low):
+        return (ref + timedelta(days=1)).isoformat(), 0.7
+    return None, 0.4
+
+
+def time_of(text: str) -> str | None:
+    m = re.search(r"\b(\d{1,2})(?:[:.](\d{2}))?\s?(am|pm)\b", text.lower()) or re.search(r"\b(\d{1,2})[:](\d{2})\b", text)
+    if not m:
+        return None
+    h, mins = int(m.group(1)), int(m.group(2) or 0)
+    half = m.group(3) if m.lastindex and m.lastindex >= 3 else None
+    if half == "pm" and h < 12:
+        h += 12
+    if half == "am" and h == 12:
+        h = 0
+    return f"{h:02d}:{mins:02d}" if h < 24 and mins < 60 else None
+
+
+def extract(messages: list[Message], courses: list[Course], roles: Roles, ids: dict[str, str] | None = None) -> list[Claim]:
+    """One claim per candidate message that names a course. `ids` maps a message id to its sender's WhatsApp id."""
+
+    out = []
+    for m in messages:
+        if not is_candidate(m.text):
+            continue
+        course = course_of(m.text, courses)
+        if course is None:
+            continue
+        day, conf = date_of(m.text, m.ts.astimezone(IST).date())
+        out.append(Claim(
+            kind=kind_of(m.text),
+            course=course,
+            date=day,
+            time=time_of(m.text) if day else None,
+            portion=portion_of(m.text),
+            message=m,
+            trust=roles.trust(m.sender, (ids or {}).get(m.id)),
+            confidence=conf,
+        ))
+    return out

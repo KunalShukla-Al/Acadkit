@@ -8,6 +8,7 @@ PersonaOS is AcadKit's Mac side grown into one system. It reads everything my de
 |---|---|
 | Orchestrator (`scripts/persona.mjs`) | Built |
 | WhatsApp collector (`persona/whatsapp.py`) | Built; first real read 28 Nov: 628 messages from 2 groups |
+| Deadline engine (`persona/deadlines/`) | Built on rules; a local model joins later |
 | Collectors, engines, phone surfaces | Planned, one PR a day until 16 Dec 2026 |
 
 ## Rules
@@ -55,6 +56,22 @@ WhatsApp's messages are read every 10 minutes (`persona/whatsapp.py`, `scripts/m
 - New messages go to `persona.sqlite` on the Mac with sender, time, text and any file's path. Rows with neither text nor a file are dropped.
 - The read writes `persona/whatsapp/status.json`. The orchestrator's `whatsapp` job reports it, so a failed or silent read alerts like any job.
 - Engines run from bash read `.env.local` themselves (`persona/env.py`). `npm run test:persona` runs the engines' tests; CI runs them too.
+
+## Deadline engine
+
+The `deadlines` job runs every 15 minutes (`persona/deadlines/`, ported from hearsay) over the last 120 days of stored messages.
+
+| Step | Does |
+|---|---|
+| Prefilter | Keeps messages with an assessment word and a date cue |
+| Extract | One claim per message: the first course the pack's cues name (code, full name, short name of 3+ letters, listed cues), the kind, the date read against the day it was sent, a time, the units. "11th experiment" is not a date |
+| Roles | Faculty and CRs by contact name or WhatsApp id from the pack's `whatsapp.faculty` and `whatsapp.cr`; a name starting "Dr" or "Prof" counts as faculty |
+| Track | Claims sharing an instance code (FT-II, FJ2, CT 1) fold into one item, and a message naming two links them; a bare mention joins the one open item of its course and kind |
+| Resolve | The date comes from faculty, then the CR, then a classmate, then me; the latest said within a rank |
+| Verify | Flags `moved`, `conflict`, `stale` and `past`; an undated item, or a disagreement with no faculty word, gets a question |
+| Output | Upcoming items to `<STUDY_DIR>/_src/persona_suggestions.json` when faculty or the CR said so, or a classmate stated a full date plainly with nothing disputing it |
+
+The study sync reads that file beside the weekly scan's `acadkit_suggestions.json`, so each item reaches the app as an Add, or a Move when it carries `moved_from`. `python3 -m persona.deadlines show` lists every tracked item with its flags and questions.
 
 ## Sources (planned)
 
