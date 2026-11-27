@@ -33,6 +33,7 @@ Every table is keyed by `device_id` (the PIN). "App may delete" is the signed-in
 | Table | Export | Reset | App may delete | Written by | Created in |
 | --- | --- | --- | --- | --- | --- |
 | `plan_ticks` | **no** | **no** | yes | app (`src/api/runup.ts`) | 043 |
+| `desk_progress` | **no** | **no** | yes | app (`src/api/desk.ts`), Mac (`scripts/desk-bridge.mjs`) | 065 |
 | `syllabus_progress` | **no** | **no** | yes | app (`src/api/units.ts`) | 034 |
 | `active_days` | **no** | **no** | insert only | app (`src/lib/activity.ts`) | 039 |
 | `reading_now` | **no** | **no** | no | app, Mac (`scripts/mac/send-to-phone.mjs`) | 062 |
@@ -86,7 +87,7 @@ Reset calls `qc.resetQueries()` and nothing else on the device. `resetAfterSignO
 
 ## What "everything" misses
 
-- Export leaves out Run-up ticks, syllabus ticks, active days, the reading handoff, suggestions, the upload and deletion queues, and all files. Leaving out the feed token, `device_owners`, `study_chunks`, `error_log` and `sent_notifications` is right.
+- Export leaves out the day plan's ticks, the Desk's progress, syllabus ticks, active days, the reading handoff, suggestions, the upload and deletion queues, and all files. Leaving out the feed token, `device_owners`, `study_chunks`, `error_log` and `sent_notifications` is right.
 - Reset leaves the two histories, the same rows export misses, push subscriptions, the search index and all files. The app can't delete the histories under RLS, so a full reset needs the service role (an edge function or a `security definer` function).
 - The dialog's list is accurate, but its title "Delete everything?" and the toast "Everything wiped" overclaim.
 - Wrapped's new-semester clear (`clearAcademicData`) is narrower by design. When the folder moves on, the Mac's `clearOldSupabase` (`scripts/lib/semester.mjs`) removes the histories, the queues and their inbox copies, suggestions, syllabus ticks for courses that are gone, and stale chunks.

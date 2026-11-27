@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(116);
+select plan(122);
 
 -- ---------------------------------------------------------------------------
 -- Seed, as the table owner (RLS does not apply)
@@ -65,6 +65,8 @@ insert into syllabus_progress (device_id, course_code, unit, topic)
   select d, '21CSC202J', 1, 'Process states' from unnest(array['1111', '2222']) d;
 insert into plan_ticks (device_id, task_id)
   select d, '2026-10-12#1' from unnest(array['1111', '2222']) d;
+insert into desk_progress (device_id, item_key, flag, pick, result)
+  select d, 'OS/os-es-2026-05/A1', true, 'B', 'correct' from unnest(array['1111', '2222']) d;
 insert into card_reviews (device_id, card_id, box, due)
   select d, 'd3acc1c88e7408bd', 2, '2026-10-20' from unnest(array['1111', '2222']) d;
 insert into feed_tokens (device_id)
@@ -145,7 +147,8 @@ from unnest(array[
   'semester_archives', 'portal_snapshots', 'portal_snapshot_history',
   'push_subscriptions', 'forecast_log', 'study_chunks', 'study_file_deletions',
   'study_uploads', 'suggestions', 'syllabus_progress', 'plan_ticks', 'card_reviews',
-  'feed_tokens', 'siri_marks', 'autopilot_actions', 'device_owners', 'lectures', 'lecture_moments', 'reading_now'
+  'feed_tokens', 'siri_marks', 'autopilot_actions', 'device_owners', 'lectures', 'lecture_moments', 'reading_now',
+  'desk_progress'
 ]) t;
 
 -- ...and none of B's, in any table.
@@ -159,7 +162,7 @@ from unnest(array[
   'push_subscriptions', 'error_log', 'forecast_log', 'sent_notifications',
   'study_chunks', 'study_file_deletions', 'study_uploads', 'suggestions',
   'syllabus_progress', 'plan_ticks', 'card_reviews', 'feed_tokens', 'siri_marks', 'autopilot_actions',
-  'device_owners', 'active_days', 'lectures', 'lecture_moments', 'reading_now'
+  'device_owners', 'active_days', 'lectures', 'lecture_moments', 'reading_now', 'desk_progress'
 ]) t;
 
 -- Activity is write-only from the app: not even your own days come back.
@@ -231,6 +234,21 @@ select throws_ok(
   '42501', null, 'A cannot tick a task under B''s PIN'
 );
 delete from plan_ticks where device_id = '2222';
+
+-- Desk progress (migration 065): A writes their own items, never B's.
+select lives_ok(
+  $$insert into desk_progress (device_id, item_key, pick, result) values ('1111', 'PS/ps-ct-1/A1', 'A', 'wrong')$$,
+  'A can record their own desk pick'
+);
+select throws_ok(
+  $$insert into desk_progress (device_id, item_key, flag) values ('2222', 'PS/ps-ct-1/A1', true)$$,
+  '42501', null, 'A cannot record desk progress under B''s PIN'
+);
+update desk_progress set flag = false, pick = null where device_id = '2222';
+delete from desk_progress where device_id = '2222';
+-- An older write (an offline phone's queued change) never replaces a newer one.
+update desk_progress set pick = 'C', updated_at = now() - interval '1 day' where device_id = '1111' and item_key = 'PS/ps-ct-1/A1';
+select is((select pick from desk_progress where device_id = '1111' and item_key = 'PS/ps-ct-1/A1'), 'A', 'an older desk write keeps the newer row');
 
 -- Crash reports: under A's own PIN, or none before a PIN is set (migration 064).
 select lives_ok(
@@ -413,6 +431,7 @@ select is((select marks_obtained from marks where device_id = '2222'), 12::numer
 select is((select status from suggestions where device_id = '2222'), 'pending', 'B''s suggestion is unchanged');
 select is((select count(*) from attendance where device_id = '2222'), 1::bigint, 'B''s attendance was not deleted');
 select is((select count(*) from plan_ticks where device_id = '2222'), 1::bigint, 'B''s run-up ticks were not deleted');
+select is((select pick from desk_progress where device_id = '2222'), 'B', 'B''s desk progress is unchanged');
 select is((select count(*) from feed_tokens where device_id = '2222'), 1::bigint, 'B''s feed token was not revoked');
 select is((select undone_at from siri_marks where device_id = '2222'), null, 'B''s Siri mark was not undone by A');
 select is((select undone_at from autopilot_actions where device_id = '2222'), null, 'B''s Autopilot action was not undone by A');

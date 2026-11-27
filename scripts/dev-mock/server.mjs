@@ -9,6 +9,7 @@ import { subjectIndex, tagFile } from "../lib/tags.mjs";
 import { RENDITION } from "../lib/renditions.mjs";
 import { checkProjects } from "../lib/weekly.mjs";
 import { checkRunup, splitRunup } from "../lib/runup.mjs";
+import { checkDesk, splitDesk } from "../lib/desk.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP } from "../lib/storage.mjs";
 
 const PORT = 54321;
@@ -293,6 +294,8 @@ const SEED = {
   active_days: [],
   // Migration 043: run-up tasks ticked as done.
   plan_ticks: [],
+  // Migration 065: the Desk's picks, flags and topic status.
+  desk_progress: [],
   // Migration 062: where you're reading, for Continue.
   reading_now: [],
 };
@@ -458,6 +461,17 @@ function mockStorage(req, res, u, { stored }) {
     if (!checked?.body) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
     const { index, parts } = splitRunup(checked.body);
     if (m[1] === "1234/runup.json") return json(200, index);
+    const part = parts.find((p) => `1234/${p.name}` === m[1]);
+    if (!part) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(part.json);
+  }
+  // The Desk: an index and a part per course, checked and split as the real sync does (scripts/lib/desk.mjs).
+  if (m[1] === "1234/desk.json" || m[1].startsWith("1234/desk/")) {
+    const file = path.join(STUDY_DIR, "_src", "acadkit_desk.json");
+    if (!existsSync(file)) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
+    const { index, parts } = splitDesk(checkDesk(JSON.parse(readFileSync(file, "utf8")), new Set(studyFiles.map((f) => f.path))).body);
+    if (m[1] === "1234/desk.json") return json(200, index);
     const part = parts.find((p) => `1234/${p.name}` === m[1]);
     if (!part) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
     res.writeHead(200, { "content-type": "application/json" });

@@ -38,9 +38,9 @@ function Item({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-const RunupChip = lazy(() => import("@/components/layout/runup-chip").then((m) => ({ default: m.RunupChip })));
+const DeskChip = lazy(() => import("@/components/layout/desk-chip").then((m) => ({ default: m.DeskChip })));
 
-/** The Mac's sidebar: the day order and the Run-up, then the five tabs, each lit for every page it holds. */
+/** The Mac's sidebar: the day order and the Desk, then the five tabs, each lit for every page it holds. */
 export function Sidebar() {
   const { pathname } = useLocation();
   return (
@@ -55,7 +55,7 @@ export function Sidebar() {
       <div className="mt-6 space-y-2 px-1">
         <DayOrderChip expanded />
         <Suspense fallback={null}>
-          <RunupChip wide />
+          <DeskChip wide />
         </Suspense>
         <CalendarButton wide />
         <MoreButton />

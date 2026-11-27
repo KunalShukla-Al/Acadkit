@@ -14,12 +14,12 @@ import { openingDay, parseDay, phase, stepDay, undatedEvents, upcomingEvents } f
 import { cn } from "@/lib/utils";
 
 /**
- * The run-up, one day at a time: today's targets to tick, anything left
- * from earlier days, the classes you can't miss, and what's coming. The
- * phone flicks between days (the strip, or a swipe); the Mac keeps the
- * whole calendar beside the day and takes the arrow keys.
+ * The Desk's Today: the day plan one day at a time, with today's targets
+ * to tick, anything left from earlier days, the classes you can't miss, and
+ * what's coming. The phone flicks between days (the strip, or a swipe); the
+ * Mac keeps the whole calendar beside the day and takes the arrow keys.
  */
-export default function Runup() {
+export default function Today() {
   const { date: param } = useParams();
   const navigate = useNavigate();
   const today = useTodayISO();
@@ -34,7 +34,7 @@ export default function Runup() {
   const prev = data && date && date > data.start ? stepDay(data, date, -1) : null;
   const next = data && date && date < data.end ? stepDay(data, date, 1) : null;
 
-  const go = useCallback((to: string | null) => to && navigate(`/runup/${to}`, { replace: true }), [navigate]);
+  const go = useCallback((to: string | null) => to && navigate(`/desk/${to}`, { replace: true }), [navigate]);
   const swipe = useSwipe(
     () => go(next),
     () => go(prev)
@@ -47,7 +47,7 @@ export default function Runup() {
       if (e.metaKey || e.ctrlKey || e.altKey || el?.closest("input, textarea, select, [contenteditable=true]")) return;
       if (e.key === "ArrowLeft") go(prev);
       else if (e.key === "ArrowRight") go(next);
-      else if (e.key === "t" || e.key === "T") navigate("/runup", { replace: true });
+      else if (e.key === "t" || e.key === "T") navigate("/desk", { replace: true });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -67,7 +67,7 @@ export default function Runup() {
     return (
       <EmptyState
         icon={CalendarRange}
-        title={plan.isError ? "Couldn't load the run-up" : "No run-up yet"}
+        title={plan.isError ? "Couldn't load the day plan" : "No day plan yet"}
         description={
           plan.isError
             ? "Check your connection - the last plan you opened shows here offline once it has loaded once."
@@ -78,7 +78,7 @@ export default function Runup() {
   }
 
   // A date outside the plan, or not a date at all: back to the day it would open on.
-  if (param && parsed !== date) return <Navigate to="/runup" replace />;
+  if (param && parsed !== date) return <Navigate to="/desk" replace />;
 
   const onToggle = (task_id: string, isDone: boolean) => tick.mutate({ task_id, done: isDone });
   const coming = upcomingEvents(data, today, 8);

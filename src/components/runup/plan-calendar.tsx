@@ -100,7 +100,7 @@ function Month({
             </span>
           );
           return inPlan ? (
-            <Link key={date} to={`/runup/${date}`} aria-label={label} aria-current={date === selected ? "date" : undefined}>
+            <Link key={date} to={`/desk/${date}`} aria-label={label} aria-current={date === selected ? "date" : undefined}>
               {cell}
             </Link>
           ) : (

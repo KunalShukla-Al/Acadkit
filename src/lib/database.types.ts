@@ -180,6 +180,42 @@ export type Database = {
           },
         ];
       };
+      desk_progress: {
+        Row: {
+          attempted_at: string | null;
+          device_id: string;
+          flag: boolean;
+          item_key: string;
+          note: string | null;
+          pick: string | null;
+          result: string | null;
+          status: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          attempted_at?: string | null;
+          device_id: string;
+          flag?: boolean;
+          item_key: string;
+          note?: string | null;
+          pick?: string | null;
+          result?: string | null;
+          status?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          attempted_at?: string | null;
+          device_id?: string;
+          flag?: boolean;
+          item_key?: string;
+          note?: string | null;
+          pick?: string | null;
+          result?: string | null;
+          status?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       device_owners: {
         Row: {
           claimed_at: string;

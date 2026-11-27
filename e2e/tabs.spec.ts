@@ -1,11 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, MOCK_API, test, waitForLaunch } from "./fixtures";
 
-// The five tabs (src/lib/screens.ts), the Run-up in the top bar and the corner (src/components/layout).
+// The five tabs (src/lib/screens.ts), the Desk in the top bar and the corner (src/components/layout).
 const bar = (page: Page) => page.getByRole("navigation", { name: "Primary" }).last();
 const corner = (page: Page) => page.getByRole("button", { name: /Calendar\. Hold for/ });
 
-test("the bar is the five tabs, each lit for its pages, and the corner's and the Run-up's light none", async ({ signedIn: page }) => {
+test("the bar is the five tabs, each lit for its pages, and the corner's and the Desk's light none", async ({ signedIn: page }) => {
   await expect(bar(page).getByRole("link")).toHaveText(["Today", "Timetable", "Attendance", "Marks", "Study"]);
   const lit = bar(page).locator('[aria-current="page"]');
   await expect(lit).toHaveText("Today");
@@ -18,7 +18,7 @@ test("the bar is the five tabs, each lit for its pages, and the corner's and the
     await page.goto(path);
     await expect(lit, path).toHaveText(tab);
   }
-  for (const path of ["/runup", "/calendar", "/skips", "/settings", "/history"]) {
+  for (const path of ["/desk", "/desk/practice", "/calendar", "/skips", "/settings", "/history"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(lit, path).toHaveCount(0);
@@ -85,14 +85,14 @@ test("Study is the study folder: files, search, and the viewer closes back onto 
   await expect(bar(page).locator('[aria-current="page"]')).toHaveText("Study");
 });
 
-test("the Run-up is one tap away from any page, with the day's count", async ({ signedIn: page }) => {
+test("the Desk is one tap away from any page, with the day's count", async ({ signedIn: page }) => {
   await page.goto("/marks");
-  const runup = page.getByRole("link", { name: /^Run-up \d+\/\d+ targets done$/ });
-  await expect(runup).toBeVisible();
-  await runup.click();
-  await expect(page).toHaveURL("/runup");
+  const desk = page.getByRole("link", { name: /^Desk \d+\/\d+ targets done$/ });
+  await expect(desk).toBeVisible();
+  await desk.click();
+  await expect(page).toHaveURL("/desk");
   await expect(page.getByRole("heading", { level: 1, name: /Wednesday, 7 October/ })).toBeVisible();
-  await expect(runup).toHaveAttribute("aria-current", "page");
+  await expect(desk).toHaveAttribute("aria-current", "page");
 });
 
 test("the corner carries the day order and opens the calendar in one tap", async ({ signedIn: page }) => {
@@ -145,7 +145,8 @@ test("old links (notifications, bookmarks, the Shortcuts) land on the page they 
     ["/grades?show=skips", "/skips"],
     ["/survival", "/skips"],
     ["/plan", "/calendar"],
-    ["/plan?show=runup", "/runup"],
+    ["/plan?show=runup", "/desk"],
+    ["/runup", "/desk"],
     ["/plan?show=timetable", "/timetable"],
     ["/plan?show=deadlines", "/deadlines"],
     ["/you", "/settings"],
@@ -158,9 +159,12 @@ test("old links (notifications, bookmarks, the Shortcuts) land on the page they 
   }
   await page.goto(`/files?${new URLSearchParams({ dir: "Operating_Systems" })}`);
   await expect(page).toHaveURL(`/study?${new URLSearchParams({ dir: "Operating_Systems" })}`);
-  // A run-up day and a subject stay where they are.
+  // A Run-up day lands on the same day of the Desk; a subject stays where it is.
   await page.goto("/runup/2026-10-08");
-  await expect(page).toHaveURL("/runup/2026-10-08");
+  await expect(page).toHaveURL("/desk/2026-10-08");
+  await expect(page.getByRole("heading", { name: /Thursday, 8 October/ })).toBeVisible();
+  await page.goto("/runup/event/os-ft2");
+  await expect(page).toHaveURL("/desk/event/os-ft2");
   await page.goto("/subject/21CSC202J");
   await expect(page).toHaveURL("/subject/21CSC202J");
 });
@@ -188,7 +192,7 @@ async function playing(page: Page): Promise<number> {
 
 test("nothing plays in: what a page shows is there when you arrive", async ({ signedIn: page }) => {
   test.setTimeout(90_000);
-  for (const path of ["/", "/timetable", "/attendance", "/marks", "/study", "/runup", "/deadlines", "/calendar", "/skips", "/settings", "/history"]) {
+  for (const path of ["/", "/timetable", "/attendance", "/marks", "/study", "/desk", "/deadlines", "/calendar", "/skips", "/settings", "/history"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await playing(page), path).toBe(0);

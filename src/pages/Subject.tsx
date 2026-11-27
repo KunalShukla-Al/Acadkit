@@ -7,6 +7,7 @@ import { FileRow } from "@/components/study/file-row";
 import { StudyRefs } from "@/components/study/study-refs";
 import { AreaHistoryNote } from "@/components/study/area-history";
 import { UnitList } from "@/components/study/unit-list";
+import { SubjectDesk } from "@/components/desk/subject-desk";
 import { fetchTicks, fetchUnits } from "@/api/units";
 import { SubjectSearch } from "@/components/study/subject-search";
 import { useStudyDeletions } from "@/hooks/useStudyDeletions";
@@ -183,6 +184,8 @@ function SubjectInner() {
           }
         />
       )}
+
+      <SubjectDesk code={code} />
 
       {prereqsFor(prereqs.data, code).length > 0 && <Prereqs links={prereqsFor(prereqs.data, code)} />}
 

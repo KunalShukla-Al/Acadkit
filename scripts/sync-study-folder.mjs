@@ -15,6 +15,8 @@ import { studyRoots } from "./lib/roots.mjs";
 import { readCourseTitles, subjectIndex, tagFile } from "./lib/tags.mjs";
 import { checkNotices, checkProjects } from "./lib/weekly.mjs";
 import { checkRunup, splitRunup } from "./lib/runup.mjs";
+import { checkDesk, mergeDesks, splitDesk } from "./lib/desk.mjs";
+import { bridgeDesk } from "./desk-bridge.mjs";
 import { buildMoveMap, follower } from "./lib/moved.mjs";
 import { STORAGE_LIMIT, UPLOAD_CAP, bucketUse, fitUploads } from "./lib/storage.mjs";
 import { findGs, shrinkPdfs } from "./lib/shrink.mjs";
@@ -403,8 +405,31 @@ if (runup)
       : "Run-up: not sent"
   );
 for (const w of runup?.warnings ?? []) console.log(`  ${w}`);
+// The Desk (scripts/lib/desk.mjs): this semester's folder and the next one's.
+// A folder whose desk can't be read leaves the bucket's last good one alone.
+let desk = null;
+{
+  const bodies = [];
+  let failed = false;
+  for (const root of [{ dir, prefix: "" }, ...extras]) {
+    try {
+      const raw = await readSrc(root.dir, "acadkit_desk.json");
+      if (!raw) continue;
+      const checked = checkDesk(raw, known, root.prefix, moved);
+      bodies.push(checked);
+      for (const w of checked.warnings) console.log(`  desk: ${w}`);
+    } catch (err) {
+      failed = true;
+      console.error(`Desk (${root.prefix || path.basename(root.dir)}): ${err.message}; the last good desk stays`);
+    }
+  }
+  if (!failed && bodies.length) {
+    desk = { body: mergeDesks(bodies.map((b) => b.body)), follows: bodies.flatMap((b) => b.follows) };
+    console.log(`Desk: ${desk.body.courses.map((c) => `${c.key} ${c.items.length}`).join(", ")}`);
+  }
+}
 // Links that followed a file moved or renamed since the last sync (lib/moved.mjs).
-const followed = new Map([...(prep?.follows ?? []), ...(notices?.follows ?? []), ...(runup?.follows ?? [])]);
+const followed = new Map([...(prep?.follows ?? []), ...(notices?.follows ?? []), ...(runup?.follows ?? []), ...(desk?.follows ?? [])]);
 if (followed.size) {
   console.log(`Followed ${followed.size} moved file(s) by content:`);
   for (const [from, to] of followed) console.log(`  ${from} → ${to}`);
@@ -577,6 +602,21 @@ if (runup?.body) {
   } catch (err) {
     console.error(`Couldn't write the Run-up: ${err.message}`);
   }
+}
+
+// The Desk: an index and one part per course.
+if (desk?.body) {
+  try {
+    await writeSplit("desk.json", "desk", splitDesk(desk.body), (i) => (i.courses ?? []).map((c) => c.file));
+  } catch (err) {
+    console.error(`Couldn't write the Desk: ${err.message}`);
+  }
+}
+// The Mac's Study Desk app and the Desk share their progress (scripts/desk-bridge.mjs).
+try {
+  await bridgeDesk({ supabase, pin, sem4Dir: [dir, ...extras.map((x) => x.dir)].find((d) => /Sem4$/i.test(d)) ?? null });
+} catch (err) {
+  console.error(`Couldn't sync the Desk's progress with the Mac app: ${err.message}`);
 }
 
 for (const [name, checked] of [

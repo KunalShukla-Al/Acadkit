@@ -28,6 +28,8 @@ import { fetchArchives } from "@/api/history";
 import { fetchMarks } from "@/api/marks";
 import { fetchPortalSnapshots } from "@/api/portal";
 import { PlanTick, fetchPlanTicks } from "@/api/runup";
+import { fetchDeskProgress } from "@/api/desk";
+import { blankProgress, type DeskProgress } from "@/lib/desk";
 import { fetchSuggestionHistory, fetchSuggestions } from "@/api/suggestions";
 
 // Falls back to the last known PIN so components kept alive briefly
@@ -473,5 +475,35 @@ export function useSetPlanTick() {
       return v.done ? [...rest, { task_id: v.task_id, done_at: new Date().toISOString() }] : rest;
     },
     errorMessage: "Couldn't save that tick",
+  });
+}
+
+/** The Desk's picks, flags and topic status (migration 065). */
+export function useDeskProgress() {
+  const pin = usePin();
+  return useQuery({
+    queryKey: ["desk-progress", pin],
+    queryFn: () => fetchDeskProgress(pin),
+  });
+}
+
+/**
+ * Change one Desk item. The change is merged into the row already held, so
+ * the queued write carries the whole row and a later change never loses an
+ * earlier one, even offline.
+ */
+export function useSetDeskProgress() {
+  const pin = usePin();
+  const qc = useQueryClient();
+  return useOptimistic<Partial<DeskProgress> & { item_key: string }, DeskProgress[]>({
+    pin,
+    root: "desk-progress",
+    name: "desk.progress",
+    prepare: (v) => {
+      const held = qc.getQueryData<DeskProgress[]>(["desk-progress", pin])?.find((r) => r.item_key === v.item_key);
+      return { ...(held ?? blankProgress(v.item_key)), ...v, updated_at: new Date().toISOString() };
+    },
+    updater: (old, v) => [...(old ?? []).filter((r) => r.item_key !== v.item_key), v as DeskProgress],
+    errorMessage: "Couldn't save that",
   });
 }

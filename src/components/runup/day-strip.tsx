@@ -48,7 +48,7 @@ export function DayStrip({
           return (
             <Link
               key={date}
-              to={`/runup/${date}`}
+              to={`/desk/${date}`}
               replace
               data-day={date}
               aria-current={active ? "date" : undefined}

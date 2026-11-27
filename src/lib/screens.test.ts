@@ -9,7 +9,7 @@ describe("the five tabs", () => {
   });
 
   it("light no tab for what the corner and the top bar open", () => {
-    expect(["/runup", "/runup/2026-11-20", "/runup/event/3", "/calendar", "/skips", "/settings", "/history", "/wrapped", "/electives"].map(screenOf)).toEqual(Array(9).fill(null));
+    expect(["/desk", "/desk/2026-11-20", "/desk/event/3", "/desk/practice", "/calendar", "/skips", "/settings", "/history", "/wrapped", "/electives"].map(screenOf)).toEqual(Array(10).fill(null));
   });
 
   it("put the study folder on Study", () => {
@@ -22,7 +22,10 @@ describe("the five tabs", () => {
     expect(movedTo("/grades", "?show=marks")).toBe("/marks");
     expect(movedTo("/grades", "?from=reminder&show=skips")).toBe("/skips?from=reminder");
     expect(movedTo("/plan")).toBe("/calendar");
-    expect(movedTo("/plan", "?show=runup")).toBe("/runup");
+    expect(movedTo("/plan", "?show=runup")).toBe("/desk");
+    expect(movedTo("/runup")).toBe("/desk");
+    expect(movedTo("/runup/2026-12-03", "?from=push", "#tasks")).toBe("/desk/2026-12-03?from=push#tasks");
+    expect(movedTo("/runup/event/ps:ft1")).toBe("/desk/event/ps:ft1");
     expect(movedTo("/plan", "?show=deadlines")).toBe("/deadlines");
     expect(movedTo("/you", "", "#notifications")).toBe("/settings#notifications");
     expect(movedTo("/you", "?show=history")).toBe("/history");
@@ -31,7 +34,7 @@ describe("the five tabs", () => {
   });
 
   it("leave the pages that stay where they are", () => {
-    expect(["/", "/attendance", "/marks", "/timetable", "/runup", "/runup/2026-11-20", "/settings", "/subject/21CSC202J", "/view"].map((p) => movedTo(p))).toEqual(Array(9).fill(null));
+    expect(["/", "/attendance", "/marks", "/timetable", "/desk", "/desk/2026-11-20", "/settings", "/subject/21CSC202J", "/view"].map((p) => movedTo(p))).toEqual(Array(9).fill(null));
   });
 
   it("match whole path parts", () => {

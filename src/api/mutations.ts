@@ -7,6 +7,7 @@ import { deleteDeadline, insertDeadline, updateDeadline } from "@/api/deadlines"
 import { deleteArchive } from "@/api/history";
 import { deleteMark, insertMark, updateMark } from "@/api/marks";
 import { setPlanTick } from "@/api/runup";
+import { setDeskProgress } from "@/api/desk";
 import { setSuggestionStatus } from "@/api/suggestions";
 
 /** Every write the app can make, addressable by name. */
@@ -37,8 +38,8 @@ export const MUTATION_FNS = {
 
   "archives.delete": (_pin: string, v: any) => deleteArchive(v),
 
-
   "runup.tick": (pin: string, v: any) => setPlanTick(pin, v),
+  "desk.progress": (pin: string, v: any) => setDeskProgress(pin, v),
 
   "suggestions.status": (_pin: string, v: any) =>
     setSuggestionStatus(v.id, v.status, v.decided_at ?? null),

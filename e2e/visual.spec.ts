@@ -35,14 +35,14 @@ for (const { device, use } of SCREENS) {
   });
 }
 
-/** Each tab's first view, and the Run-up and Settings, at 1x so the pictures stay small. */
+/** Each tab's first view, and the Desk and Settings, at 1x so the pictures stay small. */
 const FIVE = [
   { name: "today", path: "/" },
   { name: "timetable", path: "/timetable" },
   { name: "attendance", path: "/attendance" },
   { name: "marks", path: "/marks" },
   { name: "study", path: "/study" },
-  { name: "runup", path: "/runup" },
+  { name: "desk", path: "/desk" },
   { name: "settings", path: "/settings" },
 ];
 

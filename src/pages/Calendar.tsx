@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  NotebookPen,
   PartyPopper,
   Plus,
   School,
@@ -15,11 +16,15 @@ import { toast } from "sonner";
 import { useDialog } from "@/hooks/useDialog";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
+import { Link } from "react-router-dom";
 import { Badge, Dot } from "@/components/ui/misc";
 import { MarkDaySheet } from "@/components/sheets/mark-day-sheet";
 import { MarkRangeSheet } from "@/components/sheets/mark-range-sheet";
 import { DeadlineSheet } from "@/components/sheets/deadline-sheet";
 import { useDeadlines, useSettings, useSubjects, useUpdateSettings } from "@/hooks/useData";
+import { useDeskIndex } from "@/hooks/useDesk";
+import { useRunup } from "@/hooks/useRunup";
+import { inWindow } from "@/lib/desk";
 import { say, VOICE } from "@/lib/voice";
 import { useTone } from "@/hooks/useTone";
 import { deadlineLabel } from "@/lib/deadlines";
@@ -69,6 +74,11 @@ export default function Calendar() {
 
   const declared = useMemo(() => settings?.declared_holidays ?? [], [settings]);
 
+  // The Desk's test windows and semester dates, and the plan's days, beside classes and deadlines.
+  const { windows } = useDeskIndex();
+  const { plan } = useRunup();
+  const planDays = useMemo(() => new Map((plan.data?.days ?? []).filter((d) => d.tasks.length).map((d) => [d.date, d])), [plan.data]);
+
   const cells = useMemo(() => {
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -101,6 +111,8 @@ export default function Calendar() {
   }
 
   const selectedInfo = selected ? getDayInfo(selected, declared, semWindow) : null;
+  const selectedWindows = selected ? windows.filter((w) => inWindow(w, selected)) : [];
+  const selectedPlan = selected ? planDays.get(selected) ?? null : null;
   const selectedDeadlines = selected ? deadlinesByDate.get(selected) ?? [] : [];
   const declaredHit = selected ? declared.find((h) => h.date === selected) : undefined;
   const classDay = declaredHit && isClassDay(declaredHit) ? declaredHit : undefined;
@@ -217,6 +229,7 @@ export default function Calendar() {
             const dayDeadlines = deadlinesByDate.get(date) ?? [];
             const isHoliday =
               info.kind === "official-holiday" || info.kind === "declared-holiday";
+            const inWindowDay = windows.some((w) => inWindow(w, date));
             return (
               <button
                 key={date}
@@ -244,6 +257,8 @@ export default function Calendar() {
                   </span>
                 )}
                 {isHoliday && <PartyPopper className="h-3 w-3" aria-label="Holiday" />}
+                {inWindowDay && <span aria-hidden className="absolute inset-x-2 bottom-1 h-0.5 rounded-full bg-accent" />}
+                {planDays.has(date) && <span aria-hidden className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-good" />}
                 {dayDeadlines.length > 0 && (
                   <span className="absolute right-1.5 top-1.5 flex gap-0.5">
                     {dayDeadlines.slice(0, 3).map((d) => (
@@ -279,6 +294,16 @@ export default function Calendar() {
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-bad" /> deadline
           </span>
+          {planDays.size > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-good" /> plan day
+            </span>
+          )}
+          {windows.length > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-0.5 w-3 rounded-full bg-accent" /> test window or semester date
+            </span>
+          )}
         </div>
       </section>
 
@@ -303,6 +328,29 @@ export default function Calendar() {
         }
       >
         <div className="space-y-4">
+          {(selectedPlan || selectedWindows.length > 0) && (
+            <div className="space-y-2">
+              {selectedWindows.map((w) => (
+                <p key={`${w.semester}-${w.key}`} className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="h-0.5 w-3 shrink-0 rounded-full bg-accent" />
+                  {w.label}
+                  {w.semester ? <span className="text-xs font-medium text-muted">{w.semester}</span> : null}
+                </p>
+              ))}
+              {selectedPlan && selected && (
+                <Link to={`/desk/${selected}`} className="flex items-center gap-3 rounded-2xl border bg-surface-2/40 p-3 hover:bg-surface-2/70">
+                  <NotebookPen className="h-4 w-4 shrink-0 text-good" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">
+                      {selectedPlan.tasks.length} {selectedPlan.tasks.length === 1 ? "task" : "tasks"} on the plan
+                    </span>
+                    {selectedPlan.focus && <span className="block truncate text-xs text-muted">{selectedPlan.focus}</span>}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+                </Link>
+              )}
+            </div>
+          )}
           {selectedDeadlines.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-bold uppercase tracking-widest text-muted">Due this day</p>

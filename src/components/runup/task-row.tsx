@@ -65,7 +65,7 @@ export function TaskRow({
           )}
           {showFrom && <span>planned {formatDate(from, { weekday: "short" })}</span>}
           {showEvent && event && (
-            <Link to={`/runup/event/${encodeURIComponent(event.id)}`} className="font-semibold text-accent-deep hover:underline">
+            <Link to={`/desk/event/${encodeURIComponent(event.id)}`} className="font-semibold text-accent-deep hover:underline">
               {event.title}
             </Link>
           )}

@@ -1,7 +1,7 @@
 /**
  * The five tabs, and the tab each route belongs to: what the bar and the
  * sidebar light up. Everything else opens from the corner (Calendar, Skips,
- * Settings, History) or the top bar (Run-up), and lights no tab.
+ * Settings, History) or the top bar (the Desk), and lights no tab.
  */
 
 export type ScreenId = "today" | "timetable" | "attendance" | "marks" | "study";
@@ -30,7 +30,7 @@ const OWNERS: [prefix: string, screen: ScreenId][] = [
 /** Old screens and pages, by the tab (`?show=`) they were on: where each now lives. */
 const MOVED: Record<string, (show: string | null) => string> = {
   "/grades": (show) => (show === "marks" ? "/marks" : show === "skips" ? "/skips" : "/attendance"),
-  "/plan": (show) => ({ runup: "/runup", timetable: "/timetable", deadlines: "/deadlines" })[show ?? ""] ?? "/calendar",
+  "/plan": (show) => ({ runup: "/desk", timetable: "/timetable", deadlines: "/deadlines" })[show ?? ""] ?? "/calendar",
   "/you": (show) => (show === "history" ? "/history" : "/settings"),
   "/survival": () => "/skips",
   "/insights": () => "/skips",
@@ -43,6 +43,8 @@ const MOVED: Record<string, (show: string | null) => string> = {
  * page that stays where it is.
  */
 export function movedTo(pathname: string, search = "", hash = ""): string | null {
+  // The Run-up is the Desk's Today: /runup/<day> and /runup/event/<id> keep their day and event.
+  if (pathname === "/runup" || pathname.startsWith("/runup/")) return `/desk${pathname.slice(6)}${search}${hash}`;
   const to = MOVED[pathname];
   if (!to) return null;
   const params = new URLSearchParams(search);

@@ -9,7 +9,7 @@ import { expect, MOCK_API, serverRows, test } from "./fixtures";
  * app on those days and fails on a crash, a page error or a screen without
  * its title.
  */
-const SCREENS = ["/", "/timetable", "/attendance", "/marks", "/study", "/runup", "/deadlines", "/calendar", "/skips", "/settings", "/history"];
+const SCREENS = ["/", "/timetable", "/attendance", "/marks", "/study", "/desk", "/deadlines", "/calendar", "/skips", "/settings", "/history"];
 /** 21-30 Nov: past the mock's last teaching day (18 Nov), through SRM's Sem 3 end-sems. */
 const RUN_IN = ["2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30"];
 /** Each end-sem's day and subject, at 2:00 PM. */

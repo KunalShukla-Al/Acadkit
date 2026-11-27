@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "semester": "Sem 3",
+  "built": "2026-10-06",
+  "windows": [{ "key": "ft3", "label": "FT-III window", "start": "2026-10-12", "end": "2026-10-16" }],
+  "courses": [
+    {
+      "key": "OS",
+      "code": "21CSC202J",
+      "name": "Operating Systems",
+      "folder": "Operating_Systems",
+      "showUntil": null,
+      "reports": { "predict": "Operating_Systems/Unit 2 scheduling notes.pdf" },
+      "floor": 34,
+      "endsems": 4,
+      "askedBefore": 0.8,
+      "backtest": { "count": 0.5, "recent": 0.7, "all": 0.68, "random": 0.35 },
+      "tests": [
+        {
+          "id": "FT3", "name": "FT-III", "when": "FT-III window, 12 – 16 Oct", "units": [2, 3], "note": null, "papers": 4, "mcqOnly": false,
+          "rows": [
+            { "topic": "sched", "name": "CPU scheduling", "unit": 2, "seen": 4, "of": 4, "exp": 12.5, "tier": "near-certain" },
+            { "topic": "deadlock", "name": "Deadlocks and the banker's algorithm", "unit": 3, "seen": 3, "of": 4, "exp": 8.0, "tier": "likely" }
+          ],
+          "steps": [
+            { "topic": "sched", "name": "CPU scheduling", "share": 0.55, "full": 1 },
+            { "topic": "deadlock", "name": "Deadlocks and the banker's algorithm", "share": 0.82, "full": 3 }
+          ],
+          "start": "2026-10-12", "end": "2026-10-16", "date": null, "weight": 15, "provisional": true
+        },
+        { "id": "END", "name": "End-sem", "when": null, "units": [1, 2, 3, 4, 5], "rows": [], "steps": [], "start": "2026-11-30", "end": "2026-11-30", "date": "2026-11-30", "weight": 40, "provisional": false }
+      ],
+      "lockin": [{ "slot": "Q22", "unit": 2, "chain": [{ "names": ["CPU scheduling"], "count": 4 }] }],
+      "units": [
+        {
+          "n": 2, "title": "Process scheduling",
+          "topics": [{ "n": 1, "title": "Scheduling criteria and algorithms", "videos": [{ "id": "TxjIlNYRZ5M", "title": "Round robin scheduling", "teacher": "Gate Smashers", "secs": 960, "layer": "learn" }] }],
+          "pyq": [{ "topic": "sched", "name": "CPU scheduling", "ct": 2, "end": 4, "ofCt": 2, "ofEnd": 4, "perPaper": 12.5,
+                    "questions": [{ "text": "Draw the Gantt chart for round robin with quantum 2", "marks": 8, "mcq": false, "kind": "ct", "src": ["FT-II 2025 · B22a", "End-sem May 2025 · B22b"], "papers": 2 }] }],
+          "questions": 3, "ctQuestions": 1,
+          "notes": [{ "path": "Operating_Systems/Unit 2 scheduling notes.pdf", "name": "Unit 2 scheduling notes" }]
+        },
+        { "n": 3, "title": "Deadlocks", "topics": [], "pyq": [], "questions": 1, "ctQuestions": 0, "notes": [] }
+      ],
+      "notes": [],
+      "papers": [{ "path": "Operating_Systems/Unit 3 deadlocks (6 pages).pdf", "name": "Unit 3 deadlocks", "kind": "endsem", "when": "May 2025" }],
+      "items": [
+        { "key": "OS/os-es-2025-05/A1", "unit": 2, "topic": "sched", "topicName": "CPU scheduling", "kind": "end", "paper": "End-sem May 2025", "slot": "A1", "part": "A", "marks": 1, "mcq": true,
+          "text": "Which algorithm can starve a long process?", "options": ["FCFS", "SJF", "Round robin", "FIFO"], "answer": "B", "note": "SJF keeps picking shorter jobs.",
+          "file": "Operating_Systems/Unit 3 deadlocks (6 pages).pdf", "page": 1, "date": "2025-05-20", "repeats": 2, "solution": null },
+        { "key": "OS/os-es-2025-05/A2", "unit": 3, "topic": "deadlock", "topicName": "Deadlocks and the banker's algorithm", "kind": "end", "paper": "End-sem May 2025", "slot": "A2", "part": "A", "marks": 1, "mcq": true,
+          "text": "Which condition is not needed for deadlock?", "options": ["Mutual exclusion", "Hold and wait", "Preemption", "Circular wait"], "answer": null, "note": null,
+          "file": null, "page": null, "date": "2025-05-20", "repeats": 1, "solution": null },
+        { "key": "OS/os-ct-2/B22a", "unit": 2, "topic": "sched", "topicName": "CPU scheduling", "kind": "ct", "paper": "FT-II 2025", "slot": "B22a", "part": "B", "marks": 8, "mcq": false,
+          "text": "Draw the Gantt chart for round robin with quantum 2", "options": [], "answer": null, "note": null,
+          "file": "Operating_Systems/Unit 2 scheduling notes.pdf", "page": 2, "date": "2025-09-10", "repeats": 2,
+          "solution": { "file": "Operating_Systems/Unit 3 deadlocks (6 pages).pdf", "page": 4 } }
+      ]
+    }
+  ]
+}

@@ -37,7 +37,7 @@ const squash = (s: string) => s.replace(/\s/g, "").toUpperCase();
  * everything in the study folder to read for it. Tabs on the phone; on
  * the Mac it's all on one page in two columns.
  */
-export default function RunupEvent() {
+export default function Event() {
   const { id } = useParams();
   const pin = usePin();
   const today = useTodayISO();
@@ -62,7 +62,7 @@ export default function RunupEvent() {
       </div>
     );
   }
-  if (!plan.data) return <Navigate to="/runup" replace />;
+  if (!plan.data) return <Navigate to="/desk" replace />;
   if (!event) {
     return (
       <EmptyState
@@ -70,7 +70,7 @@ export default function RunupEvent() {
         title="Not in the plan any more"
         description="This test was taken out of the run-up at the last sync."
         action={
-          <Link to="/runup" className="font-bold text-accent-deep">
+          <Link to="/desk" className="font-bold text-accent-deep">
             Back to the run-up
           </Link>
         }
@@ -89,8 +89,8 @@ export default function RunupEvent() {
 
   return (
     <div className="space-y-4">
-      <Link to={event.date ? `/runup/${event.date}` : "/runup"} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Run-up
+      <Link to={event.date ? `/desk/${event.date}` : "/desk"} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
+        <ArrowLeft className="h-4 w-4" /> Today
       </Link>
 
       <header className="card space-y-3 p-5">

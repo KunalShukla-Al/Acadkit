@@ -25,7 +25,7 @@ AcadKit runs in three places, and the Mac does the heavy work:
 Where each part is described:
 
 - Foundations: Core, Accounts and data, Data flow.
-- The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Run-up,
+- The app: Five tabs, Themes, Calendar, Marks and grades, Attendance, Desk,
   File viewer, Continue, PWA and iOS.
 - The Mac: Study files (the sync), Night shift,
   Everything connected; the Quick Action is under Continue.
@@ -89,7 +89,7 @@ Supabase <- src/api/<table>.ts <- src/hooks/useData.ts (React Query) <- pages
 ```
 
 - `src/api` has one module per table or area (`settings`, `subjects`, `timetable`, `attendance`,
-  `marks`, `deadlines`, `portal`, `history`, `suggestions`, `runup`, `push`, `account`,
+  `marks`, `deadlines`, `portal`, `history`, `suggestions`, `runup`, `desk`, `push`, `account`,
   and `studyFiles`), and `db.ts` for what they share.
 
 - The Supabase client is typed by `src/lib/database.ts`: the types `npm run db:types` generates
@@ -116,7 +116,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
 
 - The phone's bar and the Mac's sidebar list the five, each lit for its pages (Attendance on
   `/log`, Today on `/deadlines`, Study on `/subject/…`). The phone's top bar holds the name and the
-  Run-up chip; the Mac's sidebar holds the day order and the same chip above the five.
+  Desk chip; the Mac's sidebar holds the day order and the same chip above the five.
 - Things move only on change: no page slides or fades in, no card fades up, no ring draws from
   zero and no list staggers in on arrival (each starts with `initial={false}`). What moves is
   what changed: a number that updates, a tab's pill, a row you open, a sheet, the corner.
@@ -130,8 +130,8 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   Above them all is only what needs you: a suggestion, a page to continue, each empty when there's
   nothing. Today's cards live in
   `src/components/home`.
-- The Run-up chip (`src/components/layout/runup-chip.tsx`) rings the day's targets ticked and
-  opens `/runup`; another day is `/runup/<date>`.
+- The Desk chip (`src/components/layout/desk-chip.tsx`) rings the day's targets ticked and
+  opens `/desk`; another day is `/desk/<date>`.
 - The corner (`src/components/layout/corner.tsx`) is a lime quarter-disc fixed in the
   bottom-right corner, above the tab bar (`--nav-h`, which the bar keeps), carrying today's Day
   Order, a star on a day without classes. A tap opens the calendar, the page I open most, and
@@ -172,7 +172,7 @@ The app is five tabs: Today, Timetable, Attendance, Marks and Study (`src/lib/sc
   nothing in it does.
 - Old links (notifications, bookmarks) can still name the old screens, Grades,
   Plan and You, which have no route of their own now. The shell sends each to the page it meant
-  before it draws (`movedTo`: `/grades?show=marks` to `/marks`, `/plan?show=runup` to `/runup`,
+  before it draws (`movedTo`: `/grades?show=marks` to `/marks`, `/plan?show=runup` and `/runup/…` to `/desk/…`,
   `/you` to `/settings`, `/files?dir=…` to `/study?dir=…`), keeping the rest of the query and the
   hash.
 
@@ -196,7 +196,7 @@ where it has one. Notifications keep the plain line.
   `/design` shows each of them, and every theme's tokens, in the current theme;
   `npm run test:visual` compares it on a phone and a Mac-sized screen, light and dark, with
   pictures of this Mac's rendering (CI skips them: Linux draws text differently). It compares
-  the first view of each tab, the Run-up and Settings the same way, at 1x so the pictures stay
+  the first view of each tab, the Desk and Settings the same way, at 1x so the pictures stay
   small, and the corner open, with the study folder's sync time and the build's commit masked.
 - Each theme's tokens, light and dark, live in `src/design/tokens.json`. `npm run tokens` writes
   them to `src/design/tokens.css` as custom properties, which a unit test keeps in step. The
@@ -246,9 +246,26 @@ expectation counts in the plan without ever being saved as a mark.
 - Every screen starts from the portal's totals (`computeSubjectAttendance`) and layers classes
   marked since.
 
-## Run-up
+## Desk
 
-- `/runup` is a day-by-day plan to the end-sems, read from `<pin>/runup.json`. The sync writes it
+The Desk (`/desk`, [docs/desk.md](docs/desk.md)) has three screens under one bar
+(`src/pages/desk`): Today, the day plan below; Priorities; and Practice.
+
+- Priorities and Practice read `<pin>/desk.json`, an index of courses, and one content-named
+  part per course under `<pin>/desk/` (`scripts/lib/desk.mjs`, from each folder's
+  `_src/acadkit_desk.json`). A course with `showUntil` drops out the day after it.
+- Progress is `desk_progress` (migration 065), written as a named write (`desk.progress`) that
+  carries the whole row, so offline changes queue and land in order. A trigger keeps the newer
+  row, and `scripts/desk-bridge.mjs` keeps the Mac app's progress in step at each sync.
+- Ask Claude puts a question in the inbox; `scripts/desk-ask.mjs` on the Mac answers it with
+  Claude Code and streams the answer back through the bucket. With no heartbeat from the Mac, the
+  phone opens the question in Claude.
+- The Calendar shows the Desk's windows and the plan's days, Deadlines its tests, and the Subject
+  page its units, topics and videos (`src/components/desk`).
+
+### The day plan (Today)
+
+- The plan is a day-by-day run to the end-sems, read from `<pin>/runup.json`. The sync writes it
   from the study folder's `_src/acadkit_runup.json` after `scripts/lib/runup.mjs` has checked it:
   one bad day, task or event is dropped with a warning, file links the sync doesn't know are
   dropped, and a repeated task id is refused so one tick can never count for two tasks.
@@ -268,7 +285,8 @@ expectation counts in the plan without ever being saved as a mark.
   which no task id can equal, so the day's count stays the tasks'.
 - An unticked task carries to today until the event it prepares for has happened
   (`itemsFor` in `src/lib/runup.ts`). Past and future days show only their own plan.
-- `/runup` opens today's day, from the top bar's chip; another day is its own page, `/runup/<date>`.
+- `/desk` opens today's day, from the top bar's chip; another day is its own page, `/desk/<date>`,
+  and an event `/desk/event/<id>`. Old `/runup` links land on the same page (`movedTo`).
 - The plan runs past the end-sems into the next semester's head start, so `semester:switch` carries
   it and its generators into the new folder (`carryRunup` in `scripts/lib/semester.mjs`): links
   filed ahead as `SRM_Sem4/…` lose the prefix, links to the old folder's files go, and task ids

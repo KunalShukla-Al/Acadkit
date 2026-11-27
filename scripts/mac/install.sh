@@ -1,6 +1,7 @@
 #!/bin/bash
 # The Mac side of the study sync: the auto-sync tick, the launch agent that keeps the folder
-# watcher running (scripts/mac/watch.mjs), the night shift's, and the Finder's Quick Action. Run
+# watcher running (scripts/mac/watch.mjs), the night shift's, the Desk's Ask listener, and the
+# Finder's Quick Action. Run
 # from the repo the Mac syncs from, after pulling:
 #   npm run mac:install
 set -euo pipefail
@@ -35,6 +36,14 @@ plutil -lint "$WATCHDOG" >/dev/null
 launchctl bootout "gui/$(id -u)/com.acadkit.watchdog" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$WATCHDOG"
 echo "Watchdog: checks the sync every 10 minutes and restarts it if it goes silent."
+
+# Ask Claude from the phone: answers the Desk's questions with Claude Code on this Mac (scripts/desk-ask.mjs).
+ASK="$HOME/Library/LaunchAgents/com.acadkit.deskask.plist"
+sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$REPO|g" "$REPO/scripts/mac/com.acadkit.deskask.plist" > "$ASK"
+plutil -lint "$ASK" >/dev/null
+launchctl bootout "gui/$(id -u)/com.acadkit.deskask" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$ASK"
+echo "Desk: questions asked on the phone are answered here. Log: ~/Library/Logs/AcadKit/desk-ask.log"
 
 # Continue from the Mac: "Send to AcadKit phone" in the Finder's Quick Actions (scripts/mac/send-to-phone.mjs).
 SERVICE="$HOME/Library/Services/Send to AcadKit phone.workflow"

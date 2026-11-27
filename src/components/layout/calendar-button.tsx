@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * The calendar from anywhere: an icon in the phone's top bar, left of the
- * Run-up, and a row in the Mac's sidebar. I open it most days, so it sits
+ * Desk, and a row in the Mac's sidebar. I open it most days, so it sits
  * one tap away here rather than inside the corner menu.
  */
 export function CalendarButton({ wide = false }: { wide?: boolean }) {
