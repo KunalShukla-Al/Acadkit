@@ -7,7 +7,7 @@ PersonaOS is AcadKit's Mac side grown into one system. It reads everything my de
 | Part | State |
 |---|---|
 | Orchestrator (`scripts/persona.mjs`) | Built |
-| WhatsApp collector (`persona/whatsapp.py`) | Built; its first run on the Mac checks WhatsApp's columns |
+| WhatsApp collector (`persona/whatsapp.py`) | Built; first real read 28 Nov: 628 messages from 2 groups |
 | Collectors, engines, phone surfaces | Planned, one PR a day until 16 Dec 2026 |
 
 ## Rules
@@ -46,14 +46,15 @@ A job is `{ name, every | at, window?, timeoutMin?, alertAfter?, graceMin?, run(
 
 ## WhatsApp collector
 
-The `whatsapp` job runs every 10 minutes (`persona/whatsapp.py`).
+WhatsApp's messages are read every 10 minutes (`persona/whatsapp.py`, `scripts/mac/whatsapp-read.sh`).
 
-- It opens the Mac app's `ChatStorage.sqlite` read-only and runs one short query per group, so WhatsApp's file is never written.
-- It watches the groups in the semester pack, `<STUDY_DIR>/_src/semester.json` (`whatsapp.groups`). `PERSONA_WHATSAPP_GROUPS` overrides the pack. Names match ignoring case.
+- macOS lets launchd's bash, and Apple's tools it starts, read WhatsApp's database under Full Disk Access, but not node or python. So the agent's tick (`scripts/mac/persona-tick.sh`) runs the read in bash before the orchestrator, and only `/usr/bin/sqlite3 -readonly` opens WhatsApp's file.
+- The read has four steps. sqlite3 lists the columns; python checks them and plans one query; sqlite3 runs it; python stores the rows. A schema change stops the run and names the missing columns.
+- It watches the groups in the semester pack, `<STUDY_DIR>/_src/semester.json` (`whatsapp.groups`). `PERSONA_WHATSAPP_GROUPS` overrides the pack. Names match ignoring case. `scripts/mac/whatsapp-read.sh --chats` lists chat names for the pack.
 - Each group keeps its own cursor. A group's first run reads back `PERSONA_WHATSAPP_DAYS` (60) days and moves the cursor past older rows too, because WhatsApp's row numbers don't follow message dates.
 - New messages go to `persona.sqlite` on the Mac with sender, time, text and any file's path. Rows with neither text nor a file are dropped.
-- It checks the columns it reads before each run and stops, naming them, if WhatsApp's schema changes. `python3 -m persona.whatsapp schema` lists what it found without any message content, and `chats` lists group names for the pack.
-- `npm run test:persona` runs the engines' tests; CI runs them too.
+- The read writes `persona/whatsapp/status.json`. The orchestrator's `whatsapp` job reports it, so a failed or silent read alerts like any job.
+- Engines run from bash read `.env.local` themselves (`persona/env.py`). `npm run test:persona` runs the engines' tests; CI runs them too.
 
 ## Sources (planned)
 
@@ -61,7 +62,7 @@ The `whatsapp` job runs every 10 minutes (`persona/whatsapp.py`).
 |---|---|---|---|
 | Student Portal | Attendance, marks, timetable, results | Playwright with its own profile; a light request every 10 min may keep the session open, if the portal's timeout counts idle time | ID and password from Keychain; I answer the CAPTCHA on my phone |
 | Academia | Subjects, faculty, semester calendar | Playwright | ID and password from Keychain |
-| WhatsApp | Notices, relays, files | A read-only connection to the Mac app's database (built) | Full Disk Access |
+| WhatsApp | Notices, relays, files | Apple's sqlite3, read-only, from the agent's bash (built) | Full Disk Access for /bin/bash |
 | Gmail | Course, GitHub, freelance and job-alert mail | IMAP with sender filters | App passwords in Keychain |
 | GitHub | CI, pull requests, commits | `gh` | `gh auth` |
 

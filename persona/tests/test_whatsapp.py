@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -8,10 +9,14 @@ from pathlib import Path
 from persona.pack import watched_groups
 from persona.store import open_store
 from persona.tests import fixtures
-from persona.whatsapp import SchemaChanged, check, collect, columns, open_live
+from persona.whatsapp import SCHEMA_SQL, SchemaChanged, check, collect, columns_of, ingest, plan
 
 NOW = datetime(2026, 11, 28, 12, tzinfo=timezone.utc)
 GROUPS = ["AS1 OFFICIAL", "as1 UNOFFICIAL"]
+
+
+def read_only(path):
+    return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
 
 
 class Collector(unittest.TestCase):
@@ -26,7 +31,7 @@ class Collector(unittest.TestCase):
         self.dir.cleanup()
 
     def run_once(self, groups=GROUPS, days=60):
-        live = open_live(Path(self.db))
+        live = read_only(self.db)
         try:
             return collect(live, self.store, groups, NOW, days)
         finally:
@@ -71,11 +76,16 @@ class Collector(unittest.TestCase):
         self.assertEqual(self.run_once(groups=["AS1 OFFICIAL", "AS2"]), "3 new messages from 1 group; no chat named AS2")
         self.assertIn("no groups to watch", self.run_once(groups=[]))
 
-    def test_never_writes_whatsapps_file(self):
-        live = open_live(Path(self.db))
-        with self.assertRaises(sqlite3.OperationalError):
-            live.execute("DELETE FROM ZWAMESSAGE")
-        live.close()
+    def test_names_with_quotes_stay_literal(self):
+        self.assertEqual(self.run_once(groups=["it's a trap' OR 1=1 --"]), "0 new messages from 0 groups; no chat named it's a trap' OR 1=1 --")
+
+    def test_the_plan_runs_through_apples_sqlite3_as_the_agent_does(self):
+        sqlite = Path("/usr/bin/sqlite3")
+        if not sqlite.exists():
+            self.skipTest("no /usr/bin/sqlite3 here")
+        run = lambda sql: json.loads(subprocess.run([str(sqlite), "-readonly", "-json", self.db], input=sql, capture_output=True, text=True, check=True).stdout or "[]")  # noqa: E731
+        sql = plan(columns_of(run(SCHEMA_SQL)), self.store, GROUPS, NOW)
+        self.assertEqual(ingest(run(sql), self.store, GROUPS), "4 new messages from 2 groups")
 
 
 class Schema(unittest.TestCase):
@@ -84,7 +94,7 @@ class Schema(unittest.TestCase):
             db = str(Path(d) / "c.sqlite")
             fixtures.build(db, members=False, media=False)
             store = open_store(Path(d) / "p.sqlite")
-            self.assertEqual(collect(open_live(Path(db)), store, ["AS1 OFFICIAL"], NOW), "2 new messages from 1 group")
+            self.assertEqual(collect(read_only(db), store, ["AS1 OFFICIAL"], NOW), "2 new messages from 1 group")
             store.close()
 
     def test_a_missing_required_column_stops_the_run_and_names_it(self):
@@ -92,16 +102,8 @@ class Schema(unittest.TestCase):
         with self.assertRaisesRegex(SchemaChanged, "ZWAMESSAGE.ZTEXT"):
             check(found)
 
-    def test_lists_columns(self):
-        with tempfile.TemporaryDirectory() as d:
-            db = str(Path(d) / "c.sqlite")
-            fixtures.build(db)
-            self.assertIn("ZTEXT", columns(open_live(Path(db)))["ZWAMESSAGE"])
-
-    def test_a_missing_database_says_so(self):
-        with tempfile.TemporaryDirectory() as d:
-            with self.assertRaises(FileNotFoundError):
-                open_live(Path(d) / "ChatStorage.sqlite")
+    def test_reads_columns_from_the_schema_query(self):
+        self.assertEqual(columns_of([{"t": "ZWAMESSAGE", "c": "ZTEXT"}, {"t": "ZWAMESSAGE", "c": "Z_PK"}]), {"ZWAMESSAGE": {"ZTEXT", "Z_PK"}})
 
 
 class Pack(unittest.TestCase):

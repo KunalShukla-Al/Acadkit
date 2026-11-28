@@ -449,7 +449,7 @@ The Mac's orchestrator for every background job that reads my sources and acts o
 (`scripts/persona.mjs`, `scripts/lib/persona/`). The plan and its rules are in
 [docs/persona.md](docs/persona.md).
 
-- A launch agent (`com.acadkit.persona`) starts a tick every minute. The tick runs each due job in
+- A launch agent (`com.acadkit.persona`) starts a tick every minute. The orchestrator runs each due job in
   `scripts/lib/persona/jobs.mjs` side by side, then exits; launchd never overlaps two.
 - A job runs `every` N minutes or `at` times of day, inside an optional `window`. Failures retry
   on a doubling backoff, and the third in a row sends one macOS notification.
@@ -460,8 +460,12 @@ The Mac's orchestrator for every background job that reads my sources and acts o
 - The engines are Python, standard library only, in `persona/`; a job runs one as
   `python3 -m persona.<module>` (`scripts/lib/persona/python.mjs`) and keeps its last line as the
   note. `npm run test:persona` tests them.
-- `whatsapp` (every 10 minutes) reads the semester pack's groups (`<STUDY_DIR>/_src/semester.json`)
-  from WhatsApp's database, opened read-only, into `persona.sqlite` on the Mac. Raw text stays there.
+- The agent runs `scripts/mac/persona-tick.sh`. Every 10 minutes it first reads the semester pack's
+  WhatsApp groups (`<STUDY_DIR>/_src/semester.json`) into `persona.sqlite` on the Mac
+  (`scripts/mac/whatsapp-read.sh`). macOS lets bash and Apple's `/usr/bin/sqlite3` read WhatsApp's
+  database under Full Disk Access but denies node and python, so only sqlite3 opens it, read-only,
+  and python plans the query and stores the rows. The `whatsapp` job reports the read's status.
+  Raw text stays on the Mac.
 
 ## Everything connected
 

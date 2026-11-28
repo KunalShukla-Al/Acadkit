@@ -15,9 +15,11 @@ import json
 import os
 from pathlib import Path
 
+from .env import environment
+
 
 def pack_path(env: dict | None = None) -> Path:
-    env = os.environ if env is None else env
+    env = environment() if env is None else env
     study = Path(os.path.expanduser(env.get("STUDY_DIR") or "~/Documents/SRM_Sem3"))
     return study / "_src" / "semester.json"
 
@@ -30,7 +32,7 @@ def load_pack(env: dict | None = None) -> dict:
 
 
 def watched_groups(env: dict | None = None) -> list[str]:
-    env = os.environ if env is None else env
+    env = environment() if env is None else env
     override = env.get("PERSONA_WHATSAPP_GROUPS", "").strip()
     if override:
         return [g.strip() for g in override.split(",") if g.strip()]
