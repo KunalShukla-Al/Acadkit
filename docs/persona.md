@@ -74,6 +74,17 @@ The `deadlines` job runs every 15 minutes (`persona/deadlines/`, ported from hea
 
 The study sync reads that file beside the weekly scan's `acadkit_suggestions.json`, so each item reaches the app as an Add, or a Move when it carries `moved_from`. `python3 -m persona.deadlines show` lists every tracked item with its flags and questions.
 
+`npm run persona -- eval` scores the engine against AcadKit's own deadlines (`persona/deadlines/replay.py`). It replays every stored message day by day, so each day the engine sees only what was sent by then. Courses come from AcadKit's subjects, so a course whose study folder is gone still counts. It reports:
+
+| Measure | Meaning |
+|---|---|
+| Recall | AcadKit deadlines due in the messages' window that the engine ends with on the right day |
+| Precision | The engine's dated items that match an AcadKit deadline |
+| Lead | Days between the engine first having the right date and the deadline (median) |
+| Baseline | The same items dated by the latest message alone, ignoring who said it |
+
+It also lists the misses and the items AcadKit doesn't have, and keeps the result in `persona/eval.json`. Only the watched groups are read, so recall measures what those groups carried.
+
 ## Calendar feed
 
 The `calendar` job (every 30 minutes) publishes my deadlines as an `.ics` my iPhone Calendar subscribes to.

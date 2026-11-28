@@ -7,13 +7,17 @@
  *   npm run persona -- list         each job's last run and whether it's due
  *   npm run persona -- run <job>    one job now, whatever its schedule
  *   npm run persona -- calendar     the webcal:// link my iPhone Calendar subscribes to
+ *   npm run persona -- eval         replay stored messages against AcadKit's deadlines (persona/deadlines/replay.py)
  *
  * PERSONA=off in .env.local turns it off.
  */
-import { execFile } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { JOBS } from "./lib/persona/jobs.mjs";
 import { isDue } from "./lib/persona/schedule.mjs";
-import { store as openStore } from "./lib/persona/store.mjs";
+import { PERSONA_DIR, store as openStore } from "./lib/persona/store.mjs";
+import { REPO } from "./lib/persona/python.mjs";
 import { DEFAULT_TIMEOUT_MIN, claudeBudget, runJob, tick } from "./lib/persona/tick.mjs";
 import { capOf } from "./lib/persona/budget.mjs";
 import { backend } from "./lib/persona/backend.mjs";
@@ -70,10 +74,21 @@ if (cmd === "list") {
     console.error(`No calendar link: ${err.message}`);
     process.exitCode = 1;
   }
+} else if (cmd === "eval") {
+  const { supabase, pin } = backend();
+  const [{ data: deadlines, error: e1 }, { data: subjects, error: e2 }] = await Promise.all([
+    supabase.from("deadlines").select("id,subject_id,title,due_date").eq("device_id", pin),
+    supabase.from("subjects").select("id,code,short_name,name").eq("device_id", pin),
+  ]);
+  if (e1 || e2) throw new Error((e1 ?? e2).message);
+  const truth = path.join(PERSONA_DIR, "eval-truth.json");
+  await mkdir(PERSONA_DIR, { recursive: true });
+  await writeFile(truth, JSON.stringify({ deadlines, subjects }));
+  process.exitCode = spawnSync("python3", ["-m", "persona.deadlines", "eval", truth], { cwd: REPO, stdio: "inherit" }).status ?? 1;
 } else if (cmd === undefined) {
   await tick({ jobs: JOBS, store, notify, log });
 } else {
-  console.error(`Unknown command ${cmd}. Use list, run <job>, calendar, or nothing for one tick.`);
+  console.error(`Unknown command ${cmd}. Use list, run <job>, calendar, eval, or nothing for one tick.`);
   process.exitCode = 1;
 }
 process.exit();

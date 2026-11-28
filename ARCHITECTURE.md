@@ -473,6 +473,8 @@ The Mac's orchestrator for every background job that reads my sources and acts o
 - `calendar` (every 30 minutes, `scripts/lib/persona/calendar.mjs`) uploads my deadlines, plus the
   engine's unconfirmed ones marked "?", as `<pin>/calendar/<secret>.ics`; the phone subscribes through
   one signed `webcal://` link (`npm run persona -- calendar`).
+- `npm run persona -- eval` replays the stored messages day by day against AcadKit's deadlines and
+  reports recall, precision, lead time and a latest-message baseline (`persona/deadlines/replay.py`).
 
 ## Everything connected
 

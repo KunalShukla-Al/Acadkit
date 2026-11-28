@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
 
 from ..pack import load_pack, pack_path
-from ..store import open_store
+from ..store import PERSONA_DIR, open_store
 from .extract import Roles, courses_from_pack, extract
 from .model import IST, Item, Message
 from .output import write_suggestions
+from .replay import courses_from_subjects, replay, report, truths
 from .track import track
 from .verify import adjudicate
 
@@ -38,9 +40,18 @@ def items_now(conn: sqlite3.Connection, pack: dict, now: datetime) -> list[Item]
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python3 -m persona.deadlines")
-    parser.add_argument("command", choices=["run", "show"])
+    parser.add_argument("command", choices=["run", "show", "eval"])
+    parser.add_argument("truth", nargs="?", help="eval: AcadKit's deadlines and subjects as JSON (npm run persona -- eval)")
     args = parser.parse_args(argv)
     pack = load_pack()
+    if args.command == "eval":
+        body = json.loads(open(args.truth).read())
+        msgs, ids = load_messages(open_store(), datetime(2000, 1, 1, tzinfo=timezone.utc))
+        result = replay(msgs, courses_from_pack({"courses": courses_from_subjects(body["subjects"])}),
+                        Roles.from_pack(pack), truths(body["deadlines"], body["subjects"]), ids)
+        (PERSONA_DIR / "eval.json").write_text(json.dumps(result, indent=1))
+        print(report(result))
+        return 0
     if not pack["courses"]:
         print(f"no courses in the semester pack ({pack_path()})", file=sys.stderr)
         return 1
