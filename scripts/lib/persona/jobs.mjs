@@ -8,6 +8,10 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { studyRoots } from "../roots.mjs";
+import { backend } from "./backend.mjs";
+import { publishBrief, publishPhone } from "./phone.mjs";
+import { alertOnLogout, portalStatus, uploadAttendance } from "./portal.mjs";
 import { runPython } from "./python.mjs";
 import { PERSONA_DIR } from "./store.mjs";
 
@@ -26,6 +30,9 @@ export async function readerStatus(file, now) {
   if (!s.ok) throw new Error(s.note);
   return s.note;
 }
+
+const suggestions = () => path.join(studyRoots().dir, "_src", "persona_suggestions.json");
+const runup = () => path.join(studyRoots().dir, "_src", "acadkit_runup.json");
 
 export const JOBS = [
   {
@@ -51,5 +58,53 @@ export const JOBS = [
     every: 15,
     timeoutMin: 3,
     run: ({ signal }) => runPython(["persona.deadlines", "run"], { signal }),
+  },
+  {
+    // Mercor, GitHub, job-board and course mail from my Gmail accounts, as signals; subjects only (persona/gmail.py).
+    name: "gmail",
+    every: 15,
+    timeoutMin: 3,
+    run: ({ signal }) => runPython(["persona.gmail", "collect"], { signal }),
+  },
+  {
+    // My open pull requests, their checks, and the days I pushed (persona/github.py).
+    name: "github",
+    every: 60,
+    timeoutMin: 3,
+    run: ({ signal }) => runPython(["persona.github"], { signal }),
+  },
+  {
+    // The class groups' recent messages as _src/_persona/messages.md, for the Desk's Ask (persona/export.py).
+    name: "export",
+    every: 30,
+    timeoutMin: 2,
+    run: ({ signal }) => runPython(["persona.export"], { signal }),
+  },
+  {
+    // The Student Portal's attendance, read in my own logged-in Chrome tab by the tick's bash, into AcadKit (portal.mjs).
+    name: "portal",
+    every: 15,
+    timeoutMin: 2,
+    run: async () => {
+      const read = await portalStatus();
+      const saved = await uploadAttendance(backend());
+      const alert = await alertOnLogout(backend());
+      return [read, saved, alert].filter(Boolean).join("; ");
+    },
+  },
+  {
+    // The calendar my iPhone subscribes to and the widget's data (phone.mjs).
+    name: "phone",
+    every: 30,
+    timeoutMin: 2,
+    run: ({ now }) => publishPhone({ ...backend(), now: now(), suggestionsFile: suggestions(), runupFile: runup() }),
+  },
+  {
+    // The morning brief, pushed by send-reminders from 07:00 (phone.mjs). Asleep at 06:30, it runs at wake.
+    name: "brief",
+    at: ["06:30"],
+    graceMin: 270,
+    timeoutMin: 2,
+    run: ({ now }) => publishBrief({ ...backend(), now: now(), suggestionsFile: suggestions(), runupFile: runup() }),
   },
 ];

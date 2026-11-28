@@ -152,7 +152,7 @@ export interface PortalSnapshotHistory {
   as_of: string; // "YYYY-MM-DD"
   synced_at: string;
   /** Where it came from; "screenshot" is a portal screenshot the Mac read (migration 058). */
-  source: "bookmarklet" | "paste" | "restore" | "backfill" | "screenshot";
+  source: "bookmarklet" | "paste" | "restore" | "backfill" | "screenshot" | "mac";
 }
 
 /** One week's forecast for a subject, or for the SGPA (`scope = "sgpa"`), migration 029. */

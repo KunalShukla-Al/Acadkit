@@ -2,6 +2,9 @@
 
     messages   one row per message from any source, raw text included
     cursors    how far each source has been read
+    signals    one row per thing worth telling me (a Mercor invite, a job alert), no bodies
+
+config.json beside it holds my settings, such as the Gmail accounts to read.
 
 Raw text never leaves the Mac. Engines send Supabase only what they extract,
 with one quoted source line.
@@ -9,6 +12,7 @@ with one quoted source line.
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from pathlib import Path
@@ -36,6 +40,16 @@ CREATE TABLE IF NOT EXISTS cursors (
     source  TEXT PRIMARY KEY,
     value   TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS signals (
+    source  TEXT NOT NULL,
+    id      TEXT NOT NULL,
+    kind    TEXT NOT NULL,
+    title   TEXT NOT NULL,
+    who     TEXT,
+    at      TEXT NOT NULL,
+    PRIMARY KEY (source, id)
+);
+CREATE INDEX IF NOT EXISTS signals_at ON signals (at);
 """
 
 _COLUMNS = ("source", "id", "chat", "sender", "sender_id", "ts", "text", "from_me", "media_path")
@@ -74,3 +88,25 @@ def add_messages(conn: sqlite3.Connection, rows: list[dict]) -> int:
         [tuple(r.get(c) for c in _COLUMNS) for r in rows],
     )
     return conn.total_changes - before
+
+
+def add_signals(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    before = conn.total_changes
+    conn.executemany(
+        "INSERT OR IGNORE INTO signals (source, id, kind, title, who, at) VALUES (?, ?, ?, ?, ?, ?)",
+        [(r["source"], r["id"], r["kind"], r["title"], r.get("who"), r["at"]) for r in rows],
+    )
+    return conn.total_changes - before
+
+
+def load_config(path: Path | None = None) -> dict:
+    try:
+        return json.loads((path or PERSONA_DIR / "config.json").read_text())
+    except FileNotFoundError:
+        return {}
+
+
+def save_config(config: dict, path: Path | None = None) -> None:
+    path = path or PERSONA_DIR / "config.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=1))

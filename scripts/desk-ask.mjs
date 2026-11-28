@@ -26,7 +26,9 @@ I'm a B.Tech CSE (Data Science) student at SRM KTR. SRM papers have one-mark MCQ
 Lead with the answer, like a good tutor. For numericals, show the method step by step. For written answers, give an \
 exam-ready structure: definition, the diagram described in words, the algorithm or code, a worked example. Keep it \
 short unless I ask for more. The working directory is my study folder: notes, past papers and analyses. Open them when \
-the answer depends on my course's notes or a past paper; the message names the paper and page. You can only read files.
+the answer depends on my course's notes or a past paper; the message names the paper and page. My class WhatsApp \
+groups' last 120 days are in _src/_persona/messages.md; open it when I ask about an announcement, a date or what \
+someone said. You can only read files.
 Plain text and Markdown only (lists, code blocks, tables). Write maths in plain text, like x^2 or sqrt(x); never LaTeX.`;
 
 const env = process.env;
