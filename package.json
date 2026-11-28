@@ -19,6 +19,7 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:persona": "python3 -m unittest discover -s persona/tests -t .",
     "sync:files": "node --env-file-if-exists=.env.local scripts/sync-study-folder.mjs",
     "semester:switch": "node --env-file-if-exists=.env.local scripts/semester-switch.mjs",
     "sync:deletions": "node --env-file-if-exists=.env.local scripts/apply-study-deletions.mjs",

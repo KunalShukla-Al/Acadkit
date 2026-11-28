@@ -35,6 +35,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: PersonaOS engines (Python)
+        run: npm run test:persona
+
       - name: Build
         run: npx vite build
 

@@ -4,12 +4,11 @@
 <plist version="1.0">
 <dict>
     <key>Label</key><string>com.acadkit.persona</string>
-    <!-- bash stays the parent: it holds Full Disk Access, and node and the jobs inherit it. -->
+    <!-- bash runs the tick: it holds Full Disk Access for the WhatsApp read, which macOS denies node and python. -->
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cd "__REPO__" &amp;&amp; node --env-file-if-exists=.env.local scripts/persona.mjs</string>
+        <string>__REPO__/scripts/mac/persona-tick.sh</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict><key>PATH</key><string>/opt/homebrew/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>

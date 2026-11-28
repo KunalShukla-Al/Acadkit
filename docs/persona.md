@@ -7,6 +7,7 @@ PersonaOS is AcadKit's Mac side grown into one system. It reads everything my de
 | Part | State |
 |---|---|
 | Orchestrator (`scripts/persona.mjs`) | Built |
+| WhatsApp collector (`persona/whatsapp.py`) | Built; first real read 28 Nov: 628 messages from 2 groups |
 | Collectors, engines, phone surfaces | Planned, one PR a day until 16 Dec 2026 |
 
 ## Rules
@@ -43,13 +44,25 @@ State lives in `~/Library/Application Support/AcadKit/persona/`: one record per 
 
 A job is `{ name, every | at, window?, timeoutMin?, alertAfter?, graceMin?, run(ctx) }`. `run` gets `{ signal, now, log, spendClaude }`, may return a short note, and should stop when `signal` aborts.
 
+## WhatsApp collector
+
+WhatsApp's messages are read every 10 minutes (`persona/whatsapp.py`, `scripts/mac/whatsapp-read.sh`).
+
+- macOS lets launchd's bash, and Apple's tools it starts, read WhatsApp's database under Full Disk Access, but not node or python. So the agent's tick (`scripts/mac/persona-tick.sh`) runs the read in bash before the orchestrator, and only `/usr/bin/sqlite3 -readonly` opens WhatsApp's file.
+- The read has four steps. sqlite3 lists the columns; python checks them and plans one query; sqlite3 runs it; python stores the rows. A schema change stops the run and names the missing columns.
+- It watches the groups in the semester pack, `<STUDY_DIR>/_src/semester.json` (`whatsapp.groups`). `PERSONA_WHATSAPP_GROUPS` overrides the pack. Names match ignoring case. `scripts/mac/whatsapp-read.sh --chats` lists chat names for the pack.
+- Each group keeps its own cursor. A group's first run reads back `PERSONA_WHATSAPP_DAYS` (60) days and moves the cursor past older rows too, because WhatsApp's row numbers don't follow message dates.
+- New messages go to `persona.sqlite` on the Mac with sender, time, text and any file's path. Rows with neither text nor a file are dropped.
+- The read writes `persona/whatsapp/status.json`. The orchestrator's `whatsapp` job reports it, so a failed or silent read alerts like any job.
+- Engines run from bash read `.env.local` themselves (`persona/env.py`). `npm run test:persona` runs the engines' tests; CI runs them too.
+
 ## Sources (planned)
 
 | Source | Holds | How | Login |
 |---|---|---|---|
 | Student Portal | Attendance, marks, timetable, results | Playwright with its own profile; a light request every 10 min may keep the session open, if the portal's timeout counts idle time | ID and password from Keychain; I answer the CAPTCHA on my phone |
 | Academia | Subjects, faculty, semester calendar | Playwright | ID and password from Keychain |
-| WhatsApp | Notices, relays, files | A read-only copy of the Mac app's database | Full Disk Access |
+| WhatsApp | Notices, relays, files | Apple's sqlite3, read-only, from the agent's bash (built) | Full Disk Access for /bin/bash |
 | Gmail | Course, GitHub, freelance and job-alert mail | IMAP with sender filters | App passwords in Keychain |
 | GitHub | CI, pull requests, commits | `gh` | `gh auth` |
 
