@@ -15,7 +15,7 @@ from pathlib import Path
 from .model import IST, Item, Trust
 from .verify import WHO, moved_from
 
-_TYPE = {"exam": "exam", "lab": "lab", "submission": "assignment", "worksheet": "assignment",
+_TYPE = {"exam": "exam", "retest": "exam", "lab": "lab", "submission": "assignment", "worksheet": "assignment",
          "viva": "other", "review": "other", "deadline": "other"}
 
 
