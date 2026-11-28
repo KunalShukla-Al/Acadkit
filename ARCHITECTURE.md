@@ -470,6 +470,9 @@ The Mac's orchestrator for every background job that reads my sources and acts o
   each dated by who said it (faculty over the CR over a classmate), and writes the upcoming ones to
   `<STUDY_DIR>/_src/persona_suggestions.json`. The sync reads it beside the weekly scan's
   `acadkit_suggestions.json`, so they arrive in the app as suggestions.
+- `calendar` (every 30 minutes, `scripts/lib/persona/calendar.mjs`) uploads my deadlines, plus the
+  engine's unconfirmed ones marked "?", as `<pin>/calendar/<secret>.ics`; the phone subscribes through
+  one signed `webcal://` link (`npm run persona -- calendar`).
 
 ## Everything connected
 

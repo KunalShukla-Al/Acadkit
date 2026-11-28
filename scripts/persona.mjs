@@ -6,6 +6,7 @@
  *   npm run persona                 one tick: every job that's due
  *   npm run persona -- list         each job's last run and whether it's due
  *   npm run persona -- run <job>    one job now, whatever its schedule
+ *   npm run persona -- calendar     the webcal:// link my iPhone Calendar subscribes to
  *
  * PERSONA=off in .env.local turns it off.
  */
@@ -15,6 +16,8 @@ import { isDue } from "./lib/persona/schedule.mjs";
 import { store as openStore } from "./lib/persona/store.mjs";
 import { DEFAULT_TIMEOUT_MIN, claudeBudget, runJob, tick } from "./lib/persona/tick.mjs";
 import { capOf } from "./lib/persona/budget.mjs";
+import { backend } from "./lib/persona/backend.mjs";
+import { calendarLink } from "./lib/persona/calendar.mjs";
 
 const log = (line) => console.log(`${new Date().toLocaleString("sv-SE").slice(0, 19)} persona: ${line}`);
 
@@ -60,10 +63,17 @@ if (cmd === "list") {
   const now = () => new Date();
   const rec = await runJob({ job, store, now, notify, log, force: true, spendClaude: claudeBudget({ store, now, cap: capOf() }) });
   process.exitCode = rec && !rec.ok ? 1 : 0;
+} else if (cmd === "calendar") {
+  try {
+    console.log(await calendarLink(backend()));
+  } catch (err) {
+    console.error(`No calendar link: ${err.message}`);
+    process.exitCode = 1;
+  }
 } else if (cmd === undefined) {
   await tick({ jobs: JOBS, store, notify, log });
 } else {
-  console.error(`Unknown command ${cmd}. Use list, run <job>, or nothing for one tick.`);
+  console.error(`Unknown command ${cmd}. Use list, run <job>, calendar, or nothing for one tick.`);
   process.exitCode = 1;
 }
 process.exit();

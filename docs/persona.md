@@ -9,6 +9,7 @@ PersonaOS is AcadKit's Mac side grown into one system. It reads everything my de
 | Orchestrator (`scripts/persona.mjs`) | Built |
 | WhatsApp collector (`persona/whatsapp.py`) | Built; first real read 28 Nov: 628 messages from 2 groups |
 | Deadline engine (`persona/deadlines/`) | Built on rules; a local model joins later |
+| Calendar feed (`scripts/lib/persona/calendar.mjs`) | Built |
 | Collectors, engines, phone surfaces | Planned, one PR a day until 16 Dec 2026 |
 
 ## Rules
@@ -72,6 +73,14 @@ The `deadlines` job runs every 15 minutes (`persona/deadlines/`, ported from hea
 | Output | Upcoming items to `<STUDY_DIR>/_src/persona_suggestions.json` when faculty or the CR said so, or a classmate stated a full date plainly with nothing disputing it |
 
 The study sync reads that file beside the weekly scan's `acadkit_suggestions.json`, so each item reaches the app as an Add, or a Move when it carries `moved_from`. `python3 -m persona.deadlines show` lists every tracked item with its flags and questions.
+
+## Calendar feed
+
+The `calendar` job (every 30 minutes) publishes my deadlines as an `.ics` my iPhone Calendar subscribes to.
+
+- It lists AcadKit's deadlines from the last 30 days on, the ones I've confirmed, with ✓ on those done. Then it adds the deadline engine's upcoming suggestions that match no confirmed deadline by course and day, as "? DAA FT-I (not confirmed)" with the source line in the notes.
+- Each event is an hour long with an alert the day before. Calendar refreshes the feed hourly.
+- The file goes to `<pin>/calendar/<secret>.ics` in the private study bucket. `npm run persona -- calendar` prints the `webcal://` link, signed once for five years. A new secret in `persona/calendar.json` retires the old link.
 
 ## Sources (planned)
 

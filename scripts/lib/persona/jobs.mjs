@@ -8,6 +8,9 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { studyRoots } from "../roots.mjs";
+import { backend } from "./backend.mjs";
+import { publishCalendar } from "./calendar.mjs";
 import { runPython } from "./python.mjs";
 import { PERSONA_DIR } from "./store.mjs";
 
@@ -51,5 +54,13 @@ export const JOBS = [
     every: 15,
     timeoutMin: 3,
     run: ({ signal }) => runPython(["persona.deadlines", "run"], { signal }),
+  },
+  {
+    // AcadKit's deadlines plus the engine's unconfirmed ones as the .ics my iPhone subscribes to (calendar.mjs).
+    name: "calendar",
+    every: 30,
+    timeoutMin: 2,
+    run: ({ now }) =>
+      publishCalendar({ ...backend(), now: now(), suggestionsFile: path.join(studyRoots().dir, "_src", "persona_suggestions.json") }),
   },
 ];
