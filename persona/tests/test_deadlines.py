@@ -52,6 +52,9 @@ class Reading(unittest.TestCase):
         self.assertEqual(date_of("complete till 11th experiment", oct13), (None, 0.4))
         self.assertEqual(date_of("at 10.30 am", oct13), (None, 0.4))
         self.assertEqual(date_of("27 Jan 10:30", oct13)[0], "2027-01-27")
+        # "marks" is not March, and the date written first wins.
+        self.assertEqual(date_of("Date: 11.11.2026 Day Order: DO5 Part A: 8 MCQs × 1 marks", oct13)[0], "2026-11-11")
+        self.assertEqual(date_of("CT on 15th october, maybe shifted to 26th October", oct13)[0], "2026-10-15")
 
     def test_reads_on_the_nth_as_the_next_such_day(self):
         self.assertEqual(date_of("the os ct which is on 11th", date(2026, 10, 25)), ("2026-11-11", 0.6))
@@ -100,6 +103,23 @@ class Tracking(unittest.TestCase):
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0].label, "FT-II")
         self.assertEqual(len(out[0].history), 3)
+
+
+    def test_a_bare_mention_after_a_test_has_passed_is_a_new_test(self):
+        ct1, later = items(
+            msg(1, "2026-09-30T04:30:00", "Dear Coordinators, the CT 1 for DAA is scheduled on 29th Oct 2026."),
+            msg(2, "2026-11-09T04:30:00", "and what do we need to do in the daa ct which is on 11th", sender="Sam"),
+        )
+        self.assertEqual((ct1.date, later.date), ("2026-10-29", "2026-11-11"))
+        self.assertNotIn("conflict", ct1.flags)
+
+    def test_a_retest_is_its_own_event(self):
+        ct, retest = items(
+            msg(1, "2026-09-30T04:30:00", "we got DBMS CT on 15th october", sender="Sam"),
+            msg(2, "2026-10-24T04:30:00", "Monday most probably DBMS retest", sender="Ana"),
+        )
+        self.assertEqual((ct.kind, ct.date), ("exam", "2026-10-15"))
+        self.assertEqual((retest.kind, retest.label), ("retest", "Retest"))
 
 
 class Verifying(unittest.TestCase):

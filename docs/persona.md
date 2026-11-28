@@ -70,9 +70,9 @@ The `deadlines` job runs every 15 minutes (`persona/deadlines/`, ported from hea
 | Step | Does |
 |---|---|
 | Prefilter | Keeps messages with an assessment word and a date cue |
-| Extract | One claim per message: the first course the pack's cues name (code, full name, short name of 3+ letters, listed cues), the kind, the date read against the day it was sent, a time, the units. "11th experiment" is not a date |
+| Extract | One claim per message: the first course the pack's cues name (code, full name, short name, the name's initials such as DSA or TBVP, listed cues), the kind (a retest is its own kind), the first date written, read against the day it was sent, a time, the units. "11th experiment" is not a date, and "marks" is not March |
 | Roles | Faculty and CRs by contact name or WhatsApp id from the pack's `whatsapp.faculty` and `whatsapp.cr`; a name starting "Dr" or "Prof" counts as faculty |
-| Track | Claims sharing an instance code (FT-II, FJ2, CT 1) fold into one item, and a message naming two links them; a bare mention joins the one open item of its course and kind |
+| Track | Claims sharing an instance code (FT-II, FJ2, CT 1) fold into one item, and a message naming two links them; a bare mention joins the one open item of its course and kind, unless that item's dates had all passed when it was said |
 | Resolve | The date comes from faculty, then the CR, then a classmate, then me; the latest said within a rank |
 | Verify | Flags `moved`, `conflict`, `stale` and `past`; an undated item, or a disagreement with no faculty word, gets a question |
 | Output | Upcoming items to `<STUDY_DIR>/_src/persona_suggestions.json` when faculty or the CR said so, or a classmate stated a full date plainly with nothing disputing it |
@@ -89,6 +89,8 @@ The study sync reads that file beside the weekly scan's `acadkit_suggestions.jso
 | Baseline | The same items dated by the latest message alone, ignoring who said it |
 
 It also lists the misses and the items AcadKit doesn't have, and keeps the result in `persona/eval.json`. Only the watched groups are read, so recall measures what those groups carried.
+
+First real score (28 Nov 2026, Sem 3, AS1 OFFICIAL and AS1 unofficial, 628 messages): 5 of 27 AcadKit deadlines, 5 of 13 dated items matching, a median 11 days ahead. Only 5 of the 27 were ever stated in those two groups with their course and date, so the engine caught every one it could see; the rest came from other groups, Classroom and the exam timetable. Several of the 8 items AcadKit lacks are real (an FDS retest, the UHV-II assignment). With no CR or faculty named in the pack, ranking by sender matches the latest-message baseline (5 = 5).
 
 ## Gmail collector
 

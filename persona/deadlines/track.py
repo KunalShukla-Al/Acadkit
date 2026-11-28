@@ -4,14 +4,15 @@ One test goes by many names across groups ("FT-II", "CT 2", "FJ2"). A claim
 joins an item that shares an instance alias with it, including aliases that
 appear together in one message ("FT-II (FJ2)"); a bridging claim merges the
 items it links. A claim with no alias joins the one open item of its course
-and kind, or starts its own. Claims fold in the order they were said.
+and kind (one whose dates weren't all past when the claim was said), or
+starts its own. Claims fold in the order they were said.
 """
 
 from __future__ import annotations
 
 import re
 
-from .model import Claim, Item
+from .model import IST, Claim, Item
 
 _ALIAS = re.compile(r"\b(ft|ct|llt|llj|fj|cla-?t|cla)\s*[-\s]?\s*(\d{1,2}|iv|v?i{1,3}|v)\b", re.IGNORECASE)
 _PREFIX = {"ft": "FT", "ct": "CT", "llt": "LLT", "llj": "LLJ", "fj": "FJ", "cla": "CLA-T", "clat": "CLA-T", "cla-t": "CLA-T"}
@@ -26,6 +27,15 @@ def aliases_in(text: str) -> set[str]:
         n = numeral.strip().upper()
         out.add(f"{_PREFIX[prefix.lower()]}-{_ROMAN.get(int(n), n) if n.isdigit() else n}")
     return out
+
+
+def _over(item: Item, claim: Claim) -> bool:
+    """True when every date the item holds was already past when the claim was said: a bare
+    "the os ct is on 11th" after CT-I's 29 Oct is a new test, not a move of the old one."""
+
+    said = claim.said_at.astimezone(IST).date().isoformat()
+    dates = [c.date for c in item.history if c.date]
+    return bool(dates) and all(d < said for d in dates)
 
 
 def track(claims: list[Claim]) -> list[Item]:
@@ -44,7 +54,7 @@ def track(claims: list[Claim]) -> list[Item]:
                 target = Item(claim.course, claim.kind)
                 items.append(target)
         else:
-            same = [it for it in items if it.course == claim.course and it.kind == claim.kind]
+            same = [it for it in items if it.course == claim.course and it.kind == claim.kind and not _over(it, claim)]
             target = same[0] if len(same) == 1 else Item(claim.course, claim.kind)
             if target not in items:
                 items.append(target)

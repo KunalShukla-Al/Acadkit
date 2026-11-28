@@ -80,15 +80,32 @@ class Course:
     cues: tuple[re.Pattern, ...]
 
 
+_STOP = {"and", "of", "the", "for", "in", "to", "with", "on", "a", "an", "&"}
+_ROMAN = {"i", "ii", "iii", "iv", "v", "vi"}
+
+
+def initials(name: str) -> str:
+    """The abbreviation students write for a course: "Data Structures and Algorithms" → "dsa".
+    A title that opens with its own code ("UHV-II: Universal Human Values …") gives that code's letters."""
+
+    name = (name or "").strip()
+    lead = re.match(r"^([A-Z]{2,})(?:-[IVX]+)?\s*[:–-]", name)
+    if lead:
+        return lead.group(1).lower()
+    head = re.split(r"[:–(]", name, maxsplit=1)[0]
+    words = [w for w in re.findall(r"[A-Za-z]+", head) if w.lower() not in _STOP and w.lower() not in _ROMAN]
+    return "".join(w[0] for w in words).lower()
+
+
 def courses_from_pack(pack: dict) -> list[Course]:
-    """Each course's cues: its code, its full name, its short name when 3+ letters, and any listed."""
+    """Each course's cues: its code, its full name, its short name, the initials of its name, and any
+    listed. Short cues are safe because a course only counts near an assessment word (course_of)."""
 
     out = []
     for c in pack.get("courses", []):
-        words = [c["code"], c.get("name", ""), *(c.get("cues") or [])]
-        if len(c.get("short", "")) >= 3:
-            words.append(c["short"])
-        cues = tuple(re.compile(rf"(?<![a-z0-9]){re.escape(w.lower())}(?![a-z0-9])") for w in words if w.strip())
+        words = [c["code"], c.get("name", ""), c.get("short") or "", initials(c.get("name", "")), *(c.get("cues") or [])]
+        words = list(dict.fromkeys(w for w in words if len(w.strip()) >= 2))
+        cues = tuple(re.compile(rf"(?<![a-z0-9]){re.escape(w.lower())}(?![a-z0-9])") for w in words)
         out.append(Course(c["code"], cues))
     return out
 
@@ -114,14 +131,16 @@ def course_of(text: str, courses: list[Course]) -> str | None:
 
 # --- what kind ---------------------------------------------------------------
 
-# Top to bottom; "lab" sits above "exam" so "FJ lab test" reads as lab work.
+# Top to bottom: a retest is its own event, never the test it repeats; "lab" sits above "exam" so
+# "FJ lab test" reads as lab work.
 _KINDS = (
+    ("retest", ("retest", "re-test", "re test")),
     ("worksheet", ("worksheet",)),
     ("review", ("review",)),
     ("viva", ("viva",)),
     ("lab", ("lab", "experiment", "exercise", "practical", "record", "llj")),
     ("submission", ("submit", "submission", "due", "assignment", "imposition")),
-    ("exam", ("ft", "ct", "llt", "cla", "fj", "exam", "test", "quiz", "retest", "assessment")),
+    ("exam", ("ft", "ct", "llt", "cla", "fj", "exam", "test", "quiz", "assessment")),
 )
 
 
@@ -162,18 +181,22 @@ def date_of(text: str, ref: date) -> tuple[str | None, float]:
     """(ISO date or None, confidence), relative forms read against `ref`."""
 
     low = text.lower()
-    mon = "(" + "|".join(_MONTHS) + ")"
-    m = re.search(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{mon}[a-z]*\.?(?:\s*,?\s*(\d{{4}}|\d{{2}}(?!\d|:)))?", low)
-    if m:
-        return _assemble(int(m.group(1)), _MONTHS[m.group(2)], m.group(3), ref), 0.9 if m.group(3) else 0.85
-    m = re.search(rf"\b{mon}[a-z]*\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?\b(?:\s*,?\s*(\d{{4}}))?", low)
-    if m:
-        return _assemble(int(m.group(2)), _MONTHS[m.group(1)], m.group(3), ref), 0.9 if m.group(3) else 0.85
-    m = re.search(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", low)
-    if m and not re.match(r"\s*(am|pm)\b", low[m.end():]):
+    # Whole month words only: "mar" and "march", never the "mar" of "marks".
+    mon = r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b"
+    found = []  # (position, iso, confidence): the date written first wins, whatever its form
+    for m in re.finditer(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{mon}\.?(?:\s*,?\s*(\d{{4}}|\d{{2}}(?!\d|:)))?", low):
+        found.append((m.start(), _assemble(int(m.group(1)), _MONTHS[m.group(2)[:3]], m.group(3), ref), 0.9 if m.group(3) else 0.85))
+    for m in re.finditer(rf"\b{mon}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?\b(?:\s*,?\s*(\d{{4}}))?", low):
+        found.append((m.start(), _assemble(int(m.group(2)), _MONTHS[m.group(1)[:3]], m.group(3), ref), 0.9 if m.group(3) else 0.85))
+    for m in re.finditer(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", low):
         d, mo = int(m.group(1)), int(m.group(2))
-        if 1 <= mo <= 12 and 1 <= d <= 31:
-            return _assemble(d, mo, m.group(3), ref), 0.9 if m.group(3) else 0.85
+        if re.match(r"\s*(am|pm)\b", low[m.end():]) or not (1 <= mo <= 12 and 1 <= d <= 31):
+            continue
+        found.append((m.start(), _assemble(d, mo, m.group(3), ref), 0.9 if m.group(3) else 0.85))
+    found = [f for f in found if f[1]]
+    if found:
+        _, iso, conf = min(found)
+        return iso, conf
     # "on 11th" is the next 11th; "till 11th experiment" is a count, not a date.
     m = re.search(
         r"\b(?:on|by|till|before)\s+(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b"
