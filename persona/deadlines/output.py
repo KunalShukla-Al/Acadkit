@@ -38,7 +38,7 @@ def suggestion(item: Item) -> dict:
         "due_date": item.date + at,
         "max_marks": None,
         "moved_from": old + at if old else None,
-        "source": f"WhatsApp · {w.message.chat} · {WHO[w.trust]} · {w.said_at.astimezone(IST):%d %b}",
+        "source": f"WhatsApp · {w.message.chat} · {w.by or WHO[w.trust]} · {w.said_at.astimezone(IST):%d %b}",
         "evidence": w.message.text.strip()[:200],
     }
 

@@ -18,7 +18,7 @@ from .model import IST, Claim, Message, Trust
 _ASSESS = re.compile(
     r"\b(ft|ct|llt|llj|fj|cla|exam|test|quiz|viva|lab|worksheet|assignment"
     r"|submit|submission|due|deadline|portion|syllabus|review|imposition"
-    r"|retest|assessment|practical|record|experiment|exercise)\b",
+    r"|retest|assessment|practical|record|experiment|exercise)(?:s|zes)?\b",
     re.IGNORECASE,
 )
 _DATE_CUE = re.compile(
@@ -39,6 +39,12 @@ def is_candidate(text: str) -> bool:
 # --- who said it -------------------------------------------------------------
 
 _TITLED = re.compile(r"^\s*(dr|prof|professor)\b\.?", re.IGNORECASE)
+# A forwarded circular ("Dear Students, … CT 1 … is scheduled on …") speaks for the department.
+_CIRCULAR = re.compile(r"^\W*dear\s+(students|all|coordinators|faculty|academic advisors|class advisors|parents)\b", re.IGNORECASE)
+
+
+def is_circular(text: str) -> bool:
+    return bool(_CIRCULAR.match(text))
 
 
 @dataclass(frozen=True)
@@ -87,9 +93,22 @@ def courses_from_pack(pack: dict) -> list[Course]:
     return out
 
 
+NEAR = 60
+
+
 def course_of(text: str, courses: list[Course]) -> str | None:
+    """The course named first within NEAR characters of an assessment word, so a long
+    circular that mentions a course in passing isn't read as that course's deadline."""
+
     low = text.lower()
-    hits = [(m.start(), c.code) for c in courses for cue in c.cues if (m := cue.search(low))]
+    words = [m.start() for m in _ASSESS.finditer(low)]
+    hits = [
+        (m.start(), c.code)
+        for c in courses
+        for cue in c.cues
+        for m in cue.finditer(low)
+        if any(abs(m.start() - w) <= NEAR for w in words)
+    ]
     return min(hits)[1] if hits else None
 
 
@@ -155,6 +174,18 @@ def date_of(text: str, ref: date) -> tuple[str | None, float]:
         d, mo = int(m.group(1)), int(m.group(2))
         if 1 <= mo <= 12 and 1 <= d <= 31:
             return _assemble(d, mo, m.group(3), ref), 0.9 if m.group(3) else 0.85
+    # "on 11th" is the next 11th; "till 11th experiment" is a count, not a date.
+    m = re.search(
+        r"\b(?:on|by|till|before)\s+(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b"
+        r"(?!\s*(?:experiment|exercise|program|question|chapter|unit|lab|week|class|sem|lecture))",
+        low,
+    )
+    if m and 1 <= int(m.group(1)) <= 31:
+        day, nxt = int(m.group(1)), ref
+        for _ in range(62):
+            if nxt.day == day:
+                return nxt.isoformat(), 0.6
+            nxt += timedelta(days=1)
     m = re.search(r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b", low)
     if m:
         ahead = (_WEEKDAYS[m.group(1)[:3]] - ref.weekday()) % 7
@@ -197,7 +228,8 @@ def extract(messages: list[Message], courses: list[Course], roles: Roles, ids: d
             time=time_of(m.text) if day else None,
             portion=portion_of(m.text),
             message=m,
-            trust=roles.trust(m.sender, (ids or {}).get(m.id)),
+            trust=Trust.FACULTY if is_circular(m.text) else roles.trust(m.sender, (ids or {}).get(m.id)),
             confidence=conf,
+            by="a circular" if is_circular(m.text) else None,
         ))
     return out

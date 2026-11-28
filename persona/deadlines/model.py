@@ -39,6 +39,7 @@ class Claim:
     message: Message
     trust: Trust
     confidence: float
+    by: str | None = None     # who said it, when the rank alone doesn't say ("a circular")
 
     @property
     def said_at(self) -> datetime:

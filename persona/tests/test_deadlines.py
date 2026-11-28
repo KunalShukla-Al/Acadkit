@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from persona.deadlines.__main__ import items_now
-from persona.deadlines.extract import Roles, course_of, courses_from_pack, date_of, extract, is_candidate, time_of
+from persona.deadlines.extract import Roles, course_of, courses_from_pack, date_of, extract, is_candidate, is_circular, time_of
 from persona.deadlines.model import Message, Trust
 from persona.deadlines.output import suggestion, worth_suggesting, write_suggestions
 from persona.deadlines.track import aliases_in, track
@@ -53,6 +53,10 @@ class Reading(unittest.TestCase):
         self.assertEqual(date_of("at 10.30 am", oct13), (None, 0.4))
         self.assertEqual(date_of("27 Jan 10:30", oct13)[0], "2027-01-27")
 
+    def test_reads_on_the_nth_as_the_next_such_day(self):
+        self.assertEqual(date_of("the os ct which is on 11th", date(2026, 10, 25)), ("2026-11-11", 0.6))
+        self.assertEqual(date_of("submit by 3rd", date(2026, 11, 3)), ("2026-11-03", 0.6))
+
     def test_reads_times(self):
         self.assertEqual([time_of("10:30 am"), time_of("2 pm"), time_of("12 am"), time_of("at 14:15"), time_of("no time")],
                          ["10:30", "14:00", "00:00", "14:15", None])
@@ -62,6 +66,17 @@ class Reading(unittest.TestCase):
         self.assertEqual(course_of("design and analysis of algorithms ft", COURSES), "21CSC204J")
         self.assertIsNone(course_of("she said the test is on monday", COURSES))
         self.assertEqual(course_of("AI quiz on Monday", COURSES), "21CSC206T")
+
+    def test_a_course_counts_only_near_an_assessment_word(self):
+        circular = "Dear Students, the innovation challenge invites AI ideas from all years. " + "Details follow. " * 6 + "Registration review on 3 Dec."
+        self.assertIsNone(course_of(circular, COURSES))
+        self.assertEqual(course_of("guys is DBMS LAB assessment tomorrow", COURSES), "21CSC205P")
+
+    def test_circulars_speak_for_the_department(self):
+        self.assertTrue(is_circular("Dear Coordinators The *CT 1* for DAA is scheduled on 29th Oct"))
+        self.assertFalse(is_circular("dear god this DAA test"))
+        [it] = items(msg(1, "2026-11-20T04:30:00", "Dear Students, the DAA CT 1 is scheduled on 2 Feb.", sender="Sam"))
+        self.assertEqual((it.winner.trust, suggestion(it)["source"]), (Trust.FACULTY, "WhatsApp · AS1 OFFICIAL · a circular · 20 Nov"))
 
     def test_ranks_senders(self):
         self.assertEqual(ROLES.trust("Dr. Rao"), Trust.FACULTY)
