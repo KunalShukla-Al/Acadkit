@@ -82,19 +82,27 @@ async function walk(root, rel = "") {
 
 const mb = (n) => `${(n / 1048576).toFixed(1)} MB`;
 
-/** The weekly scan's findings, validated. */
+/** The weekly scan's findings and PersonaOS's deadline engine's (persona/deadlines), validated. */
 const TYPES_OK = new Set(["exam", "assignment", "lab", "other"]);
+const SUGGESTION_FILES = ["acadkit_suggestions.json", "persona_suggestions.json"];
 const squash = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 async function readSuggestions(root) {
-  let raw;
-  try {
-    raw = await readFile(path.join(root, "_src", "acadkit_suggestions.json"), "utf8");
-  } catch {
-    return { rows: [], bad: [] };
+  const deadlines = [];
+  const plans = [];
+  for (const name of SUGGESTION_FILES) {
+    let raw;
+    try {
+      raw = await readFile(path.join(root, "_src", name), "utf8");
+    } catch {
+      continue;
+    }
+    const body = JSON.parse(raw);
+    deadlines.push(...(body.deadlines ?? []));
+    plans.push(...(body.plans ?? []));
   }
   const rows = [];
   const bad = [];
-  for (const [i, d] of (JSON.parse(raw).deadlines ?? []).entries()) {
+  for (const [i, d] of deadlines.entries()) {
     const due = new Date(d.due_date);
     const problem = !TYPES_OK.has(d.type)
       ? "type"
@@ -132,7 +140,7 @@ async function readSuggestions(root) {
   // Keyed on the plan's content, so a plan that changes is a new offer
   // and one that hasn't can't come back after being dismissed.
   const KINDS = new Set(["CT", "Lab", "Assignment", "Project"]);
-  for (const [i, p] of (JSON.parse(raw).plans ?? []).entries()) {
+  for (const [i, p] of plans.entries()) {
     const comps = Array.isArray(p.components) ? p.components : [];
     const sum = comps.reduce((s, c) => s + Number(c.max || 0), 0);
     const problem = !p.subject_code

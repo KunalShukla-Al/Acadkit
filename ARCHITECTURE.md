@@ -466,6 +466,10 @@ The Mac's orchestrator for every background job that reads my sources and acts o
   database under Full Disk Access but denies node and python, so only sqlite3 opens it, read-only,
   and python plans the query and stores the rows. The `whatsapp` job reports the read's status.
   Raw text stays on the Mac.
+- `deadlines` (every 15 minutes, `persona/deadlines/`) turns those messages into tracked deadlines,
+  each dated by who said it (faculty over the CR over a classmate), and writes the upcoming ones to
+  `<STUDY_DIR>/_src/persona_suggestions.json`. The sync reads it beside the weekly scan's
+  `acadkit_suggestions.json`, so they arrive in the app as suggestions.
 
 ## Everything connected
 
