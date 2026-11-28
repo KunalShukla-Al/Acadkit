@@ -470,6 +470,26 @@ The Mac's orchestrator for every background job that reads my sources and acts o
   each dated by who said it (faculty over the CR over a classmate), and writes the upcoming ones to
   `<STUDY_DIR>/_src/persona_suggestions.json`. The sync reads it beside the weekly scan's
   `acadkit_suggestions.json`, so they arrive in the app as suggestions.
+- `gmail` (every 15 minutes, `persona/gmail.py`) reads headers only from my Gmail accounts over IMAP,
+  app passwords from Keychain, and keeps mail from Mercor, GitHub, job boards and course sites as
+  signals. `github` (hourly, `persona/github.py`) snapshots my open PRs, their checks and the days I
+  pushed. `export` (every 30 minutes, `persona/export.py`) writes the groups' recent messages to
+  `_src/_persona/messages.md`, which the Desk's Ask reads.
+- `phone` (every 30 minutes, `scripts/lib/persona/phone.mjs`) uploads my deadlines, plus the engine's
+  unconfirmed ones marked "?", as `<pin>/calendar/<secret>.ics`, and the widget's data beside it;
+  the phone reads both through signed links (`npm run persona -- calendar`, `-- widget`). `brief`
+  (06:30) writes `<pin>/persona/brief.json`, which send-reminders pushes once between 07:00 and 11:00.
+- `portal` (every 10 minutes while the Mac is awake, so an idle session never times out between
+  reads): the tick's bash runs `scripts/mac/portal-read.sh`, whose
+  `osascript` fetches attendance, marks, timetable and planners through my own logged-in Student
+  Portal and Academia tabs in Chrome (it never logs in; Chrome must allow JavaScript from Apple
+  Events). `persona/portal.py` reads the tables by header text; attendance goes to
+  `portal_snapshots` (history source `mac`, migration 066), courses, faculty and day orders to the
+  semester pack, and each login/logout is timestamped. A logout uploads an alert send-reminders
+  pushes within 10 minutes, any hour. `npm run persona -- semester` runs the pack's pipeline;
+  `-- usage` gives the 14-day cut rule's numbers.
+- `npm run persona -- eval` replays the stored messages day by day against AcadKit's deadlines and
+  reports recall, precision, lead time and a latest-message baseline (`persona/deadlines/replay.py`).
 
 ## Everything connected
 

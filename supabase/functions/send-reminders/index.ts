@@ -288,6 +288,45 @@ Deno.serve(async (req) => {
         url: "/attendance",
       });
     }
+
+    // 8) PersonaOS's morning brief (scripts/lib/persona/phone.mjs): what my groups, mail and GitHub
+    //    said that AcadKit's own reminders don't. Written by the Mac at 06:30, or at wake when it
+    //    slept, so it's pushed once, on the first run between 07:00 and 11:00 that finds today's.
+    if (ist.getHours() >= 7 && ist.getHours() < 11) {
+      const { data: file } = await sb.storage.from("study-files").download(`${pin}/persona/brief.json`);
+      let brief: { date?: string; lines?: string[] } | null;
+      try {
+        brief = file ? JSON.parse(await file.text()) : null;
+      } catch {
+        brief = null;
+      }
+      if (brief?.date === date && brief.lines?.length) {
+        msgs.push({
+          device_id: pin,
+          kind: "persona_brief",
+          ref: `persona|${date}`,
+          title: "This morning",
+          body: brief.lines.join(" "),
+          url: "/",
+        });
+      }
+    }
+
+    // 9) PersonaOS's one-off alert (scripts/lib/persona/portal.mjs): the Student Portal just logged
+    //    out, pushed any hour so I can log in while the session's absence still matters. Its own ref
+    //    keeps it to once per logout.
+    {
+      const { data: file } = await sb.storage.from("study-files").download(`${pin}/persona/alert.json`);
+      let alert: { ref?: string; title?: string; body?: string; url?: string } | null;
+      try {
+        alert = file ? JSON.parse(await file.text()) : null;
+      } catch {
+        alert = null;
+      }
+      if (alert?.ref && alert.title && alert.body) {
+        msgs.push({ device_id: pin, kind: "persona_alert", ref: alert.ref, title: alert.title, body: alert.body, url: alert.url ?? "/attendance" });
+      }
+    }
   }
 
   // Who delivers: this function (off, shadow) or jobq (on). See jobq.ts.
